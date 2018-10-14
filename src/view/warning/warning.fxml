@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="105.0" prefWidth="252.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="osbot.controller.WarningController">
+   <children>
+      <AnchorPane prefHeight="413.0" prefWidth="294.0">
+         <children>
+            <Text fx:id="warningText" layoutX="30.0" layoutY="40.0" strokeType="OUTSIDE" strokeWidth="0.0" text="An error has ocurred, please try again" textAlignment="JUSTIFY" />
+            <Button fx:id="closeButton" layoutX="84.0" layoutY="66.0" mnemonicParsing="false" onAction="#closeWindow" text="Close window" />
+         </children>
+      </AnchorPane>
+   </children>
+</VBox>

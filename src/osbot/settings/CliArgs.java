@@ -1,3 +1,4 @@
+package osbot.settings;
 public enum CliArgs {
 	DEBUG("-debug"), MEM("-mem"), DATA("-data"), ALLOW("-allow"), PROXY("-proxy"), LOGIN("-login"), BOT("-bot"), SCRIPT(
 			"-script"), WORLD("-world");

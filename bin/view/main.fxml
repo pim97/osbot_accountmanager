@@ -15,20 +15,20 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Main">
+<BorderPane xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="osbot.controller.communicator.ContentController">
    <top>
-      <AnchorPane prefHeight="491.0" prefWidth="879.0" BorderPane.alignment="CENTER">
+      <AnchorPane prefHeight="491.0" prefWidth="1078.0" BorderPane.alignment="CENTER">
          <children>
-            <TabPane prefHeight="491.0" prefWidth="879.0" tabClosingPolicy="UNAVAILABLE">
+            <TabPane prefHeight="491.0" prefWidth="1078.0" tabClosingPolicy="UNAVAILABLE">
               <tabs>
                 <Tab text="Account manager">
                   <content>
-                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="171.0" prefWidth="388.0">
+                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="462.0" prefWidth="1024.0">
                            <children>
-                              <GridPane layoutX="7.0" prefHeight="462.0" prefWidth="872.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="7.0" AnchorPane.topAnchor="0.0">
+                              <GridPane layoutX="7.0" prefHeight="462.0" prefWidth="1078.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="632.0" minWidth="0.0" prefWidth="301.0" />
-                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="632.0" minWidth="0.0" prefWidth="584.0" />
+                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="977.0" minWidth="0.0" prefWidth="777.0" />
                                 </columnConstraints>
                                 <rowConstraints>
                                   <RowConstraints maxHeight="209.0" minHeight="8.0" prefHeight="50.0" vgrow="SOMETIMES" />
@@ -36,25 +36,26 @@
                                   <RowConstraints maxHeight="167.0" minHeight="10.0" prefHeight="68.0" vgrow="SOMETIMES" />
                                 </rowConstraints>
                                  <children>
-                                    <TableView fx:id="table" prefHeight="200.0" prefWidth="577.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <TableView fx:id="table" prefHeight="200.0" prefWidth="790.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                       <columns>
                                         <TableColumn fx:id="id" prefWidth="75.0" text="ID" />
                                         <TableColumn fx:id="script" prefWidth="79.0" text="Script" />
                                         <TableColumn fx:id="username" prefWidth="79.0" text="Username" />
                                         <TableColumn fx:id="world" prefWidth="79.0" text="World" />
-                                        <TableColumn fx:id="proxyIp" prefWidth="79.0" text="Proxy IP" />
-                                        <TableColumn fx:id="proxyPort" prefWidth="79.0" text="Proxy Port" />
-                                        <TableColumn fx:id="lowCpuMode" prefWidth="99.0" text="Low CPU mode" />
+                                        <TableColumn fx:id="proxyIp" prefWidth="91.0" text="Proxy IP" />
+                                        <TableColumn fx:id="proxyPort" prefWidth="86.0" text="Proxy Port" />
+                                        <TableColumn fx:id="lowCpuMode" prefWidth="134.0" text="Low CPU mode" />
+                                        <TableColumn fx:id="status" prefWidth="78.0" text="Status" />
                                       </columns>
                                     </TableView>
                                     <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" />
                                     <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                        <children>
-                                          <Button layoutX="14.0" layoutY="21.0" mnemonicParsing="false" prefHeight="33.0" prefWidth="165.0" text="View account log" />
+                                          <Button fx:id="show" layoutX="14.0" layoutY="21.0" mnemonicParsing="false" onAction="#show" prefHeight="33.0" prefWidth="165.0" text="View account log" />
                                        </children></AnchorPane>
                                     <Accordion GridPane.rowIndex="1">
                                       <panes>
-                                        <TitledPane animated="false" text="Account handler">
+                                        <TitledPane animated="false" prefWidth="235.0" text="Account handler">
                                           <content>
                                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                                    <children>
@@ -64,7 +65,7 @@
                                                             <content>
                                                               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="241.0" prefWidth="291.0">
                                                                      <children>
-                                                                        <Button layoutX="62.0" layoutY="52.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="176.0" text="Run the selected accounts" />
+                                                                        <Button fx:id="startButton" layoutX="62.0" layoutY="52.0" mnemonicParsing="false" onAction="#startBot" prefHeight="42.0" prefWidth="176.0" text="Run the selected accounts" />
                                                                         <Button layoutX="62.0" layoutY="150.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="176.0" text="Stop the selected accounts" />
                                                                         <Text layoutX="78.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Runs the selected accounts" />
                                                                         <Text layoutX="76.0" layoutY="133.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Stops the selected accounts" />
@@ -76,10 +77,10 @@
                                                             <content>
                                                               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                                                      <children>
-                                                                        <Button fx:id="button" layoutX="79.0" layoutY="52.0" mnemonicParsing="false" onAction="#openWindow" prefHeight="42.0" prefWidth="142.0" text="Create new account" />
-                                                                        <Button layoutX="79.0" layoutY="156.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="142.0" text="Delete account" />
-                                                                        <Text layoutX="85.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Creates a new account in the bot manager" textAlignment="CENTER" wrappingWidth="128.974609375" />
-                                                                        <Text layoutX="85.0" layoutY="132.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Deletes an account in the bot manager" textAlignment="CENTER" wrappingWidth="128.974609375" />
+                                                                        <Button fx:id="button" layoutX="79.0" layoutY="69.0" mnemonicParsing="false" onAction="#openWindow" prefHeight="42.0" prefWidth="142.0" text="Create new account" />
+                                                                        <Button fx:id="buttonDeleteAccount" layoutX="78.0" layoutY="160.0" mnemonicParsing="false" onAction="#deleteAccounts" prefHeight="42.0" prefWidth="142.0" text="Delete account" />
+                                                                        <Text layoutX="85.0" layoutY="43.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Creates a new account in the bot manager" textAlignment="CENTER" wrappingWidth="128.974609375" />
+                                                                        <Text layoutX="71.0" layoutY="133.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Deletes an/edits account in the bot manager" textAlignment="CENTER" wrappingWidth="157.974609375" />
                                                                      </children>
                                                                   </AnchorPane>
                                                             </content>
@@ -116,7 +117,7 @@
                   <content>
                     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <GridPane prefHeight="462.0" prefWidth="879.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <GridPane prefHeight="462.0" prefWidth="1078.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="539.0" minWidth="10.0" prefWidth="520.0" />
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="434.0" minWidth="10.0" prefWidth="359.0" />
@@ -127,18 +128,18 @@
                                   <RowConstraints maxHeight="87.0" minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
                                 </rowConstraints>
                                  <children>
-                                    <TableView prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="1">
+                                    <TableView prefHeight="200.0" prefWidth="505.0" GridPane.rowIndex="1">
                                       <columns>
                                         <TableColumn prefWidth="95.0" text="Script ID" />
                                         <TableColumn prefWidth="160.0" text="Name" />
                                         <TableColumn prefWidth="95.0" text="Parameters" />
                                       </columns>
                                     </TableView>
-                                    <Accordion GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <Accordion prefWidth="232.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                       <panes>
-                                        <TitledPane animated="false" text="Add script">
+                                        <TitledPane animated="false" prefWidth="496.0" text="Add script">
                                           <content>
-                                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="491.0" />
                                           </content>
                                         </TitledPane>
                                         <TitledPane animated="false" text="untitled 2">

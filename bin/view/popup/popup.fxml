@@ -8,32 +8,32 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="436.0" spacing="10.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="PopupController">
+<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="436.0" spacing="10.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="osbot.controller.PopupController">
    <children>
       <Label text="Adding a new account" />
       <HBox alignment="CENTER" prefWidth="412.0" style="-fx-background-color: #e1c1c1;" />
       <HBox alignment="CENTER" prefWidth="404.0">
          <children>
             <Label prefWidth="70.0" text="Account" />
-            <TextField fx:id="usernameTF" promptText="username here" />
+            <TextField fx:id="username" promptText="username here" />
          </children>
       </HBox>
       <HBox alignment="CENTER">
          <children>
             <Label prefWidth="70.0" text="Password" />
-            <PasswordField fx:id="passwordPF" promptText="*********" />
+            <PasswordField fx:id="password" promptText="*********" />
          </children>
       </HBox>
       <HBox alignment="CENTER" layoutX="30.0" layoutY="102.0">
          <children>
             <Label prefWidth="70.0" text="Bank-pin" />
-            <PasswordField fx:id="passwordPF1" promptText="*********" />
+            <PasswordField fx:id="bankpin" promptText="*********" />
          </children>
       </HBox>
       <HBox alignment="CENTER" layoutX="30.0" layoutY="67.0">
          <children>
             <Label prefWidth="70.0" text="Proxy ip" />
-            <TextField fx:id="usernameTF1" promptText="ip here" />
+            <TextField fx:id="proxyIp" promptText="ip here" />
          </children>
       </HBox>
       <HBox alignment="CENTER" layoutX="30.0" layoutY="137.0">
@@ -41,7 +41,7 @@
             <HBox alignment="CENTER">
                <children>
                   <Label prefWidth="70.0" text="Proxy port" />
-                  <TextField fx:id="usernameTF11" promptText="port here" />
+                  <TextField fx:id="proxyPort" promptText="port here" />
                </children>
             </HBox>
          </children>
@@ -51,7 +51,7 @@
             <HBox alignment="CENTER" prefWidth="240.0">
                <children>
                   <Label prefHeight="17.0" prefWidth="92.0" text="Proxy username" />
-                  <TextField fx:id="usernameTF111" promptText="proxy username" />
+                  <TextField fx:id="proxyUsername" promptText="proxy username" />
                </children>
             </HBox>
          </children>
@@ -61,7 +61,7 @@
             <HBox alignment="CENTER">
                <children>
                   <Label prefHeight="17.0" prefWidth="92.0" text="Proxy password" />
-                  <TextField fx:id="usernameTF1111" promptText="proxy password" />
+                  <TextField fx:id="proxyPassword" promptText="proxy password" />
                </children>
             </HBox>
          </children>
@@ -71,14 +71,14 @@
             <HBox alignment="CENTER">
                <children>
                   <Label prefHeight="17.0" prefWidth="92.0" text="World number" />
-                  <TextField fx:id="usernameTF11111" promptText="world" />
+                  <TextField fx:id="worldNumber" promptText="world" />
                </children>
             </HBox>
          </children>
       </HBox>
       <HBox alignment="CENTER">
          <children>
-            <Button fx:id="connectBtn" mnemonicParsing="false" text="Add account to manager" />
+            <Button fx:id="addButton" mnemonicParsing="false" onAction="#addToTable" text="Add account to manager" />
          </children>
       </HBox>
    </children>
