@@ -3,5 +3,29 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="C:/Users/pim/Desktop/OS-War development/Server/deps/mysql.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/animal-sniffer-annotations-1.14.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/byte-buddy-1.8.15.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/checker-compat-qual-2.0.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/commons-exec-1.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/error_prone_annotations-2.1.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/guava-25.0-jre.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/httpclient-4.5.5.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/httpcore-4.4.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/j2objc-annotations-1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/jsr305-1.3.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/okhttp-3.10.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/okio-1.14.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-api-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-chrome-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-edge-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-firefox-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-ie-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-java-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-opera-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-remote-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-safari-driver-3.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/selenium-support-3.14.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
