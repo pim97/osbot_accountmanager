@@ -1,6 +1,7 @@
 package osbot.controller.communicator;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -65,6 +66,9 @@ public class ContentController {
 	private Button startButton;
 
 	@FXML
+	private Button stopButton;
+
+	@FXML
 	private Button buttonDeleteAccount;
 
 	@FXML
@@ -101,23 +105,30 @@ public class ContentController {
 		OsbotController bot = BotController.getBotById(table.getSelectionModel().getSelectedItem().getId());
 		AccountTable account = bot.getAccount();
 
-		bot.addArguments(CliArgs.DEBUG, false, 5005);
+		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
 			bot.addArguments(CliArgs.BOT, true, account.getUsername(), account.getPassword(), account.getBankPin());
 		} else if (account.hasUsernameAndPassword()) {
-			bot.addArguments(CliArgs.BOT, true, account.getUsername(), account.getPassword());
+			bot.addArguments(CliArgs.BOT, true, account.getUsername(), account.getPassword(), "0000");
 		}
 		if (account.hasValidProxy()) {
-			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort());
+			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
+					Config.PROXY_PASSWORD);
 		}
 		if (account.hasScript()) {
-			bot.addArguments(CliArgs.SCRIPT, false, account.getScript());
+			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(), account.getScript());
 		}
 		bot.runBot();
 
+	}
+
+	@FXML
+	private void stopBot() {
+		OsbotController bot = BotController.getBotById(table.getSelectionModel().getSelectedItem().getId());
+		BotController.killProcess(bot.getPidId());
 	}
 
 	@FXML

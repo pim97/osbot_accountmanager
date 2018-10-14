@@ -66,7 +66,7 @@
                                                               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="241.0" prefWidth="291.0">
                                                                      <children>
                                                                         <Button fx:id="startButton" layoutX="62.0" layoutY="52.0" mnemonicParsing="false" onAction="#startBot" prefHeight="42.0" prefWidth="176.0" text="Run the selected accounts" />
-                                                                        <Button layoutX="62.0" layoutY="150.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="176.0" text="Stop the selected accounts" />
+                                                                        <Button fx:id="stopButton" layoutX="62.0" layoutY="150.0" mnemonicParsing="false" onAction="#stopBot" prefHeight="42.0" prefWidth="176.0" text="Stop the selected accounts" />
                                                                         <Text layoutX="78.0" layoutY="38.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Runs the selected accounts" />
                                                                         <Text layoutX="76.0" layoutY="133.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Stops the selected accounts" />
                                                                      </children>

@@ -71,11 +71,13 @@ public class DatabaseUtilities {
 				int world = resultSet.getInt("world_number");
 				String proxyIp = resultSet.getString("proxy_ip");
 				String proxyPort = resultSet.getString("proxy_port");
+				String scriptName = resultSet.getString("scriptname");
 				boolean lowCpuMode = resultSet.getBoolean("low_cpu_mode");
 				AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
 
 				AccountTable account = new AccountTable(id, null, name, world, proxyIp, proxyPort, lowCpuMode, status);
 				account.setPassword(password);
+				account.setScript(scriptName);
 
 				accounts.add(account);
 

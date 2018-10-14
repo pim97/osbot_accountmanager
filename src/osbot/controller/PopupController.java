@@ -77,8 +77,7 @@ public class PopupController {
 						proxPort, lowCpuMode, AccountStatus.AVAILABLE);
 				acc.setBankPin(bank);
 				acc.setPassword(pass);
-				OsbotController botController = new OsbotController();
-				botController.setId(acc.getId());
+				OsbotController botController = new OsbotController(acc.getId(), acc);
 				BotController.addBot(botController);
 
 				DatabaseUtilities.insertIntoTable(acc);
