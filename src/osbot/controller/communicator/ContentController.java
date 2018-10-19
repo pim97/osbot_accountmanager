@@ -107,11 +107,12 @@ public class ContentController {
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
+		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
-			bot.addArguments(CliArgs.BOT, true, account.getUsername(), account.getPassword(), account.getBankPin());
+			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
 		} else if (account.hasUsernameAndPassword()) {
-			bot.addArguments(CliArgs.BOT, true, account.getUsername(), account.getPassword(), "0000");
+			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
