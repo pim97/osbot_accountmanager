@@ -9,10 +9,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.global.Config;
+import osbot.account.handler.BotHandler;
+import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
 import osbot.controller.PopupController;
 import osbot.database.DatabaseUtilities;
@@ -36,6 +40,12 @@ public class ContentController {
 
 	@FXML
 	TableColumn<AccountTable, String> proxyIp;
+
+	@FXML
+	TableColumn<AccountTable, String> scriptProgress;
+
+	@FXML
+	TableColumn<AccountTable, String> email;
 
 	@FXML
 	TableColumn<AccountTable, String> username;
@@ -65,8 +75,14 @@ public class ContentController {
 	private Button startButton;
 
 	@FXML
+	private Button createAccsButton;
+
+	@FXML
 	private Button stopButton;
 
+	@FXML
+	private Button instantKillButton;
+	
 	@FXML
 	private Button buttonDeleteAccount;
 
@@ -89,6 +105,12 @@ public class ContentController {
 	}
 
 	@FXML
+	private void instantKillAllBots() {
+		BotHandler.killAllBots();
+		System.out.println("Killed all bots!");
+	}
+	
+	@FXML
 	private void openWindow() {
 		try {
 			PopupController popup = new PopupController();
@@ -108,6 +130,11 @@ public class ContentController {
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
 		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
+		bot.addArguments(CliArgs.MEM, false, "2048");
+		
+		if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
+			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		}
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
@@ -119,9 +146,57 @@ public class ContentController {
 					Config.PROXY_PASSWORD);
 		}
 		if (account.hasScript()) {
-			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(), account.getScript());
+			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
+					account.getEmail() + "_" + account.getPassword()+"_"+bot.getPidId());
 		}
 		bot.runBot();
+
+	}
+
+	@FXML
+	private ToggleButton toggleButton;
+
+	@FXML
+	private void toggleBot() {
+
+		BotHandler.handleBots();
+		
+//		while (BotController.getJavaPIDsWindows().size() < 5) {
+//			for (OsbotController bot : BotController.getBots()) {
+//				AccountTable account = bot.getAccount();
+//
+//				if (account.getStatus() == AccountStatus.AVAILABLE) {
+//					// bot.addArguments(CliArgs.DEBUG, false, 5005);
+//					bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
+//					bot.addArguments(CliArgs.DATA, false, 0);
+//					bot.addArguments(CliArgs.WORLD, false, account.getWorld());
+//					bot.addArguments(CliArgs.MEM, false, "2048");
+//					bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+//
+//					if (account.hasUsernameAndPasswordAndBankpin()) {
+//						bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(),
+//								account.getBankPin());
+//					} else if (account.hasUsernameAndPassword()) {
+//						bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
+//					}
+//					if (account.hasValidProxy()) {
+//						bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
+//								Config.PROXY_USERNAME, Config.PROXY_PASSWORD);
+//					}
+//					if (account.hasScript()) {
+//						bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
+//								account.getEmail() + "_" + account.getPassword());
+//					}
+//					bot.runBot();
+//				}
+//				try {
+//					Thread.sleep(5000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		}
 
 	}
 
@@ -132,11 +207,24 @@ public class ContentController {
 	}
 
 	@FXML
+	private void createAccounts() {
+		DatabaseUtilities.seleniumCreateAccountThread();
+	}
+
+	@FXML
+	private void recover() {
+		DatabaseUtilities.seleniumRecoverAccount();
+	}
+
+	@FXML
 	public void initialize() {
+		WebdriverFunctions.killAll();
 
 		id.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("id"));
 		script.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("script"));
 		username.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("username"));
+		scriptProgress.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("accountStageProgress"));
+		email.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("email"));
 		world.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("world"));
 		proxyIp.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyIp"));
 		proxyPort.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyPort"));
@@ -151,12 +239,17 @@ public class ContentController {
 		 * public AccountTable(String script, String username, int world, String
 		 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
 		 */
+
 		ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
 		for (AccountTable acc : account) {
-			table.getItems().add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
-					acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus()));
+			table.getItems()
+					.add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
+							acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(), acc.getStage(),
+							acc.getAccountStageProgress()));
 			BotController.addBot(new OsbotController(acc.getId(), acc));
 		}
+
+		// DatabaseUtilities.seleniumCreateAccountThread();
 
 		// RunBot bot = new RunBot();
 		//
@@ -164,6 +257,21 @@ public class ContentController {
 		// bot.runBot();
 		System.out.println("Initializing bot");
 
+	}
+
+	@FXML
+	private void refreshTable() {
+		table.getItems().clear();
+
+		BotController.getBots().clear();
+		ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
+		for (AccountTable acc : account) {
+			table.getItems()
+					.add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
+							acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(), acc.getStage(),
+							acc.getAccountStageProgress()));
+			BotController.addBot(new OsbotController(acc.getId(), acc));
+		}
 	}
 
 }

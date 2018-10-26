@@ -3,6 +3,7 @@ package osbot.account.gmail.protonmail;
 import java.util.List;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
@@ -50,6 +51,12 @@ public class ProtonActions {
 	 * @return
 	 */
 	public boolean sendKeysAndVerifyValue(By by, String sendKeys) {
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		WebElement element = getDriver().findElement(by);
 
 		WebdriverFunctions.waitForElementToBeVisible(driver, element);
@@ -112,8 +119,11 @@ public class ProtonActions {
 	 */
 	public boolean clickedCorrectEmail() {
 		try {
+			WebdriverFunctions.waitForLoad(driver);
+			Thread.sleep(2000);
+			
 			WebElement toEmail = getDriver().findElement(By.className("recipients-summary-label"));
-
+			WebdriverFunctions.waitForElementToBeVisible(driver, toEmail);
 			if (toEmail != null) {
 				System.out.println("Label: "+ getAccount().getAccount().getEmail()+" "+toEmail.getText());
 				if (getAccount().getAccount().getEmail().equalsIgnoreCase(toEmail.getText())) {
@@ -122,7 +132,33 @@ public class ProtonActions {
 			}
 
 		} catch (Exception e) {
-			// Not catching exception, might be dangerous
+			e.printStackTrace();
+			return false;
+		}
+		return false;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean deleteEmail() {
+		try {
+			WebElement deleteButton = getDriver().findElement(By.className("moveElement-btn-trash"));
+			
+			WebdriverFunctions.waitForElementToBeVisible(driver, deleteButton);
+			if (deleteButton != null) {
+				WebElement toEmail = getDriver().findElement(By.className("recipients-summary-label"));
+				WebdriverFunctions.waitForElementToBeVisible(driver, toEmail);
+				deleteButton.click();
+				System.out.println("Clicked delete button");
+
+				if (toEmail == null) {
+					return true;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 		return false;
@@ -139,12 +175,15 @@ public class ProtonActions {
 			for (WebElement name : email) {
 				if (name != null && name.getText().equalsIgnoreCase(subjectName)) {
 					name.click();
+//					WebElement parent = (WebElement) ((JavascriptExecutor) driver).executeScript(
+//                            "return arguments[0].parentNode;", email);
+//					System.out.println(parent+" found "+parent.getText());
 					return true;
 				}
 			}
 
 		} catch (Exception e) {
-			// Not catching exception, might be dangerous
+			e.printStackTrace();
 			return false;
 		}
 		return false;
@@ -170,6 +209,12 @@ public class ProtonActions {
 	 */
 	private boolean logInToMail(String username, String password) {
 		if (openMail()) {
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (sendKeysAndVerifyValue(By.id("username"), username)) {
 				if (sendKeysAndVerifyValue(By.id("password"), password)) {
 					if (clickButtonAndVerifyLink(By.id("login_btn"), ProtonConfig.LINK_TO_PROTON)) {

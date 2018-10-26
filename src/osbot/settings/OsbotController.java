@@ -7,13 +7,12 @@ import osbot.bot.BotController;
 import osbot.tables.AccountTable;
 
 public class OsbotController {
-
+	
 	private AccountTable account;
 
 	public OsbotController(int id, AccountTable account) {
 		setId(id);
 		setAccount(account);
-
 	}
 
 	private int id, pidId;

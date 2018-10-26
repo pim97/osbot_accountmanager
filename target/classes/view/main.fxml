@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
@@ -19,7 +20,7 @@
    <top>
       <AnchorPane prefHeight="491.0" prefWidth="1078.0" BorderPane.alignment="CENTER">
          <children>
-            <TabPane prefHeight="491.0" prefWidth="1078.0" tabClosingPolicy="UNAVAILABLE">
+            <TabPane prefHeight="491.0" prefWidth="1433.0" tabClosingPolicy="UNAVAILABLE">
               <tabs>
                 <Tab text="Account manager">
                   <content>
@@ -28,7 +29,7 @@
                               <GridPane layoutX="7.0" prefHeight="462.0" prefWidth="1078.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="632.0" minWidth="0.0" prefWidth="301.0" />
-                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="977.0" minWidth="0.0" prefWidth="777.0" />
+                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="1179.0" minWidth="0.0" prefWidth="1132.0" />
                                 </columnConstraints>
                                 <rowConstraints>
                                   <RowConstraints maxHeight="209.0" minHeight="8.0" prefHeight="50.0" vgrow="SOMETIMES" />
@@ -38,24 +39,30 @@
                                  <children>
                                     <TableView fx:id="table" prefHeight="200.0" prefWidth="790.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                       <columns>
-                                        <TableColumn fx:id="id" prefWidth="75.0" text="ID" />
-                                        <TableColumn fx:id="script" prefWidth="79.0" text="Script" />
-                                        <TableColumn fx:id="username" prefWidth="79.0" text="Username" />
-                                        <TableColumn fx:id="world" prefWidth="79.0" text="World" />
-                                        <TableColumn fx:id="proxyIp" prefWidth="91.0" text="Proxy IP" />
-                                        <TableColumn fx:id="proxyPort" prefWidth="86.0" text="Proxy Port" />
-                                        <TableColumn fx:id="lowCpuMode" prefWidth="134.0" text="Low CPU mode" />
-                                        <TableColumn fx:id="status" prefWidth="78.0" text="Status" />
+                                        <TableColumn fx:id="id" prefWidth="45.0" text="ID" />
+                                        <TableColumn fx:id="script" prefWidth="170.0" text="Script" />
+                                        <TableColumn fx:id="scriptProgress" prefWidth="105.0" text="Script progress" />
+                                        <TableColumn fx:id="username" prefWidth="113.0" text="Username" />
+                                        <TableColumn fx:id="email" minWidth="0.0" prefWidth="147.0" text="Email" />
+                                        <TableColumn fx:id="world" minWidth="0.0" prefWidth="59.0" text="World" />
+                                        <TableColumn fx:id="proxyIp" prefWidth="114.0" text="Proxy IP" />
+                                        <TableColumn fx:id="proxyPort" prefWidth="123.0" text="Proxy Port" />
+                                        <TableColumn fx:id="lowCpuMode" prefWidth="102.0" text="Low CPU mode" />
+                                        <TableColumn fx:id="status" prefWidth="148.0" text="Status" />
                                       </columns>
                                     </TableView>
                                     <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" />
                                     <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                        <children>
-                                          <Button fx:id="show" layoutX="14.0" layoutY="21.0" mnemonicParsing="false" onAction="#show" prefHeight="33.0" prefWidth="165.0" text="View account log" />
+                                          <Button fx:id="show" layoutX="14.0" layoutY="21.0" mnemonicParsing="false" onAction="#recover" prefHeight="33.0" prefWidth="165.0" text="Recover locked accounts" />
+                                          <Button fx:id="createAccsButton" layoutX="198.0" layoutY="21.0" mnemonicParsing="false" onAction="#createAccounts" prefHeight="33.0" prefWidth="165.0" text="Start creating accounts" />
+                                          <Button fx:id="refreshTable1" layoutX="389.0" layoutY="21.0" mnemonicParsing="false" onAction="#refreshTable" prefHeight="33.0" prefWidth="165.0" text="Refresh table contents" />
+                                          <ToggleButton fx:id="toggleButton" layoutX="955.0" layoutY="14.0" mnemonicParsing="false" onAction="#toggleBot" prefHeight="41.0" prefWidth="146.0" text="On/off" />
+                                          <Button fx:id="instantKillButton" layoutX="770.0" layoutY="21.0" mnemonicParsing="false" onAction="#instantKillAllBots" prefHeight="33.0" prefWidth="165.0" text="Kill all bots instantly" />
                                        </children></AnchorPane>
                                     <Accordion GridPane.rowIndex="1">
                                       <panes>
-                                        <TitledPane animated="false" prefWidth="235.0" text="Account handler">
+                                        <TitledPane animated="false" prefHeight="294.0" prefWidth="363.0" text="Account handler">
                                           <content>
                                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                                    <children>

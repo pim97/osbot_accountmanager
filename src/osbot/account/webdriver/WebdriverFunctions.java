@@ -35,7 +35,7 @@ public class WebdriverFunctions {
 		try {
 			Thread.sleep(1000);
 			System.out.println("Waiting for element visibility");
-			WebDriverWait wait = new WebDriverWait(driver, 15);
+			WebDriverWait wait = new WebDriverWait(driver, 45);
 			wait.until(ExpectedConditions.visibilityOf(element));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -56,6 +56,26 @@ public class WebdriverFunctions {
 			System.out.println("Waiting for element visibility");
 			WebDriverWait wait = new WebDriverWait(driver, 15);
 			wait.until(ExpectedConditions.urlToBe(url));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
+
+	/**
+	 * Checks if the current element on the page is visible for the next 15 seconds
+	 * 
+	 * @param driver
+	 * @param element
+	 */
+	public static void waitForUrlContains(WebDriver driver, String url) {
+		try {
+			Thread.sleep(1000);
+			System.out.println("Waiting for element visibility");
+			WebDriverWait wait = new WebDriverWait(driver, 15);
+			wait.until(ExpectedConditions.urlContains(url));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -58,18 +58,19 @@ public class AccountCreationService {
 	 * @param account
 	 * @param test
 	 */
-	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, boolean test) {
-		WebdriverFunctions.killAll();
+	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
+//		WebdriverFunctions.killAll();
 
 		System.setProperty("webdriver.gecko.driver",
 				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
-		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
-		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
+//		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
+//		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
 
 		ProfilesIni profile2 = new ProfilesIni();
 		FirefoxProfile profile = profile2.getProfile("bot");// new FirefoxProfile();
 
 		FirefoxBinary firefoxBinary = new FirefoxBinary();
+//		firefoxBinary.addCommandLineOptions("--headless");
 		DesiredCapabilities dc = new DesiredCapabilities();
 		FirefoxOptions option = new FirefoxOptions();
 
@@ -90,22 +91,45 @@ public class AccountCreationService {
 		driver.findElement(By.id("newProxyPassword")).sendKeys("AqwncH");
 		driver.findElement(By.id("newProxySave")).click();
 
-		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account);
-		runescapeWebsite.create();
-		/**
-		 * The proton e-mail service
-		 */
-		 ProtonMain proton = new ProtonMain(driver, account);
-		 proton.verifyAccount();
-
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type);
+			if (runescapeWebsite.create()) {
+				/**
+				 * The proton e-mail service
+				 */
+				ProtonMain proton = new ProtonMain(driver, account);
+				proton.verifyAccount();
+			}
+			
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			driver.quit();
+			System.out.println("Account successfully created");
 		}
-		driver.quit();
-		System.out.println("Account successfully created");
+		
+		else if (type == SeleniumType.RECOVER_ACCOUNT) {
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type);
+			if (runescapeWebsite.unlock()) {
+				/**
+				 * Proton e-mail
+				 */
+				ProtonMain proton = new ProtonMain(driver, account);
+				proton.unlockAccount();
+			}
+			
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//			driver.quit();
+			System.out.println("Account recovered successfully");
+		}
 
 	}
 

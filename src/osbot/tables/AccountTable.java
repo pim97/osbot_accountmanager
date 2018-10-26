@@ -1,5 +1,6 @@
 package osbot.tables;
 
+import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 
 public class AccountTable {
@@ -44,7 +45,7 @@ public class AccountTable {
 	}
 
 	public AccountTable(int id, String script, String username, int world, String proxyIp, String proxyPort,
-			boolean lowCpuMode, AccountStatus status) {
+			boolean lowCpuMode, AccountStatus status, AccountStage stage, int accountStageProgress) {
 		this.id = id;
 		this.script = script;
 		this.username = username;
@@ -53,11 +54,15 @@ public class AccountTable {
 		this.proxyPort = proxyPort;
 		this.lowCpuMode = lowCpuMode;
 		this.status = status;
+		this.stage = stage;
+		this.accountStageProgress = accountStageProgress;
 	}
+	
+	private AccountStage stage;
 
 	private String script, username, password, proxyIp, proxyPort, bankPin, email;
 
-	private int world, day, month, year;
+	private int world, day, month, year, accountStageProgress;
 
 	private AccountStatus status;
 
@@ -220,6 +225,34 @@ public class AccountTable {
 	 */
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	/**
+	 * @return the stage
+	 */
+	public AccountStage getStage() {
+		return stage;
+	}
+
+	/**
+	 * @param stage the stage to set
+	 */
+	public void setStage(AccountStage stage) {
+		this.stage = stage;
+	}
+
+	/**
+	 * @return the accountStageProgress
+	 */
+	public int getAccountStageProgress() {
+		return accountStageProgress;
+	}
+
+	/**
+	 * @param accountStageProgress the accountStageProgress to set
+	 */
+	public void setAccountStageProgress(int accountStageProgress) {
+		this.accountStageProgress = accountStageProgress;
 	}
 
 }

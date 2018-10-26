@@ -74,7 +74,7 @@ public class PopupController {
 			try {
 				int id = ContentController.dataAccountTable.size() + 1;
 				AccountTable acc = new AccountTable(id, null, user, Integer.parseInt(worldNumber.getText()), proxIp,
-						proxPort, lowCpuMode, AccountStatus.AVAILABLE);
+						proxPort, lowCpuMode, AccountStatus.AVAILABLE, null, 0);
 				acc.setBankPin(bank);
 				acc.setPassword(pass);
 				OsbotController botController = new OsbotController(acc.getId(), acc);
