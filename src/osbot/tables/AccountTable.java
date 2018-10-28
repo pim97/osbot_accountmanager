@@ -62,7 +62,7 @@ public class AccountTable {
 
 	private String script, username, password, proxyIp, proxyPort, bankPin, email;
 
-	private int world, day, month, year, accountStageProgress;
+	private int world, day, month, year, accountStageProgress, questPoints;
 
 	private AccountStatus status;
 
@@ -253,6 +253,14 @@ public class AccountTable {
 	 */
 	public void setAccountStageProgress(int accountStageProgress) {
 		this.accountStageProgress = accountStageProgress;
+	}
+
+	public int getQuestPoints() {
+		return questPoints;
+	}
+
+	public void setQuestPoints(int questPoints) {
+		this.questPoints = questPoints;
 	}
 
 }

@@ -172,7 +172,7 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = "SELECT * FROM `account`";
+		String sql = "SELECT * FROM account WHERE visible = \"true\" AND status <> \"MANUAL_REVIEW\" AND status <> \"LOCKED_INGAME\" AND status <> \"BANNED\"";
 		try {
 			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 
@@ -182,6 +182,7 @@ public class DatabaseUtilities {
 				String name = resultSet.getString("name");
 				String password = resultSet.getString("password");
 				int world = resultSet.getInt("world_number");
+				int qp = resultSet.getInt("quest_points");
 				String proxyIp = resultSet.getString("proxy_ip");
 				String proxyPort = resultSet.getString("proxy_port");
 				String scriptName = resultSet.getString("account_stage");
@@ -189,7 +190,7 @@ public class DatabaseUtilities {
 				AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
 				AccountStage stage = null;
 				if (resultSet.getString("account_stage") != null) {
-					 stage = AccountStage.valueOf(resultSet.getString("account_stage"));
+					stage = AccountStage.valueOf(resultSet.getString("account_stage"));
 				}
 				int account_stage_progress = resultSet.getInt("account_stage_progress");
 
@@ -198,6 +199,7 @@ public class DatabaseUtilities {
 				account.setPassword(password);
 				account.setScript(scriptName);
 				account.setEmail(email);
+				account.setQuestPoints(qp);
 
 				accounts.add(account);
 
@@ -260,7 +262,7 @@ public class DatabaseUtilities {
 	}
 
 	public static void main(String[] args) {
-		seleniumRecoverAccount();
+//		seleniumRecoverAccount();
 		// seleniumCreateAccountThread();
 	}
 
@@ -268,56 +270,58 @@ public class DatabaseUtilities {
 	 * Recovers an account
 	 */
 	public static void seleniumRecoverAccount() {
-		new Thread(() -> {
-			{
+		// new Thread(() -> {
+		{
 
-				// System.out.println(getAccountsToBeRecovered().size());
-				for (OsbotController account : getAccountsToBeRecovered()) {
-					DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
-							account.getAccount().getProxyPort());
-					AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
-					System.out.println("Recovering account: " + account.getAccount().getUsername());
-				}
-				//
-
+			// System.out.println(getAccountsToBeRecovered().size());
+			for (OsbotController account : getAccountsToBeRecovered()) {
+				// if (account.getAccount().getUsername().equalsIgnoreCase("solomid6lz")) {
+				DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
+						account.getAccount().getProxyPort());
+				AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
+				System.out.println("Recovering account: " + account.getAccount().getUsername());
+				// }
 			}
+			//
 
-		}).start();
+		}
+
+		// }).start();
 	}
 
 	/**
 	 * 
 	 */
 	public static void seleniumCreateAccountThread() {
-		new Thread(() -> {
+		// new Thread(() -> {
 
-			HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
 
-			for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
-				DatabaseProxy key = entry.getKey();
-				Integer value = entry.getValue();
+		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+			DatabaseProxy key = entry.getKey();
+			Integer value = entry.getValue();
 
-				if (value < 3) {
-					/**
-					 * public AccountTable(int id, String script, String username, int world, String
-					 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
-					 */
+			if (value < 3) {
+				/**
+				 * public AccountTable(int id, String script, String username, int world, String
+				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
+				 */
 
-					RandomNameGenerator name = new RandomNameGenerator();
+				RandomNameGenerator name = new RandomNameGenerator();
 
-					AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 318,
-							key.getProxyIp(), key.getProxyPort(), true, AccountStatus.AVAILABLE,
-							AccountStage.TUT_ISLAND, 0);
-					table.setPassword(name.generateRandomNameString());
-					table.setBankPin("0000");
-					OsbotController bot = new OsbotController(-1, table);
+				AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 318,
+						key.getProxyIp(), key.getProxyPort(), true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND,
+						0);
+				table.setPassword(name.generateRandomNameString());
+				table.setBankPin("0000");
+				OsbotController bot = new OsbotController(-1, table);
 
-					AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
-				}
-
+				AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
 			}
 
-		}).start();
+		}
+
+		// }).start();
 	}
 
 }

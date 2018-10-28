@@ -63,14 +63,14 @@ public class AccountCreationService {
 
 		System.setProperty("webdriver.gecko.driver",
 				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
-//		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
-//		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
+		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
+		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
 
 		ProfilesIni profile2 = new ProfilesIni();
 		FirefoxProfile profile = profile2.getProfile("bot");// new FirefoxProfile();
 
 		FirefoxBinary firefoxBinary = new FirefoxBinary();
-//		firefoxBinary.addCommandLineOptions("--headless");
+		firefoxBinary.addCommandLineOptions("--headless");
 		DesiredCapabilities dc = new DesiredCapabilities();
 		FirefoxOptions option = new FirefoxOptions();
 

@@ -43,8 +43,8 @@
                                         <TableColumn fx:id="script" prefWidth="170.0" text="Script" />
                                         <TableColumn fx:id="scriptProgress" prefWidth="105.0" text="Script progress" />
                                         <TableColumn fx:id="username" prefWidth="113.0" text="Username" />
-                                        <TableColumn fx:id="email" minWidth="0.0" prefWidth="147.0" text="Email" />
-                                        <TableColumn fx:id="world" minWidth="0.0" prefWidth="59.0" text="World" />
+                                        <TableColumn fx:id="email" minWidth="0.0" prefWidth="85.0" text="Quest Points" />
+                                        <TableColumn fx:id="world" minWidth="0.0" prefWidth="121.0" text="World" />
                                         <TableColumn fx:id="proxyIp" prefWidth="114.0" text="Proxy IP" />
                                         <TableColumn fx:id="proxyPort" prefWidth="123.0" text="Proxy Port" />
                                         <TableColumn fx:id="lowCpuMode" prefWidth="102.0" text="Low CPU mode" />

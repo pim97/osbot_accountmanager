@@ -154,8 +154,6 @@ public class RunescapeActions {
 				e1.printStackTrace();
 			}
 
-			accountUnkowninglyFailedRecover();
-
 			setFailedTries(0);
 			while (!clickButtonAndVerifyLink(By.id("passwordRecovery"), "email-confirmation")) {// account-identified
 				System.out.println("Verifying the unlock button!");
@@ -166,6 +164,8 @@ public class RunescapeActions {
 					System.out.println("Restarting..");
 					return false;
 				}
+				
+				System.out.println("Three");
 
 				try {
 					Thread.sleep(1000);
@@ -174,8 +174,6 @@ public class RunescapeActions {
 					e.printStackTrace();
 				}
 			}
-
-			accountUnkowninglyFailedRecover();
 
 			while (!clickButtonAndVerifyLink(By.name("continueYes"), "enter_security_code")) {// account_created
 				System.out.println("Verifying the final unlock button!");
@@ -194,14 +192,12 @@ public class RunescapeActions {
 					e.printStackTrace();
 				}
 			}
-
+			
 			if (waitUnCaptchaFailed(getType())) {
 				driver.quit();
 				System.out.println("Captcha failed, retrying with new driver");
 				return false;
 			}
-			
-			accountUnkowninglyFailedRecover();
 			
 			System.out.println("Successully verified account");
 			return true;
@@ -214,9 +210,11 @@ public class RunescapeActions {
 	}
 
 	private boolean accountUnkowninglyFailedRecover() {
+		System.out.println(driver.getPageSource());
 		if (driver.getPageSource().contains(
 				"Due to your account status, you must")) {
-			HttpRequests.updateAccountStatusInDatabase("MANUAL_REVIEW", getAccount().getAccount().getEmail());
+			HttpRequests.updateAccountStatusInDatabase("LOCKED_INGAME", getAccount().getAccount().getEmail());
+			System.out.println("Account couldn't be recovered this way");
 			driver.quit();
 			return true;
 		}
@@ -383,6 +381,15 @@ public class RunescapeActions {
 			if (button != null) {
 				button.click();
 
+				//Quiting driving when failing to click button
+				if (isAtLink("passwordrecovery")) {
+					driver.quit();
+					return false;
+				}
+				//Must recover ingame??
+				if (isAtLink("game-recovery")) {
+					return accountUnkowninglyFailedRecover();
+				}
 				if (isAtLink(link)) {
 					return true;
 				}

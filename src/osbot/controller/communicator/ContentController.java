@@ -23,6 +23,7 @@ import osbot.database.DatabaseUtilities;
 import osbot.settings.CliArgs;
 import osbot.settings.OsbotController;
 import osbot.tables.AccountTable;
+import osbot.threads.ThreadHandler;
 
 public class ContentController {
 
@@ -82,7 +83,7 @@ public class ContentController {
 
 	@FXML
 	private Button instantKillButton;
-	
+
 	@FXML
 	private Button buttonDeleteAccount;
 
@@ -109,7 +110,7 @@ public class ContentController {
 		BotHandler.killAllBots();
 		System.out.println("Killed all bots!");
 	}
-	
+
 	@FXML
 	private void openWindow() {
 		try {
@@ -124,32 +125,35 @@ public class ContentController {
 	@FXML
 	private void startBot() {
 		OsbotController bot = BotController.getBotById(table.getSelectionModel().getSelectedItem().getId());
-		AccountTable account = bot.getAccount();
+//		AccountTable account = bot.getAccount();
 
-		// bot.addArguments(CliArgs.DEBUG, false, 5005);
-		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
-		bot.addArguments(CliArgs.DATA, false, 0);
-		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
-		bot.addArguments(CliArgs.MEM, false, "2048");
+		BotHandler.runBot(bot);
 		
-		if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
-			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
-		}
-
-		if (account.hasUsernameAndPasswordAndBankpin()) {
-			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
-		} else if (account.hasUsernameAndPassword()) {
-			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
-		}
-		if (account.hasValidProxy()) {
-			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
-					Config.PROXY_PASSWORD);
-		}
-		if (account.hasScript()) {
-			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
-					account.getEmail() + "_" + account.getPassword()+"_"+bot.getPidId());
-		}
-		bot.runBot();
+		// bot.addArguments(CliArgs.DEBUG, false, 5005);
+//		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
+//		bot.addArguments(CliArgs.DATA, false, 0);
+//		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
+//		bot.addArguments(CliArgs.MEM, false, "1024");
+//
+//		if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
+//			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+//		}
+//
+//		if (account.hasUsernameAndPasswordAndBankpin()) {
+//			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
+//		} else if (account.hasUsernameAndPassword()) {
+//			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
+//		}
+//		if (account.hasValidProxy()) {
+//			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
+//					Config.PROXY_PASSWORD);
+//		}
+//		if (account.hasScript()) {
+//			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
+//			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),	
+//					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId()+"_"+accountStatus);
+//		}
+//		bot.runBot();
 
 	}
 
@@ -160,43 +164,47 @@ public class ContentController {
 	private void toggleBot() {
 
 		BotHandler.handleBots();
-		
-//		while (BotController.getJavaPIDsWindows().size() < 5) {
-//			for (OsbotController bot : BotController.getBots()) {
-//				AccountTable account = bot.getAccount();
-//
-//				if (account.getStatus() == AccountStatus.AVAILABLE) {
-//					// bot.addArguments(CliArgs.DEBUG, false, 5005);
-//					bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
-//					bot.addArguments(CliArgs.DATA, false, 0);
-//					bot.addArguments(CliArgs.WORLD, false, account.getWorld());
-//					bot.addArguments(CliArgs.MEM, false, "2048");
-//					bot.addArguments(CliArgs.ALLOW, false, "norandoms");
-//
-//					if (account.hasUsernameAndPasswordAndBankpin()) {
-//						bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(),
-//								account.getBankPin());
-//					} else if (account.hasUsernameAndPassword()) {
-//						bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
-//					}
-//					if (account.hasValidProxy()) {
-//						bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
-//								Config.PROXY_USERNAME, Config.PROXY_PASSWORD);
-//					}
-//					if (account.hasScript()) {
-//						bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
-//								account.getEmail() + "_" + account.getPassword());
-//					}
-//					bot.runBot();
-//				}
-//				try {
-//					Thread.sleep(5000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		}
+
+		// while (BotController.getJavaPIDsWindows().size() < 5) {
+		// for (OsbotController bot : BotController.getBots()) {
+		// AccountTable account = bot.getAccount();
+		//
+		// if (account.getStatus() == AccountStatus.AVAILABLE) {
+		// // bot.addArguments(CliArgs.DEBUG, false, 5005);
+		// bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME,
+		// Config.OSBOT_PASSWORD);
+		// bot.addArguments(CliArgs.DATA, false, 0);
+		// bot.addArguments(CliArgs.WORLD, false, account.getWorld());
+		// bot.addArguments(CliArgs.MEM, false, "2048");
+		// bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		//
+		// if (account.hasUsernameAndPasswordAndBankpin()) {
+		// bot.addArguments(CliArgs.BOT, true, account.getEmail(),
+		// account.getPassword(),
+		// account.getBankPin());
+		// } else if (account.hasUsernameAndPassword()) {
+		// bot.addArguments(CliArgs.BOT, true, account.getEmail(),
+		// account.getPassword(), "0000");
+		// }
+		// if (account.hasValidProxy()) {
+		// bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(),
+		// account.getProxyPort(),
+		// Config.PROXY_USERNAME, Config.PROXY_PASSWORD);
+		// }
+		// if (account.hasScript()) {
+		// bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
+		// account.getEmail() + "_" + account.getPassword());
+		// }
+		// bot.runBot();
+		// }
+		// try {
+		// Thread.sleep(5000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// }
+		// }
 
 	}
 
@@ -224,7 +232,7 @@ public class ContentController {
 		script.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("script"));
 		username.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("username"));
 		scriptProgress.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("accountStageProgress"));
-		email.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("email"));
+		email.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("questPoints"));
 		world.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("world"));
 		proxyIp.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyIp"));
 		proxyPort.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyPort"));
@@ -240,14 +248,17 @@ public class ContentController {
 		 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
 		 */
 
-		ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
-		for (AccountTable acc : account) {
-			table.getItems()
-					.add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
-							acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(), acc.getStage(),
-							acc.getAccountStageProgress()));
-			BotController.addBot(new OsbotController(acc.getId(), acc));
-		}
+		// ArrayList<AccountTable> account =
+		// DatabaseUtilities.getAccountsFromMysqlConnection();
+		// for (AccountTable acc : account) {
+		// table.getItems()
+		// .add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
+		// acc.getWorld(),
+		// acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(),
+		// acc.getStage(),
+		// acc.getAccountStageProgress()));
+		// BotController.addBot(new OsbotController(acc.getId(), acc));
+		// }
 
 		// DatabaseUtilities.seleniumCreateAccountThread();
 
@@ -256,11 +267,45 @@ public class ContentController {
 		// bot.addArguments(CliArgs.WORLD, "318");
 		// bot.runBot();
 		System.out.println("Initializing bot");
+		
+		ThreadHandler.runThreads();
+
+		new Thread(() -> {
+
+			while (true) {
+
+				ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
+				if (account.size() > 0) {
+					table.getItems().clear();
+					BotController.getBots().clear();
+
+					for (AccountTable acc : account) {
+						AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
+								acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(),
+								acc.getStage(), acc.getAccountStageProgress());
+						accTable.setQuestPoints(acc.getQuestPoints());
+						
+						table.getItems().add(accTable);
+						
+						BotController.addBot(new OsbotController(acc.getId(), acc));
+					}
+				}
+
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("Refreshing table every 10 seconds");
+			}
+		}).start();
 
 	}
 
 	@FXML
 	private void refreshTable() {
+
 		table.getItems().clear();
 
 		BotController.getBots().clear();
@@ -272,6 +317,7 @@ public class ContentController {
 							acc.getAccountStageProgress()));
 			BotController.addBot(new OsbotController(acc.getId(), acc));
 		}
+
 	}
 
 }
