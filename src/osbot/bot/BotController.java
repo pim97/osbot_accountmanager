@@ -33,6 +33,20 @@ public class BotController {
         return pids;
     }
 	
+	/**
+	 * Does the pid contains in the list or not?
+	 * @param id
+	 * @return
+	 */
+	public static boolean containsInPidList(int id) {
+		for (int pid : getJavaPIDsWindows()) {
+			if (pid == id) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	public static void killProcess(final int pid) {
         try {
             if (System.getProperty("os.name").startsWith("Windows")) {

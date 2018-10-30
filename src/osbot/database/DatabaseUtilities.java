@@ -235,6 +235,7 @@ public class DatabaseUtilities {
 				}
 			}
 			hash.put(p, count);
+//			System.out.println(p+" "+count+" added to array");
 		}
 		return hash;
 	}
@@ -273,6 +274,7 @@ public class DatabaseUtilities {
 		// new Thread(() -> {
 		{
 
+			System.out.println("[ACCOUNT RECOVERING] "+getAccountsToBeRecovered().size()+" accounts left to recover currently");
 			// System.out.println(getAccountsToBeRecovered().size());
 			for (OsbotController account : getAccountsToBeRecovered()) {
 				// if (account.getAccount().getUsername().equalsIgnoreCase("solomid6lz")) {
@@ -296,7 +298,18 @@ public class DatabaseUtilities {
 		// new Thread(() -> {
 
 		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+		
+		int count = 0;
+		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+			DatabaseProxy key = entry.getKey();
+			Integer value = entry.getValue();
 
+			if (value < 3) {
+				count += value;
+			}
+		}
+
+		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] "+count+" accounts left to create accounts with!");
 		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
 			DatabaseProxy key = entry.getKey();
 			Integer value = entry.getValue();

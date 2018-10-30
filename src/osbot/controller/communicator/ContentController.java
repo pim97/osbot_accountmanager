@@ -1,6 +1,7 @@
 package osbot.controller.communicator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,15 +13,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
-import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
 import osbot.controller.PopupController;
 import osbot.database.DatabaseUtilities;
-import osbot.settings.CliArgs;
 import osbot.settings.OsbotController;
 import osbot.tables.AccountTable;
 import osbot.threads.ThreadHandler;
@@ -105,6 +103,9 @@ public class ContentController {
 		table.getItems().removeAll(table.getSelectionModel().getSelectedItems());
 	}
 
+	/**
+	 * Will kill all the currently running bots in an instant
+	 */
 	@FXML
 	private void instantKillAllBots() {
 		BotHandler.killAllBots();
@@ -125,36 +126,8 @@ public class ContentController {
 	@FXML
 	private void startBot() {
 		OsbotController bot = BotController.getBotById(table.getSelectionModel().getSelectedItem().getId());
-//		AccountTable account = bot.getAccount();
-
+		//Starting one specific bot
 		BotHandler.runBot(bot);
-		
-		// bot.addArguments(CliArgs.DEBUG, false, 5005);
-//		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
-//		bot.addArguments(CliArgs.DATA, false, 0);
-//		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
-//		bot.addArguments(CliArgs.MEM, false, "1024");
-//
-//		if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
-//			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
-//		}
-//
-//		if (account.hasUsernameAndPasswordAndBankpin()) {
-//			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
-//		} else if (account.hasUsernameAndPassword()) {
-//			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
-//		}
-//		if (account.hasValidProxy()) {
-//			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
-//					Config.PROXY_PASSWORD);
-//		}
-//		if (account.hasScript()) {
-//			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
-//			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),	
-//					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId()+"_"+accountStatus);
-//		}
-//		bot.runBot();
-
 	}
 
 	@FXML
@@ -162,50 +135,8 @@ public class ContentController {
 
 	@FXML
 	private void toggleBot() {
-
+		//Starting the bots
 		BotHandler.handleBots();
-
-		// while (BotController.getJavaPIDsWindows().size() < 5) {
-		// for (OsbotController bot : BotController.getBots()) {
-		// AccountTable account = bot.getAccount();
-		//
-		// if (account.getStatus() == AccountStatus.AVAILABLE) {
-		// // bot.addArguments(CliArgs.DEBUG, false, 5005);
-		// bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME,
-		// Config.OSBOT_PASSWORD);
-		// bot.addArguments(CliArgs.DATA, false, 0);
-		// bot.addArguments(CliArgs.WORLD, false, account.getWorld());
-		// bot.addArguments(CliArgs.MEM, false, "2048");
-		// bot.addArguments(CliArgs.ALLOW, false, "norandoms");
-		//
-		// if (account.hasUsernameAndPasswordAndBankpin()) {
-		// bot.addArguments(CliArgs.BOT, true, account.getEmail(),
-		// account.getPassword(),
-		// account.getBankPin());
-		// } else if (account.hasUsernameAndPassword()) {
-		// bot.addArguments(CliArgs.BOT, true, account.getEmail(),
-		// account.getPassword(), "0000");
-		// }
-		// if (account.hasValidProxy()) {
-		// bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(),
-		// account.getProxyPort(),
-		// Config.PROXY_USERNAME, Config.PROXY_PASSWORD);
-		// }
-		// if (account.hasScript()) {
-		// bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
-		// account.getEmail() + "_" + account.getPassword());
-		// }
-		// bot.runBot();
-		// }
-		// try {
-		// Thread.sleep(5000);
-		// } catch (InterruptedException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		// }
-		// }
-
 	}
 
 	@FXML
@@ -216,16 +147,19 @@ public class ContentController {
 
 	@FXML
 	private void createAccounts() {
+		//Starts another thread on creating accounts
 		DatabaseUtilities.seleniumCreateAccountThread();
 	}
 
 	@FXML
 	private void recover() {
+		//Starts another thread on recovering accounts
 		DatabaseUtilities.seleniumRecoverAccount();
 	}
 
 	@FXML
 	public void initialize() {
+		//Killing all webdrivers on start
 		WebdriverFunctions.killAll();
 
 		id.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("id"));
@@ -243,80 +177,161 @@ public class ContentController {
 
 		table.setItems(dataAccountTable);
 
-		/**
-		 * public AccountTable(String script, String username, int world, String
-		 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
-		 */
-
-		// ArrayList<AccountTable> account =
-		// DatabaseUtilities.getAccountsFromMysqlConnection();
-		// for (AccountTable acc : account) {
-		// table.getItems()
-		// .add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
-		// acc.getWorld(),
-		// acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(),
-		// acc.getStage(),
-		// acc.getAccountStageProgress()));
-		// BotController.addBot(new OsbotController(acc.getId(), acc));
-		// }
-
-		// DatabaseUtilities.seleniumCreateAccountThread();
-
-		// RunBot bot = new RunBot();
-		//
-		// bot.addArguments(CliArgs.WORLD, "318");
-		// bot.runBot();
 		System.out.println("Initializing bot");
-		
+
+		// Running the main thread
 		ThreadHandler.runThreads();
 
+		// Running another thread in this class, because stuck on table
 		new Thread(() -> {
 
 			while (true) {
 
+				// Gets all the account information from a MySQL connection
 				ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
+
+				// Will get the username stored that's currently selected, this is so when the
+				// table refreshes with new MySQL data, the selected item will stay
+				String selectedItem = null;
+				if (table.getSelectionModel().getSelectedItem() != null) {
+					selectedItem = table.getSelectionModel().getSelectedItem().getUsername();
+				}
+
 				if (account.size() > 0) {
+					//Clears the table
 					table.getItems().clear();
-					BotController.getBots().clear();
+					int botListSize = BotController.getBots().size();
 
 					for (AccountTable acc : account) {
-						AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
-								acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(),
-								acc.getStage(), acc.getAccountStageProgress());
+						AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
+								acc.getWorld(), acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(),
+								acc.getStatus(), acc.getStage(), acc.getAccountStageProgress());
 						accTable.setQuestPoints(acc.getQuestPoints());
-						
+						accTable.setPassword(acc.getPassword());
+						accTable.setBankPin(acc.getBankPin());
+						accTable.setDay(acc.getDay());
+						accTable.setMonth(acc.getMonth());
+						accTable.setYear(acc.getYear());
+						accTable.setEmail(acc.getEmail());
+
+						// Adds the account to the table
 						table.getItems().add(accTable);
-						
-						BotController.addBot(new OsbotController(acc.getId(), acc));
+
+						if (botListSize == 0) {
+							BotController.addBot(new OsbotController(acc.getId(), acc));
+						} else {
+							OsbotController bot = BotController.getBotById(acc.getId());
+							if (bot != null) {
+								bot.setAccount(accTable);
+							}
+						}
+					}
+
+					ArrayList<AccountTable> toBeDeleted = containsInBoth(BotController.getBots(), account);
+
+					for (AccountTable del : toBeDeleted) {
+						removeFromList(del.getUsername());
+						System.out.println(del.getUsername()
+								+ " deleted from the botcontroller, didn't exist as available anymore");
+					}
+
+				}
+
+				// Will find the same index as before that was selected
+				int index = -1;
+				for (int i = 0; i < table.getItems().size(); i++) {
+					AccountTable acc = table.getItems().get(i);
+					if (acc.getUsername().equalsIgnoreCase(selectedItem)) {
+						index = i;
 					}
 				}
 
+				// Refreshes the table
+				table.refresh();
+
+				// Setting the selection model on the found index
+				if (index > -1) {
+					table.getSelectionModel().select(index);
+				}
+
 				try {
-					Thread.sleep(10000);
+					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				System.out.println("Refreshing table every 10 seconds");
+//				System.out.println("Refreshing table every 10 seconds");
 			}
 		}).start();
 
 	}
 
+	/**
+	 * Will look if two arraylists contains the same values. The one with the most
+	 * values to check on must be first in the paramaters
+	 * 
+	 * @param one
+	 * @param two
+	 * @return
+	 */
+	private ArrayList<AccountTable> containsInBoth(ArrayList<OsbotController> one, ArrayList<AccountTable> two) {
+		ArrayList<AccountTable> notFoundInBoth = new ArrayList<AccountTable>();
+
+		for (OsbotController a : one) {
+			boolean found = false;
+			for (AccountTable b : two) {
+				if (a.getAccount().getUsername().equalsIgnoreCase(b.getUsername())) {
+					found = true;
+				}
+			}
+			if (!found) {
+				notFoundInBoth.add(a.getAccount());
+			}
+		}
+		return notFoundInBoth;
+	}
+
+	/**
+	 * Removes an account name from the BotControllers list
+	 * 
+	 * @param accountName
+	 */
+	private void removeFromList(String accountName) {
+		Iterator<OsbotController> bot = BotController.getBots().iterator();
+
+		while (bot.hasNext()) {
+			OsbotController b = bot.next();
+
+			if (b.getAccount().getUsername().equalsIgnoreCase(accountName)) {
+				bot.remove();
+			}
+		}
+	}
+
+	/**
+	 * The name that's in the list
+	 * 
+	 * @param accountName
+	 * @return
+	 */
+	private boolean accountContainsInList(String accountName) {
+		boolean found = false;
+		for (AccountTable acc : DatabaseUtilities.getAccountsFromMysqlConnection()) {
+			if (acc.getUsername().equalsIgnoreCase(accountName)) {
+				found = true;
+			}
+		}
+		return found;
+	}
+
+	/**
+	 * This feature has been removed, now the table is automatically refreshing
+	 * without clearing the BotController list to prevent deleting PID's
+	 */
 	@FXML
 	private void refreshTable() {
 
-		table.getItems().clear();
-
-		BotController.getBots().clear();
-		ArrayList<AccountTable> account = DatabaseUtilities.getAccountsFromMysqlConnection();
-		for (AccountTable acc : account) {
-			table.getItems()
-					.add(new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(), acc.getWorld(),
-							acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(), acc.getStage(),
-							acc.getAccountStageProgress()));
-			BotController.addBot(new OsbotController(acc.getId(), acc));
-		}
+		// Button not working, refreshes automatically
 
 	}
 

@@ -3,6 +3,8 @@ package osbot.threads;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import osbot.account.global.Config;
+import osbot.account.handler.BotHandler;
 import osbot.database.DatabaseUtilities;
 
 public class ThreadHandler {
@@ -44,6 +46,30 @@ public class ThreadHandler {
 	}
 
 	/**
+	 * Handles all the bots running
+	 */
+	private static void handleBotsRunning() {
+		Thread handleBotsRunning = new Thread(() -> {
+			while (programIsRunning) {
+
+				BotHandler.handleBots();
+
+				// Checking every 5 seconds if bot is still running
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		handleBotsRunning.setName("handleBotsRunning");
+		handleBotsRunning.start();
+
+		threadList.add(handleBotsRunning);
+	}
+
+	/**
 	 * Manages all the threads currently running
 	 */
 	public static void runThreads() {
@@ -54,15 +80,25 @@ public class ThreadHandler {
 						"Thread management: " + isThreadAlive("recoverAccounts") + " " + getThread("recoverAccounts"));
 				System.out.println(
 						"Thread management: " + isThreadAlive("createAccounts") + " " + getThread("createAccounts"));
-				
-				if (!isThreadAlive("recoverAccounts") || getThread("recoverAccounts") == null) {
+				System.out.println("Thread management: " + isThreadAlive("handleBotsRunning") + " "
+						+ getThread("handleBotsRunning"));
+
+				if ((!isThreadAlive("recoverAccounts") || getThread("recoverAccounts") == null)
+						&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
 					recoverAccountsThread();
-					System.out.println("Started new thread: recover accounts");
+					System.out.println("Started new thread: recoverAccounts");
 				}
 
-				if (!isThreadAlive("createAccounts") || getThread("createAccounts") == null) {
+				if ((!isThreadAlive("createAccounts") || getThread("createAccounts") == null)
+						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 					createAccountsThread();
 					System.out.println("Started new thread: createAccounts");
+				}
+
+				if ((!isThreadAlive("handleBotsRunning") || getThread("handleBotsRunning") == null)
+						&& Config.BOT_HANDLER_THREAD_ACTIVE) {
+					handleBotsRunning();
+					System.out.println("Started new thread: handleBotsRunning");
 				}
 
 				// Thread sleeping & checking every 30 seconds

@@ -35,6 +35,7 @@ public class BotHandler {
 			while ((line = bufferedreader.readLine()) != null) {
 				// Search the PID matched lines single line for the sequence: " 1300 "
 				// if you find it, then the PID is still running.
+				// System.out.println("Current pids: "+line);
 				if (line.contains(" " + pid + " ")) {
 					return true;
 				}
@@ -60,8 +61,8 @@ public class BotHandler {
 			int nextPid = it.next();
 
 			if (!isProcessIdRunningOnWindows(nextPid)) {
-				it.remove();
 				System.out.println("Removed pid: " + nextPid + " from the processes list, was no longer running");
+				it.remove();
 			}
 		}
 
@@ -112,12 +113,9 @@ public class BotHandler {
 	 * @return
 	 */
 	public static int getAmountOfBotsActive() {
-		checkProcesses();
 		return BotController.getJavaPIDsWindows().size();
 
 	}
-
-	public static final int MAXMIUM_AMOUNT_OF_BOTS_ON_THIS_MACHINE = 3;
 
 	/**
 	 * Kill all bots
@@ -129,47 +127,41 @@ public class BotHandler {
 	}
 
 	/**
-	 * 
+	 * Handlig all the bots, deciding how many should be open etc.
 	 */
 	public static void handleBots() {
-		new Thread(() -> {
-			boolean on = true;
-			while (on) {
-				System.out.println(getAmountOfBotsActive());
-				if (getAmountOfBotsActive() < MAXMIUM_AMOUNT_OF_BOTS_ON_THIS_MACHINE) {
+		// Will check the PID processes if they are still running or not, when not, they
+		// get deleted in the PID list
+		BotHandler.checkProcesses();
 
-					for (int i = 0; i < BotController.getBots().size(); i++) {
-						OsbotController osbot = BotController.getBots().get(i);
+		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
+		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
 
-						if (osbot != null
-								&& (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
-										|| osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
-								&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
-								&& !BotController.getJavaPIDsWindows().contains(osbot.getPidId())
-								&& getAmountOfBotsActive() < MAXMIUM_AMOUNT_OF_BOTS_ON_THIS_MACHINE) {
-							runBot(osbot);
-							System.out.println("Running bot name: " + osbot.getAccount().getStage() + " "
-									+ osbot.getAccount().getUsername());
-							try {
-								Thread.sleep(5000);
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						} else if (osbot == null) {
-							System.out.println(osbot + " got null");
-						} else if (getAmountOfBotsActive() >= MAXMIUM_AMOUNT_OF_BOTS_ON_THIS_MACHINE) {
-							System.out.println("Maximum amount of bots currently online for this machine reached");
-						}
+			for (int i = 0; i < BotController.getBots().size(); i++) {
+				OsbotController osbot = BotController.getBots().get(i);
+
+				if (osbot != null
+						&& (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
+								|| osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
+						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
+						&& !BotController.containsInPidList(osbot.getPidId())
+						&& getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
+					runBot(osbot);
+					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
+							+ " " + osbot.getAccount().getUsername());
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-				}
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} else if (osbot == null) {
+					System.out.println(osbot + " got null");
+				} else if (getAmountOfBotsActive() >= Config.MAX_BOTS_OPEN) {
+					System.out.println(
+							"[BOT HANDLER MANAGEMENT] Maximum amount of bots currently online for this machine reached");
 				}
 			}
-		}).start();
+		}
 	}
 }
