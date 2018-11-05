@@ -12,11 +12,15 @@ public class RandomNameGenerator {
 		String setName = generateRandomName();
 		String randomIdentitier = randomIdentifier();
 		setName = setName.substring(0, setName.length() < 7 ? setName.length() : 7);
-		randomIdentitier = randomIdentitier.substring(0, 3);
+		randomIdentitier = randomIdentitier.substring(0, 4);
 
 		name.append(setName);
 		name.append(randomIdentitier);
 
+		//Max length of names is 12
+		if (name.length() > 12) {
+			name.setLength(12);
+		}
 		return name.toString().toLowerCase().replaceAll("[^a-zA-Z0-9]+", "");
 	}
 

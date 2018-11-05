@@ -1,5 +1,7 @@
 package osbot.tables;
 
+import java.util.Calendar;
+
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 
@@ -57,12 +59,15 @@ public class AccountTable {
 		this.stage = stage;
 		this.accountStageProgress = accountStageProgress;
 	}
-	
+
 	private AccountStage stage;
 
-	private String script, username, password, proxyIp, proxyPort, bankPin, email;
+	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
+			proxyUsername, proxyPassword;
 
-	private int world, day, month, year, accountStageProgress, questPoints;
+	private int world, day, month, year, accountStageProgress, questPoints, accountValue;
+
+	private Calendar date;
 
 	private AccountStatus status;
 
@@ -179,7 +184,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param year the year to set
+	 * @param year
+	 *            the year to set
 	 */
 	public void setYear(int year) {
 		this.year = year;
@@ -193,7 +199,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param month the month to set
+	 * @param month
+	 *            the month to set
 	 */
 	public void setMonth(int month) {
 		this.month = month;
@@ -207,7 +214,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param day the day to set
+	 * @param day
+	 *            the day to set
 	 */
 	public void setDay(int day) {
 		this.day = day;
@@ -221,7 +229,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param email the email to set
+	 * @param email
+	 *            the email to set
 	 */
 	public void setEmail(String email) {
 		this.email = email;
@@ -235,7 +244,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param stage the stage to set
+	 * @param stage
+	 *            the stage to set
 	 */
 	public void setStage(AccountStage stage) {
 		this.stage = stage;
@@ -249,7 +259,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param accountStageProgress the accountStageProgress to set
+	 * @param accountStageProgress
+	 *            the accountStageProgress to set
 	 */
 	public void setAccountStageProgress(int accountStageProgress) {
 		this.accountStageProgress = accountStageProgress;
@@ -261,6 +272,94 @@ public class AccountTable {
 
 	public void setQuestPoints(int questPoints) {
 		this.questPoints = questPoints;
+	}
+
+	/**
+	 * @return the accountValue
+	 */
+	public int getAccountValue() {
+		return accountValue;
+	}
+
+	/**
+	 * @param accountValue
+	 *            the accountValue to set
+	 */
+	public void setAccountValue(int accountValue) {
+		this.accountValue = accountValue;
+	}
+
+	/**
+	 * @return the date
+	 */
+	public Calendar getDate() {
+		return date;
+	}
+
+	/**
+	 * @param date
+	 *            the date to set
+	 */
+	public void setDate(Calendar date) {
+		this.date = date;
+	}
+
+	/**
+	 * @return the dateString
+	 */
+	public String getDateString() {
+		return dateString;
+	}
+
+	/**
+	 * @param dateString
+	 *            the dateString to set
+	 */
+	public void setDateString(String dateString) {
+		this.dateString = dateString;
+	}
+
+	/**
+	 * @return the tradeWithOther
+	 */
+	public String getTradeWithOther() {
+		return tradeWithOther;
+	}
+
+	/**
+	 * @param tradeWithOther
+	 *            the tradeWithOther to set
+	 */
+	public void setTradeWithOther(String tradeWithOther) {
+		this.tradeWithOther = tradeWithOther;
+	}
+
+	/**
+	 * @return the proxyUsername
+	 */
+	public String getProxyUsername() {
+		return proxyUsername;
+	}
+
+	/**
+	 * @param proxyUsername the proxyUsername to set
+	 */
+	public void setProxyUsername(String proxyUsername) {
+		this.proxyUsername = proxyUsername;
+	}
+
+	/**
+	 * @return the proxyPassword
+	 */
+	public String getProxyPassword() {
+		return proxyPassword;
+	}
+
+	/**
+	 * @param proxyPassword the proxyPassword to set
+	 */
+	public void setProxyPassword(String proxyPassword) {
+		this.proxyPassword = proxyPassword;
 	}
 
 }

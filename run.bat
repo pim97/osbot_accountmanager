@@ -1,2 +1,2 @@
-java -jar osbot.jar -login dormic:DuTIbljNuXHDF4T0e7Bk -data 0 -world 394 -bot toplistbot+24@gmail.com:mankeyguu:0000 -proxy 185.36.190.252:8000:rvWt0S:AqwncH -script qp:qp
+java -jar osbot.jar -login dormic:DuTIbljNuXHDF4T0e7Bk -data 0 -world 394 -allow norandoms -bot alphabearman+542288@protonmail.com:banditbwk:0000 -mem 2048 -proxy 193.169.245.225:8000:rvWt0S:AqwncH -script QUEST_SHEEP_SHEARER:alphabearman+542288@protonmail.com_banditbwk_17652_AVAILABLE
 pause

@@ -26,7 +26,7 @@
                   <content>
                     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="462.0" prefWidth="1024.0">
                            <children>
-                              <GridPane layoutX="7.0" prefHeight="462.0" prefWidth="1078.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <GridPane layoutX="7.0" prefHeight="462.0" prefWidth="1360.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="632.0" minWidth="0.0" prefWidth="301.0" />
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="1179.0" minWidth="0.0" prefWidth="1132.0" />
@@ -40,15 +40,17 @@
                                     <TableView fx:id="table" prefHeight="200.0" prefWidth="790.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                       <columns>
                                         <TableColumn fx:id="id" prefWidth="45.0" text="ID" />
-                                        <TableColumn fx:id="script" prefWidth="170.0" text="Script" />
-                                        <TableColumn fx:id="scriptProgress" prefWidth="105.0" text="Script progress" />
-                                        <TableColumn fx:id="username" prefWidth="113.0" text="Username" />
-                                        <TableColumn fx:id="email" minWidth="0.0" prefWidth="85.0" text="Quest Points" />
-                                        <TableColumn fx:id="world" minWidth="0.0" prefWidth="121.0" text="World" />
-                                        <TableColumn fx:id="proxyIp" prefWidth="114.0" text="Proxy IP" />
-                                        <TableColumn fx:id="proxyPort" prefWidth="123.0" text="Proxy Port" />
-                                        <TableColumn fx:id="lowCpuMode" prefWidth="102.0" text="Low CPU mode" />
-                                        <TableColumn fx:id="status" prefWidth="148.0" text="Status" />
+                                        <TableColumn fx:id="script" prefWidth="132.00003051757812" text="Script" />
+                                        <TableColumn fx:id="scriptProgress" prefWidth="94.0" text="Script progress" />
+                                        <TableColumn fx:id="username" prefWidth="101.0" text="Username" />
+                                        <TableColumn fx:id="email" minWidth="0.0" prefWidth="90.0" text="Quest Points" />
+                                        <TableColumn fx:id="accValue" minWidth="0.0" prefWidth="87.0" text="Acc value" />
+                                        <TableColumn fx:id="world" minWidth="0.0" prefWidth="47.0" text="World" />
+                                        <TableColumn fx:id="proxyIp" prefWidth="119.0" text="Proxy IP" />
+                                        <TableColumn fx:id="proxyPort" prefWidth="75.0" text="Proxy Port" />
+                                        <TableColumn fx:id="lowCpuMode" prefWidth="115.0" text="Low CPU mode" visible="false" />
+                                        <TableColumn fx:id="status" prefWidth="102.0" text="Status" />
+                                        <TableColumn fx:id="breaktill" prefWidth="173.0" text="Break till" />
                                       </columns>
                                     </TableView>
                                     <AnchorPane prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" />

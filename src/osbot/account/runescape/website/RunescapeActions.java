@@ -17,10 +17,12 @@ import com.twocaptcha.api.ProxyType;
 import com.twocaptcha.api.TwoCaptchaService;
 
 import osbot.account.creator.HttpRequests;
+import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.database.DatabaseUtilities;
+import osbot.random.RandomUtil;
 import osbot.settings.OsbotController;
 
 public class RunescapeActions {
@@ -30,11 +32,14 @@ public class RunescapeActions {
 	 * @param driver
 	 * @param account
 	 */
-	public RunescapeActions(WebDriver driver, OsbotController account, SeleniumType type) {
+	public RunescapeActions(WebDriver driver, OsbotController account, SeleniumType type, PidDriver pidDriver) {
 		setAccount(account);
 		setDriver(driver);
 		setType(type);
+		setPidDriver(pidDriver);
 	}
+
+	private PidDriver pidDriver;
 
 	private WebDriver driver;
 
@@ -114,6 +119,7 @@ public class RunescapeActions {
 	 */
 	public boolean unlock() {
 		try {
+
 			while (!goToRunescapeRecoverAccount()) {
 				try {
 					Thread.sleep(1000);
@@ -164,7 +170,7 @@ public class RunescapeActions {
 					System.out.println("Restarting..");
 					return false;
 				}
-				
+
 				System.out.println("Three");
 
 				try {
@@ -192,13 +198,13 @@ public class RunescapeActions {
 					e.printStackTrace();
 				}
 			}
-			
+
 			if (waitUnCaptchaFailed(getType())) {
 				driver.quit();
 				System.out.println("Captcha failed, retrying with new driver");
 				return false;
 			}
-			
+
 			System.out.println("Successully verified account");
 			return true;
 		} catch (Exception e) {
@@ -211,8 +217,7 @@ public class RunescapeActions {
 
 	private boolean accountUnkowninglyFailedRecover() {
 		System.out.println(driver.getPageSource());
-		if (driver.getPageSource().contains(
-				"Due to your account status, you must")) {
+		if (driver.getPageSource().contains("Due to your account status, you must")) {
 			HttpRequests.updateAccountStatusInDatabase("LOCKED_INGAME", getAccount().getAccount().getEmail());
 			System.out.println("Account couldn't be recovered this way");
 			driver.quit();
@@ -220,7 +225,7 @@ public class RunescapeActions {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * 
 	 */
@@ -263,7 +268,6 @@ public class RunescapeActions {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-
 			}
 			System.out.println("Captcha has completed!");
 
@@ -308,6 +312,7 @@ public class RunescapeActions {
 			});
 		} catch (Exception e) {
 			// Ignorning stacktrace
+			e.printStackTrace();
 			return false;
 		}
 	}
@@ -377,19 +382,24 @@ public class RunescapeActions {
 			Thread.sleep(5000);
 			WebElement button = getDriver().findElement(by);
 
-			WebdriverFunctions.waitForElementToBeVisible(driver, button);
+			// IDK
+			WebdriverFunctions.waitForLoad(driver);
 			if (button != null) {
 				button.click();
 
-				//Quiting driving when failing to click button
+				Thread.sleep(10000);
+				WebdriverFunctions.waitForLoad(driver);
+
+				// Quiting driving when failing to click button
 				if (isAtLink("passwordrecovery")) {
 					driver.quit();
 					return false;
 				}
-				//Must recover ingame??
+				// Must recover ingame??
 				if (isAtLink("game-recovery")) {
 					return accountUnkowninglyFailedRecover();
 				}
+
 				if (isAtLink(link)) {
 					return true;
 				}
@@ -407,12 +417,13 @@ public class RunescapeActions {
 	 */
 	public boolean isAtLink(String link) {
 		try {
-			return (new WebDriverWait(driver, 60)).until(new ExpectedCondition<Boolean>() {
+			return (new WebDriverWait(driver, 10)).until(new ExpectedCondition<Boolean>() {
 				public Boolean apply(WebDriver d) {
 					return getCurrentURL().contains(link);
 				}
 			});
 		} catch (Exception e) {
+			e.printStackTrace();
 			// Ignorning stacktrace
 			return false;
 		}
@@ -532,7 +543,9 @@ public class RunescapeActions {
 		}
 
 		driver.findElement(By.id("email")).sendKeys("" + account.getAccount().getEmail());
-		driver.findElement(By.className("c-cookie-consent__dismiss")).click();
+
+		// Cookie consent dismissed
+		// driver.findElement(By.className("c-cookie-consent__dismiss")).click();
 
 		if (!allInputLockedAccountElementsHaveValue()) {
 			goToRunescapeRecoverAccount();
@@ -592,7 +605,11 @@ public class RunescapeActions {
 		int month = getRandomValueBetweenUpperAndLower(0, 12);
 		int year = getRandomValueBetweenUpperAndLower(1990, 2000);
 
-		account.getAccount().setWorld(394);
+		List<Integer> worldsAvailable = new ArrayList<Integer>(
+				Arrays.asList(308, 316, 326, 335, 382, 383, 384, 393, 394, 418));
+		int world = worldsAvailable.get(RandomUtil.getRandomNumberInRange(0, worldsAvailable.size() - 1));
+
+		account.getAccount().setWorld(world);
 		account.getAccount().setDay(day);
 		account.getAccount().setMonth(month);
 		account.getAccount().setYear(year);
@@ -604,7 +621,7 @@ public class RunescapeActions {
 		driver.findElement(By.id("create-email")).sendKeys("alphabearman+" + randomNumber + "@protonmail.com");
 		driver.findElement(By.id("create-password")).sendKeys(account.getAccount().getPassword());
 		driver.findElement(By.id("character-name")).sendKeys(account.getAccount().getUsername());
-		driver.findElement(By.className("c-cookie-consent__dismiss")).click();
+		// driver.findElement(By.className("c-cookie-consent__dismiss")).click();
 
 		if (!allInputElementsHaveValue()) {
 			goToRunescapeCreateAccount();
@@ -760,5 +777,20 @@ public class RunescapeActions {
 	 */
 	public void setType(SeleniumType type) {
 		this.type = type;
+	}
+
+	/**
+	 * @return the pidDriver
+	 */
+	public PidDriver getPidDriver() {
+		return pidDriver;
+	}
+
+	/**
+	 * @param pidDriver
+	 *            the pidDriver to set
+	 */
+	public void setPidDriver(PidDriver pidDriver) {
+		this.pidDriver = pidDriver;
 	}
 }

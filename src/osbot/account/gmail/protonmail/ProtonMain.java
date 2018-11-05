@@ -2,6 +2,7 @@ package osbot.account.gmail.protonmail;
 
 import org.openqa.selenium.WebDriver;
 
+import osbot.account.creator.PidDriver;
 import osbot.account.runescape.website.RunescapeActions;
 import osbot.settings.OsbotController;
 
@@ -10,15 +11,18 @@ public class ProtonMain {
 	private ProtonActions actions;
 
 	private OsbotController account;
+	
+	private PidDriver pidDriver;
 
 	/**
 	 * 
 	 * @param driver
 	 */
-	public ProtonMain(WebDriver driver, OsbotController account) {
+	public ProtonMain(WebDriver driver, OsbotController account, PidDriver pidDriver) {
 		this.setDriver(driver);
 		this.setAccount(account);
 		this.setActions(new ProtonActions(driver, account));
+		this.setPidDriver(pidDriver);
 	}
 
 	public void unlockAccount() {
@@ -78,7 +82,7 @@ public class ProtonMain {
 	 * @return
 	 */
 	public boolean fillInAllInformation() {
-		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null);
+		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null, null);
 		
 		return runescapeWebsite.fillInInformationRecovering();
 	}
@@ -182,6 +186,20 @@ public class ProtonMain {
 	 */
 	public void setAccount(OsbotController account) {
 		this.account = account;
+	}
+
+	/**
+	 * @return the pidDriver
+	 */
+	public PidDriver getPidDriver() {
+		return pidDriver;
+	}
+
+	/**
+	 * @param pidDriver the pidDriver to set
+	 */
+	public void setPidDriver(PidDriver pidDriver) {
+		this.pidDriver = pidDriver;
 	}
 
 }

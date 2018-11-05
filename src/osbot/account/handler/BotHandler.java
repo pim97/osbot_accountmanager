@@ -3,12 +3,15 @@ package osbot.account.handler;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.global.Config;
 import osbot.bot.BotController;
+import osbot.database.DatabaseUtilities;
 import osbot.settings.CliArgs;
 import osbot.settings.OsbotController;
 import osbot.tables.AccountTable;
@@ -85,9 +88,9 @@ public class BotHandler {
 		bot.addArguments(CliArgs.DATA, false, 0);
 		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
 
-		if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
-			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
-		}
+		// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
+		bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		// }
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
@@ -96,13 +99,47 @@ public class BotHandler {
 		}
 		bot.addArguments(CliArgs.MEM, false, 2048);
 		if (account.hasValidProxy()) {
-			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(), Config.PROXY_USERNAME,
-					Config.PROXY_PASSWORD);
+			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
+					account.getProxyUsername(), account.getProxyPassword());
 		}
 		if (account.hasScript()) {
 			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
 			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
 					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId() + "_" + accountStatus);
+		}
+		bot.runBot();
+	}
+
+	public static void runMule(OsbotController bot, String toTradeWith) {
+		if (bot == null) {
+			System.out.println("Invalid bot");
+			return;
+		}
+		AccountTable account = bot.getAccount();
+
+		// bot.addArguments(CliArgs.DEBUG, false, 5005);
+		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
+		bot.addArguments(CliArgs.DATA, false, 0);
+		bot.addArguments(CliArgs.WORLD, false, 394);
+
+		// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
+		bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		// }
+
+		if (account.hasUsernameAndPasswordAndBankpin()) {
+			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), account.getBankPin());
+		} else if (account.hasUsernameAndPassword()) {
+			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
+		}
+		bot.addArguments(CliArgs.MEM, false, 2048);
+		if (account.hasValidProxy()) {
+			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
+					account.getProxyUsername(), account.getProxyPassword());
+		}
+		if (account.hasScript()) {
+			String accountStatus = bot.getAccount().getStage().name().replaceAll("_", "-");
+			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
+					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith);
 		}
 		bot.runBot();
 	}
@@ -127,12 +164,82 @@ public class BotHandler {
 	}
 
 	/**
+	 * Handling with running the mules
+	 */
+	public static void handleMules() {
+		OsbotController availableMule = null;
+
+		// If accounts are not loaded yet
+		if (BotController.getBots().size() == 0) {
+			System.out.println("[MULE TRADING] Couldn't trade yet, accounts weren't loaded yet");
+		}
+
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+
+			// Looking for a mule account and that is currently available ('NULL')
+			if (osbot.getAccount().getStatus() == AccountStatus.MULE
+					&& osbot.getAccount().getTradeWithOther() == null) {
+				availableMule = osbot;
+				System.out.println("[MULE TRADING] Found an account! " + availableMule.getAccount().getUsername());
+			}
+		}
+
+		// Must have a mule available to continue
+		if (BotController.getBots().size() > 0 && availableMule == null) {
+			System.out.println("[MULE TRADING] Couldn't find mule to trade with, is not available");
+			return;
+		}
+
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+
+			// If an account wants to mule
+			if (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
+					&& !osbot.getAccount().getUsername().equalsIgnoreCase(availableMule.getAccount().getUsername())) {
+
+				// Running the mule's account script
+				runMule(availableMule, osbot.getAccount().getUsername());
+
+				// Setting in database that the mule is trading with the workers name
+				DatabaseUtilities.setTradingWith(osbot.getAccount().getUsername(), availableMule.getId());
+
+				System.out.println("[MULE TRADING] Starting mule: " + availableMule.getAccount().getUsername()
+						+ " to trade with: " + osbot.getAccount().getUsername());
+
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				// Running the osbot's account script
+				runMule(osbot, availableMule.getAccount().getUsername());
+
+				// Setting in database that worker is trading with mule
+				DatabaseUtilities.setTradingWith(availableMule.getAccount().getUsername(), osbot.getId());
+
+				System.out.println("[MULE TRADING] Starting worker: " + osbot.getAccount().getUsername()
+						+ " to trade with mule: " + availableMule.getAccount().getUsername());
+
+				break;
+			}
+		}
+
+	}
+
+	/**
 	 * Handlig all the bots, deciding how many should be open etc.
 	 */
 	public static void handleBots() {
 		// Will check the PID processes if they are still running or not, when not, they
 		// get deleted in the PID list
 		BotHandler.checkProcesses();
+
+		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Calendar calendar2 = Calendar.getInstance();
+		calendar2.setTime(new Date());
 
 		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
 		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
@@ -144,8 +251,16 @@ public class BotHandler {
 						&& (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
 								|| osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
 						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
+						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
 						&& !BotController.containsInPidList(osbot.getPidId())
 						&& getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
+
+					if (!calendar2.after(osbot.getAccount().getDate())) {
+						System.out.println(
+								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
+						continue;
+					}
+
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());

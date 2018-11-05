@@ -83,6 +83,7 @@ public class ProtonActions {
 				return true;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			// Not logged in yet, not catching exception
 			return false;
 		}
@@ -107,6 +108,7 @@ public class ProtonActions {
 				}
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			// Ignoring excetion, might be dangerous
 			return false;
 		}

@@ -24,7 +24,18 @@ public class ThreadHandler {
 	 */
 	private static void createAccountsThread() {
 		Thread createAccounts = new Thread(() -> {
-			DatabaseUtilities.seleniumCreateAccountThread();
+
+			while (programIsRunning) {
+
+				DatabaseUtilities.seleniumCreateAccountThread();
+
+				try {
+					Thread.sleep(5000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
 		});
 		createAccounts.setName("createAccounts");
 		createAccounts.start();
@@ -37,12 +48,54 @@ public class ThreadHandler {
 	 */
 	private static void recoverAccountsThread() {
 		Thread recoverAccounts = new Thread(() -> {
-			DatabaseUtilities.seleniumRecoverAccount();
+
+			while (programIsRunning) {
+
+				DatabaseUtilities.seleniumRecoverAccount();
+
+				//
+				try {
+					Thread.sleep(5000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
 		});
 		recoverAccounts.setName("recoverAccounts");
 		recoverAccounts.start();
 
 		threadList.add(recoverAccounts);
+	}
+
+	/**
+	 * Handles the thread for muling on the accounts
+	 */
+	private static void handleMulesTrading() {
+		Thread handleMulesTrading = new Thread(() -> {
+			while (programIsRunning) {
+
+				try {
+					Thread.sleep(5000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				BotHandler.handleMules();
+
+				// Checking every 15 seconds for a mule
+				try {
+					Thread.sleep(10000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+		});
+		handleMulesTrading.setName("handleMulesTrading");
+		handleMulesTrading.start();
+
+		threadList.add(handleMulesTrading);
 	}
 
 	/**
@@ -76,29 +129,40 @@ public class ThreadHandler {
 		Thread mainThread = new Thread(() -> {
 			while (programIsRunning) {
 
-				System.out.println(
-						"Thread management: " + isThreadAlive("recoverAccounts") + " " + getThread("recoverAccounts"));
-				System.out.println(
-						"Thread management: " + isThreadAlive("createAccounts") + " " + getThread("createAccounts"));
+//				System.out.println(
+//						"Thread management: " + isThreadAlive("recoverAccounts") + " " + getThread("recoverAccounts"));
+//				System.out.println(
+//						"Thread management: " + isThreadAlive("createAccounts") + " " + getThread("createAccounts"));
 				System.out.println("Thread management: " + isThreadAlive("handleBotsRunning") + " "
 						+ getThread("handleBotsRunning"));
+				System.out.println("Thread management: " + isThreadAlive("handleMulesTrading") + " "
+						+ getThread("handleMulesTrading"));
 
-				if ((!isThreadAlive("recoverAccounts") || getThread("recoverAccounts") == null)
-						&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
-					recoverAccountsThread();
-					System.out.println("Started new thread: recoverAccounts");
-				}
-
-				if ((!isThreadAlive("createAccounts") || getThread("createAccounts") == null)
-						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
-					createAccountsThread();
-					System.out.println("Started new thread: createAccounts");
-				}
+//				if ((!isThreadAlive("recoverAccounts") || getThread("recoverAccounts") == null)
+//						&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+//
+//					recoverAccountsThread();
+//					System.out.println("Started new thread: recoverAccounts");
+//
+//				}
+//
+//				if ((!isThreadAlive("createAccounts") || getThread("createAccounts") == null)
+//						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+//
+//					createAccountsThread();
+//					System.out.println("Started new thread: createAccounts");
+//				}
 
 				if ((!isThreadAlive("handleBotsRunning") || getThread("handleBotsRunning") == null)
 						&& Config.BOT_HANDLER_THREAD_ACTIVE) {
 					handleBotsRunning();
 					System.out.println("Started new thread: handleBotsRunning");
+				}
+
+				if ((!isThreadAlive("handleMulesTrading") || getThread("handleMulesTrading") == null)
+						&& Config.MULES_TRADING) {
+					handleMulesTrading();
+					System.out.println("Started new thread: handleMulesTrading");
 				}
 
 				// Thread sleeping & checking every 30 seconds
@@ -115,6 +179,7 @@ public class ThreadHandler {
 		mainThread.start();
 
 		threadList.add(mainThread);
+
 	}
 
 	/**

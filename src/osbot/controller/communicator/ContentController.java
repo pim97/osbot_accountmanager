@@ -1,6 +1,8 @@
 package osbot.controller.communicator;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 
 import javafx.collections.FXCollections;
@@ -14,6 +16,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import osbot.account.AccountStatus;
+import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
@@ -35,6 +38,9 @@ public class ContentController {
 	TableColumn<AccountTable, Integer> id;
 
 	@FXML
+	TableColumn<AccountTable, String> breaktill;
+	
+	@FXML
 	TableColumn<AccountTable, String> script;
 
 	@FXML
@@ -49,6 +55,9 @@ public class ContentController {
 	@FXML
 	TableColumn<AccountTable, String> username;
 
+	@FXML
+	TableColumn<AccountTable, Integer> accValue;
+	
 	@FXML
 	TableColumn<AccountTable, String> world;
 
@@ -126,7 +135,7 @@ public class ContentController {
 	@FXML
 	private void startBot() {
 		OsbotController bot = BotController.getBotById(table.getSelectionModel().getSelectedItem().getId());
-		//Starting one specific bot
+		// Starting one specific bot
 		BotHandler.runBot(bot);
 	}
 
@@ -135,7 +144,7 @@ public class ContentController {
 
 	@FXML
 	private void toggleBot() {
-		//Starting the bots
+		// Starting the bots
 		BotHandler.handleBots();
 	}
 
@@ -147,19 +156,20 @@ public class ContentController {
 
 	@FXML
 	private void createAccounts() {
-		//Starts another thread on creating accounts
+		// Starts another thread on creating accounts
 		DatabaseUtilities.seleniumCreateAccountThread();
 	}
 
 	@FXML
 	private void recover() {
-		//Starts another thread on recovering accounts
+		// Starts another thread on recovering accounts
 		DatabaseUtilities.seleniumRecoverAccount();
 	}
 
 	@FXML
 	public void initialize() {
-		//Killing all webdrivers on start
+		
+		// Killing all webdrivers on start
 		WebdriverFunctions.killAll();
 
 		id.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("id"));
@@ -172,6 +182,10 @@ public class ContentController {
 		proxyPort.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyPort"));
 		lowCpuMode.setCellValueFactory(new PropertyValueFactory<AccountTable, Boolean>("lowCpuMode"));
 		status.setCellValueFactory(new PropertyValueFactory<AccountTable, AccountStatus>("status"));
+		accValue.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("accountValue"));
+		breaktill.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("dateString"));
+		
+		
 
 		table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -198,7 +212,7 @@ public class ContentController {
 				}
 
 				if (account.size() > 0) {
-					//Clears the table
+					// Clears the table
 					table.getItems().clear();
 					int botListSize = BotController.getBots().size();
 
@@ -213,9 +227,17 @@ public class ContentController {
 						accTable.setMonth(acc.getMonth());
 						accTable.setYear(acc.getYear());
 						accTable.setEmail(acc.getEmail());
+						accTable.setAccountValue(acc.getAccountValue());
+						accTable.setDate(acc.getDate());
+						accTable.setDateString(acc.getDateString());
+						accTable.setTradeWithOther(acc.getTradeWithOther());
+						accTable.setProxyUsername(acc.getProxyUsername());
+						accTable.setProxyPassword(acc.getProxyPassword());
 
 						// Adds the account to the table
-						table.getItems().add(accTable);
+						if (table != null && table.getItems() != null && accTable != null) {
+							table.getItems().add(accTable);
+						}
 
 						if (botListSize == 0) {
 							BotController.addBot(new OsbotController(acc.getId(), acc));
@@ -250,20 +272,33 @@ public class ContentController {
 				table.refresh();
 
 				// Setting the selection model on the found index
-				if (index > -1) {
-					table.getSelectionModel().select(index);
-				}
+				
+//				try {
+//					if (index > -1 && table != null && table.getSelectionModel() != null) {
+//						table.getSelectionModel().select(index);
+//					}
+//				} catch (Exception e) {
+//					//If goes wrong, then clear the selection
+//					table.getSelectionModel().clearSelection();
+//					e.printStackTrace();
+//				}
 
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(10000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-//				System.out.println("Refreshing table every 10 seconds");
+				System.out.println("[REFRESHING TABLE] still active [10 sec] per loop");
 			}
 		}).start();
 
+		if (Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+			DatabaseUtilities.seleniumCreateAccountThread();
+		}
+		if (Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+			DatabaseUtilities.seleniumRecoverAccount();
+		}
 	}
 
 	/**

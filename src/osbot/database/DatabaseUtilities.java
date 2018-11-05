@@ -3,7 +3,10 @@ package osbot.database;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -80,7 +83,7 @@ public class DatabaseUtilities {
 	 * @return
 	 */
 	public static ArrayList<DatabaseProxy> getTotalProxies() {
-		String sql = "SELECT * FROM `proxies`";
+		String sql = "SELECT * FROM proxies as p WHERE p.mule_proxy=0";
 
 		ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
@@ -165,6 +168,26 @@ public class DatabaseUtilities {
 		}
 	}
 
+	public static boolean setTradingWith(String tradeWith, int accountId) {
+		try {
+			String query = "UPDATE account SET trade_with_other = ? WHERE id=?";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, tradeWith);
+			preparedStmt.setInt(2, accountId);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+
+			System.out.println("Updated account in database trading with: " + tradeWith);
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	/**
 	 * 
 	 * @return
@@ -172,7 +195,7 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = "SELECT * FROM account WHERE visible = \"true\" AND status <> \"MANUAL_REVIEW\" AND status <> \"LOCKED_INGAME\" AND status <> \"BANNED\"";
+		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"";
 		try {
 			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 
@@ -186,8 +209,27 @@ public class DatabaseUtilities {
 				String proxyIp = resultSet.getString("proxy_ip");
 				String proxyPort = resultSet.getString("proxy_port");
 				String scriptName = resultSet.getString("account_stage");
+				String tradingWith = resultSet.getString("trade_with_other");
+				String proxyUsername = resultSet.getString("p_us");
+				String proxyPassword = resultSet.getString("p_pass");
 				boolean lowCpuMode = resultSet.getBoolean("low_cpu_mode");
+				int accountValue = resultSet.getInt("account_value");
 				AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
+				String date = resultSet.getString("break_till");
+
+				Calendar calendar = Calendar.getInstance();
+				// calendar.add(Calendar.MINUTE, 30);
+				java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+				try {
+					Date date2 = sdf.parse(date);
+					calendar.setTime(date2);
+
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 				AccountStage stage = null;
 				if (resultSet.getString("account_stage") != null) {
 					stage = AccountStage.valueOf(resultSet.getString("account_stage"));
@@ -196,10 +238,16 @@ public class DatabaseUtilities {
 
 				AccountTable account = new AccountTable(id, null, name, world, proxyIp, proxyPort, lowCpuMode, status,
 						stage, account_stage_progress);
+				account.setProxyUsername(proxyUsername);
+				account.setProxyPassword(proxyPassword);
 				account.setPassword(password);
 				account.setScript(scriptName);
 				account.setEmail(email);
 				account.setQuestPoints(qp);
+				account.setAccountValue(accountValue);
+				account.setDate(calendar);
+				account.setDateString(date);
+				account.setTradeWithOther(tradingWith);
 
 				accounts.add(account);
 
@@ -235,20 +283,20 @@ public class DatabaseUtilities {
 				}
 			}
 			hash.put(p, count);
-//			System.out.println(p+" "+count+" added to array");
+			// System.out.println(p+" "+count+" added to array");
 		}
 		return hash;
 	}
 
 	public static ArrayList<OsbotController> getAccountsToBeRecovered() {
 		ArrayList<OsbotController> bots = new ArrayList<OsbotController>();
-		String sql = "SELECT *\r\n" + "FROM account\r\n" + "WHERE `status`=\"LOCKED\"";
+		String sql = "SELECT * FROM account WHERE status = \"LOCKED\"";
 		try {
 			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 
 			while (resultSet.next()) {
 				int id = resultSet.getInt("id");
-				// System.out.println("Account id: " + id + " has to get recovered");
+				System.out.println("Account id: " + id + " has to get recovered");
 
 				OsbotController bot = BotController.getBotById(id);
 				if (bot != null) {
@@ -263,7 +311,7 @@ public class DatabaseUtilities {
 	}
 
 	public static void main(String[] args) {
-//		seleniumRecoverAccount();
+		// seleniumRecoverAccount();
 		// seleniumCreateAccountThread();
 	}
 
@@ -271,70 +319,90 @@ public class DatabaseUtilities {
 	 * Recovers an account
 	 */
 	public static void seleniumRecoverAccount() {
-		// new Thread(() -> {
-		{
+		new Thread(() -> {
+			{
 
-			System.out.println("[ACCOUNT RECOVERING] "+getAccountsToBeRecovered().size()+" accounts left to recover currently");
-			// System.out.println(getAccountsToBeRecovered().size());
-			for (OsbotController account : getAccountsToBeRecovered()) {
-				// if (account.getAccount().getUsername().equalsIgnoreCase("solomid6lz")) {
-				DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
-						account.getAccount().getProxyPort());
-				AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
-				System.out.println("Recovering account: " + account.getAccount().getUsername());
-				// }
+				while (true) {
+					System.out.println("[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size()
+							+ " accounts left to recover currently");
+					// System.out.println(getAccountsToBeRecovered().size());
+					for (OsbotController account : getAccountsToBeRecovered()) {
+						// if (account.getAccount().getUsername().equalsIgnoreCase("solomid6lz")) {
+						DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
+								account.getAccount().getProxyPort());
+						AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
+						System.out.println("Recovering account: " + account.getAccount().getUsername());
+						// }
+					}
+					//
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+
 			}
-			//
 
-		}
-
-		// }).start();
+		}).start();
 	}
 
 	/**
 	 * 
 	 */
 	public static void seleniumCreateAccountThread() {
-		// new Thread(() -> {
+		new Thread(() -> {
 
-		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
-		
-		int count = 0;
-		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
-			DatabaseProxy key = entry.getKey();
-			Integer value = entry.getValue();
+			while (true) {
 
-			if (value < 3) {
-				count += value;
+				HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+
+				int count = 0;
+				for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+					DatabaseProxy key = entry.getKey();
+					Integer value = entry.getValue();
+
+					if (value < 2) {
+						count += value;
+					}
+				}
+
+				System.out.println(
+						"[RS AUTOMATIC ACCOUNT CREATION] " + count + " accounts left to create accounts with!");
+				for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+					DatabaseProxy key = entry.getKey();
+					Integer value = entry.getValue();
+
+					if (value < 2) {
+						/**
+						 * public AccountTable(int id, String script, String username, int world, String
+						 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
+						 */
+
+						RandomNameGenerator name = new RandomNameGenerator();
+
+						AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 318,
+								key.getProxyIp(), key.getProxyPort(), true, AccountStatus.AVAILABLE,
+								AccountStage.TUT_ISLAND, 0);
+						table.setPassword(name.generateRandomNameString());
+						table.setBankPin("0000");
+						OsbotController bot = new OsbotController(-1, table);
+
+						AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
+					}
+
+				}
+
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-		}
 
-		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] "+count+" accounts left to create accounts with!");
-		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
-			DatabaseProxy key = entry.getKey();
-			Integer value = entry.getValue();
-
-			if (value < 3) {
-				/**
-				 * public AccountTable(int id, String script, String username, int world, String
-				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
-				 */
-
-				RandomNameGenerator name = new RandomNameGenerator();
-
-				AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 318,
-						key.getProxyIp(), key.getProxyPort(), true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND,
-						0);
-				table.setPassword(name.generateRandomNameString());
-				table.setBankPin("0000");
-				OsbotController bot = new OsbotController(-1, table);
-
-				AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
-			}
-
-		}
-
-		// }).start();
+		}).start();
 	}
 
 }
