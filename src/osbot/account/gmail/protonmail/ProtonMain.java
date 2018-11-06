@@ -30,12 +30,14 @@ public class ProtonMain {
 			System.out.println("Successfully logged in");
 
 			boolean found = false;
+			int cantFindEmail = 0;
 
 			while (!found) {
 				if (getActions().clickMail("Reset your Jagex password")) {
 					if (!getActions().clickedCorrectEmail()) {
 						getActions().deleteEmail();
 						System.out.println("Email has not been found");
+						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -47,6 +49,12 @@ public class ProtonMain {
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				}
+				
+				if (cantFindEmail > 20) {
+					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+					driver.quit();
+					return;
 				}
 			}
 			System.out.println("Got the e-mail");
@@ -94,12 +102,14 @@ public class ProtonMain {
 		if (getActions().login(ProtonConfig.PROTON_MAIL_USERNAME, ProtonConfig.PROTON_MAIL_PASSWORD)) {
 			System.out.println("Successfully logged in");
 			boolean found = false;
+			int cantFindEmail = 0;
 
 			while (!found) {
 				if (getActions().clickMail("Welcome to RuneScape!")) {
 					if (!getActions().clickedCorrectEmail()) {
 						getActions().deleteEmail();
 						System.out.println("Email has not been found");
+						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -111,6 +121,12 @@ public class ProtonMain {
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				}
+				
+				if (cantFindEmail > 20) {
+					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+					driver.quit();
+					return;
 				}
 			}
 			System.out.println("Got the e-mail");

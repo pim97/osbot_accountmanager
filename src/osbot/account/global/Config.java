@@ -20,11 +20,14 @@ public class Config {
 	 * Configs for threads
 	 */
 	
+	public static final boolean CREATE_AND_VERIFY = true;
+	
+	
 	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
 	
 	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
 	
-	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
+	public static final boolean BOT_HANDLER_THREAD_ACTIVE = false;
 	
-	public static final boolean MULES_TRADING = true;
+	public static final boolean MULES_TRADING = false;
 }

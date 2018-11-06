@@ -135,8 +135,15 @@ public class AccountCreationService {
 
 		WebDriver driver = new FirefoxDriver(option);
 
+		int tries = 0;
 		boolean searching = true;
 		while (searching) {
+			if (tries > 5) {
+				driver.quit();
+				searching = false;
+				System.out.println("Couldn't find the PID, restarting the browser");
+				return;
+			}
 			pidsAfter = GeckoHandler.getGeckodriverExeWindows();
 
 			if (pids.size() != pidsAfter.size()) {
@@ -159,6 +166,7 @@ public class AccountCreationService {
 				e.printStackTrace();
 			}
 			System.out.println("Trying to find the pid");
+			tries++;
 		}
 
 		if (pidsAfter.size() == 1) {
@@ -172,6 +180,7 @@ public class AccountCreationService {
 
 		if (pidId < 0) {
 			System.out.println("Pid couldn't be set");
+			driver.quit();
 			return;
 		} else {
 			System.out.println("Pid set!");

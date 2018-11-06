@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import osbot.account.global.Config;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
 import osbot.settings.OsbotController;
@@ -20,7 +21,9 @@ public class MainController extends Application {
 			primaryStage.setScene(scene);
 			primaryStage.setResizable(false);
 			primaryStage.setTitle("OSBot account handler");
-			primaryStage.show();
+			if (!Config.CREATE_AND_VERIFY) {
+				primaryStage.show();
+			}
 			
 			primaryStage.setOnCloseRequest(e -> {
 				killAll();

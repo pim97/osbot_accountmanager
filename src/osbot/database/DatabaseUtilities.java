@@ -296,7 +296,7 @@ public class DatabaseUtilities {
 
 			while (resultSet.next()) {
 				int id = resultSet.getInt("id");
-				System.out.println("Account id: " + id + " has to get recovered");
+//				System.out.println("Account id: " + id + " has to get recovered");
 
 				OsbotController bot = BotController.getBotById(id);
 				if (bot != null) {
@@ -311,7 +311,7 @@ public class DatabaseUtilities {
 	}
 
 	public static void main(String[] args) {
-		// seleniumRecoverAccount();
+		 seleniumRecoverAccount();
 		// seleniumCreateAccountThread();
 	}
 
@@ -323,6 +323,14 @@ public class DatabaseUtilities {
 			{
 
 				while (true) {
+
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
 					System.out.println("[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size()
 							+ " accounts left to recover currently");
 					// System.out.println(getAccountsToBeRecovered().size());
@@ -335,12 +343,6 @@ public class DatabaseUtilities {
 						// }
 					}
 					//
-					try {
-						Thread.sleep(10000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
 				}
 
 			}

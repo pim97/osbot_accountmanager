@@ -107,7 +107,7 @@ public class BotHandler {
 			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
 					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId() + "_" + accountStatus);
 		}
-		bot.runBot();
+		bot.runBot(false);
 	}
 
 	public static void runMule(OsbotController bot, String toTradeWith) {
@@ -141,7 +141,7 @@ public class BotHandler {
 			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
 					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith);
 		}
-		bot.runBot();
+		bot.runBot(true);
 	}
 
 	/**
@@ -164,7 +164,27 @@ public class BotHandler {
 	}
 
 	/**
+	 * Gets the mule partner
+	 * 
+	 * @param bot
+	 * @return
+	 */
+	public static OsbotController getMulePartner(OsbotController bot) {
+		for (int b = 0; b < BotController.getBots().size(); b++) {
+			OsbotController osbot2 = BotController.getBots().get(b);
+
+			if (!osbot2.getAccount().getUsername().equalsIgnoreCase(bot.getAccount().getUsername())
+					&& osbot2.getAccount().getTradeWithOther().equalsIgnoreCase(bot.getAccount().getTradeWithOther())) {
+				return osbot2;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Handling with running the mules
+	 * 
+	 * Setting them up to yet
 	 */
 	public static void handleMules() {
 		OsbotController availableMule = null;
@@ -198,24 +218,11 @@ public class BotHandler {
 			if (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
 					&& !osbot.getAccount().getUsername().equalsIgnoreCase(availableMule.getAccount().getUsername())) {
 
-				// Running the mule's account script
-				runMule(availableMule, osbot.getAccount().getUsername());
-
 				// Setting in database that the mule is trading with the workers name
 				DatabaseUtilities.setTradingWith(osbot.getAccount().getUsername(), availableMule.getId());
 
 				System.out.println("[MULE TRADING] Starting mule: " + availableMule.getAccount().getUsername()
 						+ " to trade with: " + osbot.getAccount().getUsername());
-
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				// Running the osbot's account script
-				runMule(osbot, availableMule.getAccount().getUsername());
 
 				// Setting in database that worker is trading with mule
 				DatabaseUtilities.setTradingWith(availableMule.getAccount().getUsername(), osbot.getId());
@@ -242,6 +249,26 @@ public class BotHandler {
 		calendar2.setTime(new Date());
 
 		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
+
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+
+			// Running mules
+			if (osbot != null && osbot.getAccount().getTradeWithOther() != null
+					&& osbot.getAccount().getTradeWithOther().length() > 0
+					&& !BotController.containsInPidList(osbot.getPidId())) {
+				runMule(osbot, osbot.getAccount().getTradeWithOther());
+				System.out.println("Running mule trading " + osbot.getAccount().getUsername());
+
+				try {
+					Thread.sleep(15000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+
 		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
 
 			for (int i = 0; i < BotController.getBots().size(); i++) {
@@ -265,7 +292,7 @@ public class BotHandler {
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
 					try {
-						Thread.sleep(5000);
+						Thread.sleep(15000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

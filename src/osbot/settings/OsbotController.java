@@ -3,11 +3,12 @@ package osbot.settings;
 import java.io.IOException;
 import java.util.List;
 
+import osbot.account.handler.BotHandler;
 import osbot.bot.BotController;
 import osbot.tables.AccountTable;
 
 public class OsbotController {
-	
+
 	private AccountTable account;
 
 	public OsbotController(int id, AccountTable account) {
@@ -17,11 +18,12 @@ public class OsbotController {
 
 	private int id, pidId;
 
-
 	/**
+	 * @param isMule
+	 *            TODO
 	 * 
 	 */
-	public void runBot() {
+	public void runBot(boolean isMule) {
 		new Thread(() -> {
 			try {
 				List<Integer> pids = BotController.getJavaPIDsWindows();
@@ -37,6 +39,14 @@ public class OsbotController {
 					System.out.println("Pid set to: " + pidsAfter.get(0));
 				}
 				setCliArgs(new StringBuilder());
+
+				if (isMule) {
+					OsbotController partner = BotHandler.getMulePartner(this);
+					if (partner != null && partner.getPidId() > 0
+							&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
+						System.out.println("Both mules are running, others may start again!");
+					}
+				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
