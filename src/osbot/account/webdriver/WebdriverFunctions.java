@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -23,6 +24,10 @@ public class WebdriverFunctions {
 			e1.printStackTrace();
 			System.out.println("Couldn't kill tasks Firefox");
 		}
+	}
+	
+	public static boolean hasQuit(WebDriver driver) {
+	    return ((RemoteWebDriver)driver).getSessionId() == null;
 	}
 	
 	/**

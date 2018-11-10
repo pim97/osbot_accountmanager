@@ -13,7 +13,7 @@ public class PidDriver {
 	
 	private int pidId;
 	
-	private PidType type;
+	private SeleniumType type;
 
 	/**
 	 * @return the driver
@@ -46,14 +46,14 @@ public class PidDriver {
 	/**
 	 * @return the type
 	 */
-	public PidType getType() {
+	public SeleniumType getType() {
 		return type;
 	}
 
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(PidType type) {
+	public void setType(SeleniumType type) {
 		this.type = type;
 	}
 }

@@ -6,6 +6,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.settings.OsbotController;
@@ -98,9 +100,13 @@ public class ProtonActions {
 	 */
 	public boolean clickLink(String contentEquals) {
 		try {
-			List<WebElement> allLinksByTagA = driver.findElements(By.tagName("a"));
+			List<WebElement> allLinksByTagA = driver
+					.findElements(By.xpath("//a[contains(text(),'https://secure.runescape.com')]"));
 
 			for (WebElement link2 : allLinksByTagA) {
+				System.out.println(
+						"link found: " + link2 + " " + link2.getAttribute("href") != null ? link2.getAttribute("href")
+								: "null");
 				if (link2 != null && link2.getAttribute("href") != null
 						&& link2.getAttribute("href").contains(contentEquals)) {
 					link2.click();
@@ -123,11 +129,17 @@ public class ProtonActions {
 		try {
 			WebdriverFunctions.waitForLoad(driver);
 			Thread.sleep(2000);
-			
+
+			WebDriverWait wait = new WebDriverWait(driver, 30);
+
+			WebElement element = wait
+					.until(ExpectedConditions.visibilityOfElementLocated(By.className("recipients-summary-label")));
+
 			WebElement toEmail = getDriver().findElement(By.className("recipients-summary-label"));
+
 			WebdriverFunctions.waitForElementToBeVisible(driver, toEmail);
 			if (toEmail != null) {
-				System.out.println("Label: "+ getAccount().getAccount().getEmail()+" "+toEmail.getText());
+				System.out.println("Label: " + getAccount().getAccount().getEmail() + " " + toEmail.getText());
 				if (getAccount().getAccount().getEmail().equalsIgnoreCase(toEmail.getText())) {
 					return true;
 				}
@@ -139,7 +151,7 @@ public class ProtonActions {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -147,9 +159,15 @@ public class ProtonActions {
 	public boolean deleteEmail() {
 		try {
 			WebElement deleteButton = getDriver().findElement(By.className("moveElement-btn-trash"));
-			
+
 			WebdriverFunctions.waitForElementToBeVisible(driver, deleteButton);
 			if (deleteButton != null) {
+
+				WebDriverWait wait = new WebDriverWait(driver, 30);
+
+				WebElement element = wait
+						.until(ExpectedConditions.visibilityOfElementLocated(By.className("recipients-summary-label")));
+
 				WebElement toEmail = getDriver().findElement(By.className("recipients-summary-label"));
 				WebdriverFunctions.waitForElementToBeVisible(driver, toEmail);
 				deleteButton.click();
@@ -166,28 +184,57 @@ public class ProtonActions {
 		return false;
 	}
 
+	private int clickedIndex = 0;
+	
+	private int loop;
+
+	
 	/**
 	 * 
 	 * @return
 	 */
 	public boolean clickMail(String subjectName) {
 		try {
-			List<WebElement> email = getDriver().findElements(By.className("subject-text"));
+			WebDriverWait wait = new WebDriverWait(driver, 30);
 
-			for (WebElement name : email) {
-				if (name != null && name.getText().equalsIgnoreCase(subjectName)) {
-					name.click();
-//					WebElement parent = (WebElement) ((JavascriptExecutor) driver).executeScript(
-//                            "return arguments[0].parentNode;", email);
-//					System.out.println(parent+" found "+parent.getText());
-					return true;
-				}
+			WebElement element = wait
+					.until(ExpectedConditions.visibilityOfElementLocated(By.className("subject-text")));
+			
+			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
+//			System.out
+//					.println("Trying to click email index: " + clickedIndex + " " + " " + name.get(clickedIndex) != null
+//							? name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)
+//							: "null"+" "+subjectName);
+
+			if (clickedIndex > 30) {//name.size()) {
+				loop++;
+				clickedIndex = 0;
 			}
+			
+			if (loop > 1) {
+				driver.quit();
+				System.out.println("Couldn't find e-mail twice, restarting & retrying");
+				return false;
+			}
+
+			// for (WebElement name : email) {
+			
+			if (name.get(clickedIndex) != null && name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)) {
+				name.get(clickedIndex).click();
+				clickedIndex++;
+				// WebElement parent = (WebElement) ((JavascriptExecutor) driver).executeScript(
+				// "return arguments[0].parentNode;", email);
+				// System.out.println(parent+" found "+parent.getText());
+				return true;
+			}
+			// }
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			clickedIndex++;
 			return false;
 		}
+		clickedIndex++;
 		return false;
 	}
 

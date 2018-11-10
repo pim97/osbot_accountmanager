@@ -173,7 +173,8 @@ public class BotHandler {
 		for (int b = 0; b < BotController.getBots().size(); b++) {
 			OsbotController osbot2 = BotController.getBots().get(b);
 
-			if (!osbot2.getAccount().getUsername().equalsIgnoreCase(bot.getAccount().getUsername())
+			if (osbot2.getAccount().getTradeWithOther() != null && bot.getAccount().getTradeWithOther() != null
+					&& !osbot2.getAccount().getUsername().equalsIgnoreCase(bot.getAccount().getUsername())
 					&& osbot2.getAccount().getTradeWithOther().equalsIgnoreCase(bot.getAccount().getTradeWithOther())) {
 				return osbot2;
 			}
@@ -236,6 +237,17 @@ public class BotHandler {
 
 	}
 
+	private static boolean wantsToMule() {
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+			
+			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Handlig all the bots, deciding how many should be open etc.
 	 */
@@ -285,6 +297,10 @@ public class BotHandler {
 					if (!calendar2.after(osbot.getAccount().getDate())) {
 						System.out.println(
 								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
+						continue;
+					}
+					if (wantsToMule()) {
+						System.out.println("A bot wants to mule, so giving them priority");
 						continue;
 					}
 

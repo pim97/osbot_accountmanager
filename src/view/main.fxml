@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -100,9 +101,13 @@
                                                 </AnchorPane>
                                           </content>
                                         </TitledPane>
-                                        <TitledPane animated="false" text="Import accounts">
+                                        <TitledPane animated="false" text="Settings">
                                           <content>
-                                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                                   <children>
+                                                      <TextField fx:id="numberOfBotsSetting" layoutX="75.0" layoutY="41.0" onAction="#setAccounts" onKeyReleased="#setAccounts" />
+                                                      <Text layoutX="108.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Amount of bots" />
+                                                   </children></AnchorPane>
                                           </content>
                                         </TitledPane>
                                         <TitledPane animated="false" text="Console">

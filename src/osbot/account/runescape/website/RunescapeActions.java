@@ -19,6 +19,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.twocaptcha.api.ProxyType;
 import com.twocaptcha.api.TwoCaptchaService;
 
+import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.HttpRequests;
 import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
@@ -85,7 +86,7 @@ public class RunescapeActions {
 			}
 
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(1000);
 			} catch (InterruptedException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -133,6 +134,14 @@ public class RunescapeActions {
 				System.out.println("Waiting on navigating to the Runescape recover page");
 			}
 			System.out.println("On the runescappe account");
+
+			if (driver.getPageSource().contains("You have been temporarily blocked from using this service.")
+					&& driver.getCurrentUrl().contains("message.ws")) {// message.ws/?message=5
+				HttpRequests.updateAccountStatusInDatabase("LOCKED_TIMEOUT", getAccount().getAccount().getEmail());
+				System.out.println("Account couldn't be recovered this way");
+				driver.quit();
+				return false;
+			}
 
 			getResponseToken("https://secure.runescape.com/m=accountappeal/passwordrecovery");
 
@@ -184,23 +193,24 @@ public class RunescapeActions {
 				}
 			}
 
-//			while (!clickButtonAndVerifyLink(By.name("continueYes"), "enter_security_code")) {// account_created
-//				System.out.println("Verifying the final unlock button!");
-//				setFailedTries(getFailedTries() + 1);
-//				//
-//				if (getFailedTries() > 1) {
-//					driver.quit();
-//					System.out.println("Restarting..");
-//					return false;
-//				}
-//
-//				try {
-//					Thread.sleep(1000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
+			// while (!clickButtonAndVerifyLink(By.name("continueYes"),
+			// "enter_security_code")) {// account_created
+			// System.out.println("Verifying the final unlock button!");
+			// setFailedTries(getFailedTries() + 1);
+			// //
+			// if (getFailedTries() > 1) {
+			// driver.quit();
+			// System.out.println("Restarting..");
+			// return false;
+			// }
+			//
+			// try {
+			// Thread.sleep(1000);
+			// } catch (InterruptedException e) {
+			// // TODO Auto-generated catch block
+			// e.printStackTrace();
+			// }
+			// }
 
 			if (waitUnCaptchaFailed(getType())) {
 				driver.quit();
@@ -337,9 +347,9 @@ public class RunescapeActions {
 				return false;
 			}
 		} else if (type == SeleniumType.RECOVER_ACCOUNT) {
-			WebdriverFunctions.waitForElementToBeVisible(driver, driver.findElement(By.name("continueYes")));
-			if (driver.getPageSource()
-					.contains("We are about to send an email with a link to reset your password to")) {
+			// WebdriverFunctions.waitForElementToBeVisible(driver,
+			// driver.findElement(By.name("continueYes")));
+			if (driver.getPageSource().contains("A link to reset your password has been sent to")) {
 				return false;
 			}
 		}
@@ -356,13 +366,15 @@ public class RunescapeActions {
 			String responseToken = null;
 			TwoCaptchaService service = new TwoCaptchaService("8ff2e630e82351bdc3f0b00af2e026b9",
 					"6LccFA0TAAAAAHEwUJx_c1TfTBWMTAOIphwTtd1b", link, "" + getAccount().getAccount().getProxyIp(),
-					"" + getAccount().getAccount().getProxyPort(), "rvWt0S", "AqwncH", ProxyType.SOCKS5);
+					"" + getAccount().getAccount().getProxyPort(), getAccount().getAccount().getProxyUsername(),
+					getAccount().getAccount().getProxyPassword(), ProxyType.SOCKS5);
 
 			try {
 				responseToken = service.solveCaptcha();
 				System.out.println("The response token is: " + responseToken);
 			} catch (InterruptedException | IOException e) {
 				// TODO Auto-generated catch block
+				driver.quit();
 				e.printStackTrace();
 			}
 
@@ -382,36 +394,33 @@ public class RunescapeActions {
 	 */
 	public boolean clickButtonAndVerifyLink(By by, String link) {
 		try {
-			Thread.sleep(5000);
 
 			WebDriverWait wait = new WebDriverWait(driver, 30);
-			WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(by));
+			wait.until(ExpectedConditions.visibilityOfElementLocated(by));
 			WebElement button = getDriver().findElement(by);
 
-			// IDK
-			WebdriverFunctions.waitForLoad(driver);
 			if (button != null) {
 				button.click();
 
-				Thread.sleep(10000);
-				WebdriverFunctions.waitForLoad(driver);
+				if (isAtLink(link)) {
+					return true;
+				}
 
+				// Must recover ingame??
+				if (isAtLinkNoWait("game-recovery")) {
+					return accountUnkowninglyFailedRecover();
+				}
 				// Quiting driving when failing to click button
 				if (isAtLinkNoWait("passwordrecovery")) {
 					driver.quit();
 					return false;
 				}
-				// Must recover ingame??
-				if (isAtLinkNoWait("game-recovery")) {
-					return accountUnkowninglyFailedRecover();
-				}
 
-				if (isAtLink(link)) {
-					return true;
-				}
 			}
 		} catch (Exception e) {
+			System.out.println("Couldn't verify clicking the button!");
 			e.printStackTrace();
+			// driver.quit();
 		}
 		return false;
 	}
@@ -423,7 +432,7 @@ public class RunescapeActions {
 	 */
 	public boolean isAtLink(String link) {
 		try {
-			return (new WebDriverWait(driver, 17)).until(new ExpectedCondition<Boolean>() {
+			return (new WebDriverWait(driver, 60)).until(new ExpectedCondition<Boolean>() {
 				public Boolean apply(WebDriver d) {
 					return getCurrentURL().contains(link);
 				}
@@ -550,7 +559,7 @@ public class RunescapeActions {
 	private boolean fillInRecoverInformation() {
 		while (!allRecoverElementsExist()) {
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -616,7 +625,7 @@ public class RunescapeActions {
 	private boolean fillInInformation() {
 		while (!allInputElementsExist()) {
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -630,9 +639,9 @@ public class RunescapeActions {
 		int year = getRandomValueBetweenUpperAndLower(1990, 2000);
 
 		// New worlds selection of more F2P worlds
-		List<Integer> worldsAvailable = new ArrayList<Integer>(Arrays.asList(385, 468, 474, 477, 470, 479, 472, 476,
-				473, 478, 475, 471, 469, 394, 414, 413, 453, 456, 452, 458, 460, 455, 459, 451, 454, 457, 398, 397, 399,
-				383, 372, 381, 498, 497, 499, 504, 502, 503, 501, 500, 505, 506));
+		List<Integer> worldsAvailable = new ArrayList<Integer>(
+				Arrays.asList(474, 477, 470, 479, 472, 476, 473, 478, 475, 471, 469, 394, 453, 456, 452, 458, 460, 455,
+						459, 451, 454, 457, 398, 397, 399, 383, 498, 497, 499, 504, 502, 503, 501, 500, 505, 506));
 
 		int world = worldsAvailable.get(RandomUtil.getRandomNumberInRange(0, worldsAvailable.size() - 1));
 

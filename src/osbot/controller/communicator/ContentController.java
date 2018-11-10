@@ -1,8 +1,6 @@
 package osbot.controller.communicator;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Iterator;
 
 import javafx.collections.FXCollections;
@@ -12,6 +10,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
@@ -39,7 +38,7 @@ public class ContentController {
 
 	@FXML
 	TableColumn<AccountTable, String> breaktill;
-	
+
 	@FXML
 	TableColumn<AccountTable, String> script;
 
@@ -57,7 +56,7 @@ public class ContentController {
 
 	@FXML
 	TableColumn<AccountTable, Integer> accValue;
-	
+
 	@FXML
 	TableColumn<AccountTable, String> world;
 
@@ -71,6 +70,9 @@ public class ContentController {
 	TableColumn<AccountTable, AccountStatus> status;
 
 	public static ObservableList<AccountTable> dataAccountTable = FXCollections.observableArrayList();
+
+	@FXML
+	private TextField numberOfBotsSetting;
 
 	/**
 	 * Table end
@@ -100,6 +102,16 @@ public class ContentController {
 	@FXML
 	public void show() {
 
+	}
+	
+	@FXML
+	private void setAccounts() {
+		try {
+			Config.MAX_BOTS_OPEN = Integer.parseInt(numberOfBotsSetting.getText());
+			System.out.println("Set max bots open to: "+Config.MAX_BOTS_OPEN);
+		} catch (Exception e) {
+			System.out.println("Must be a number");
+		}
 	}
 
 	@FXML
@@ -168,7 +180,7 @@ public class ContentController {
 
 	@FXML
 	public void initialize() {
-		
+
 		// Killing all webdrivers on start
 		WebdriverFunctions.killAll();
 
@@ -184,8 +196,6 @@ public class ContentController {
 		status.setCellValueFactory(new PropertyValueFactory<AccountTable, AccountStatus>("status"));
 		accValue.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("accountValue"));
 		breaktill.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("dateString"));
-		
-		
 
 		table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -245,6 +255,8 @@ public class ContentController {
 							OsbotController bot = BotController.getBotById(acc.getId());
 							if (bot != null) {
 								bot.setAccount(accTable);
+							} else if (bot == null) {
+								BotController.addBot(new OsbotController(acc.getId(), acc));
 							}
 						}
 					}
@@ -272,16 +284,16 @@ public class ContentController {
 				table.refresh();
 
 				// Setting the selection model on the found index
-				
-//				try {
-//					if (index > -1 && table != null && table.getSelectionModel() != null) {
-//						table.getSelectionModel().select(index);
-//					}
-//				} catch (Exception e) {
-//					//If goes wrong, then clear the selection
-//					table.getSelectionModel().clearSelection();
-//					e.printStackTrace();
-//				}
+
+				// try {
+				// if (index > -1 && table != null && table.getSelectionModel() != null) {
+				// table.getSelectionModel().select(index);
+				// }
+				// } catch (Exception e) {
+				// //If goes wrong, then clear the selection
+				// table.getSelectionModel().clearSelection();
+				// e.printStackTrace();
+				// }
 
 				try {
 					Thread.sleep(10000);
@@ -293,12 +305,14 @@ public class ContentController {
 			}
 		}).start();
 
-		if (Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
-			DatabaseUtilities.seleniumCreateAccountThread();
-		}
-		if (Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
-			DatabaseUtilities.seleniumRecoverAccount();
-		}
+		DatabaseUtilities.checkPidsProcessesEveryMinutes();
+
+		// if (Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+		// DatabaseUtilities.seleniumCreateAccountThread();
+		// }
+		// if (Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+		// DatabaseUtilities.seleniumRecoverAccount();
+		// }
 	}
 
 	/**

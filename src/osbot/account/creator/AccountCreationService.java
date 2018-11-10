@@ -1,9 +1,9 @@
 package osbot.account.creator;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -23,6 +23,7 @@ import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
 import osbot.account.runescape.website.RunescapeActions;
+import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
 import osbot.database.DatabaseProxy;
 import osbot.settings.OsbotController;
@@ -70,13 +71,31 @@ public class AccountCreationService {
 		}
 	}
 
-	public static void checkPreviousProcessesAndDie(PidType type) {
-		for (PidDriver d : ALL_DRIVERS) {
-			if (d.getType() == type) {
-				BotController.killProcess(d.getPidId());
-				System.out.println("Killed pid: " + d.getPidId() + " with type: " + type.name());
+	public static void removeProcess(int pid) {
+		Iterator<PidDriver> it = ALL_DRIVERS.iterator();
+
+		while (it.hasNext()) {
+			PidDriver nextPid = it.next();
+
+			if (pid == nextPid.getPidId()) {
+				System.out.println(
+						"Removed pid: " + nextPid.getPidId() + " from the processes list, was no longer running");
+				it.remove();
 			}
 		}
+	}
+
+	public static boolean checkPreviousProcessesAndDie(SeleniumType type) {
+		for (PidDriver d : ALL_DRIVERS) {
+			if (d.getType() == type) {
+				// d.getDriver().quit();
+				// BotController.killProcess(d.getPidId());
+				// System.out.println("Killed pid: " + d.getPidId() + " with type: " +
+				// type.name());
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -94,7 +113,16 @@ public class AccountCreationService {
 		return null;
 	}
 
-	private static boolean oneDriverLaunchingAtATime = false;
+	public static boolean containsDriver(int pid) {
+		for (PidDriver d : AccountCreationService.ALL_DRIVERS) {
+			if (d.getPidId() == pid) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean LAUNCHING = false;
 
 	/**
 	 * Launching the runescape website
@@ -105,13 +133,20 @@ public class AccountCreationService {
 	 */
 	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
 		// WebdriverFunctions.killAll();
-		checkProcesses();
+		// checkProcesses();
 
-		if (oneDriverLaunchingAtATime) {
+		// System.out.println(LAUNCHING);
+		if (LAUNCHING) {
+			// System.out.println("Waiting for the other launching to be done");
+			return;
+		}
+		if (checkPreviousProcessesAndDie(type)) {
 			return;
 		}
 
-		oneDriverLaunchingAtATime = true;
+		LAUNCHING = true;
+		long begin = System.currentTimeMillis();
+
 		System.setProperty("webdriver.gecko.driver",
 				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
 		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
@@ -140,6 +175,7 @@ public class AccountCreationService {
 		while (searching) {
 			if (tries > 5) {
 				driver.quit();
+				LAUNCHING = false;
 				searching = false;
 				System.out.println("Couldn't find the PID, restarting the browser");
 				return;
@@ -159,21 +195,18 @@ public class AccountCreationService {
 				System.out.println("Couldn't find Pid yet, " + pids.size() + " " + pidsAfter.size());
 			}
 
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			System.out.println("Trying to find the pid");
 			tries++;
 		}
 
 		if (pidsAfter.size() == 1) {
 			pidId = pidsAfter.get(0);
+			LAUNCHING = false;
 			System.out.println("Pid set to with geckodriver: " + pidsAfter.get(0));
-		} else {
-			driver.quit();
+		} else if (pidsAfter.size() > 2) {
+			// AccountCreationService.checkPreviousProcessesAndDie(type);
+			WebdriverFunctions.killAll();
+			LAUNCHING = false;
 			System.out.println("Quitting driver, couldn't specify the pid");
 			return;
 		}
@@ -181,32 +214,47 @@ public class AccountCreationService {
 		if (pidId < 0) {
 			System.out.println("Pid couldn't be set");
 			driver.quit();
+			LAUNCHING = false;
 			return;
 		} else {
 			System.out.println("Pid set!");
 		}
+		System.out.println("launched in " + ((System.currentTimeMillis() - begin) / 1000) + " seconds");
 		PidDriver pidDriver = new PidDriver(driver, pidId);
-
-		oneDriverLaunchingAtATime = false;
 
 		Dimension n = new Dimension(1000, 700);
 		driver.manage().window().setSize(n);
 
-		driver.get("moz-extension://49aecb7d-8e81-4baf-8d90-d5e138cc07fd/add-edit-proxy.html");
+		driver.get("moz-extension://49aecb7d-8e81-4baf-8d90-d5e138cc07fd/add-edit-proxy.html"); // old
 
+		//Selecting socks 5
 		Select select = new Select(driver.findElement(By.id("newProxyType")));
 		select.selectByIndex(1);
 
-		driver.findElement(By.id("newProxyAddress")).sendKeys(proxy.getProxyIp());
-		driver.findElement(By.id("newProxyPort")).sendKeys(proxy.getProxyPort());
-		driver.findElement(By.id("newProxyUsername")).sendKeys("rvWt0S");
-		driver.findElement(By.id("newProxyPassword")).sendKeys("AqwncH");
+		driver.findElement(By.id("newProxyAddress")).sendKeys(account.getAccount().getProxyIp());
+		driver.findElement(By.id("newProxyPort")).sendKeys(account.getAccount().getProxyPort());
+		driver.findElement(By.id("newProxyUsername")).sendKeys(account.getAccount().getProxyUsername());
+		driver.findElement(By.id("newProxyPassword")).sendKeys(account.getAccount().getProxyPassword());
 		driver.findElement(By.id("newProxySave")).click();
+		
+		System.out.println("Used proxy ip: "+account.getAccount().getProxyIp());
+		System.out.println("Used proxy port: "+account.getAccount().getProxyPort());
+		System.out.println("Used proxy username: "+account.getAccount().getProxyUsername());
+		System.out.println("Used proxy password: "+account.getAccount().getProxyPassword());
 
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
-			pidDriver.setType(PidType.CREATE);
-			checkPreviousProcessesAndDie(pidDriver.getType());
+			pidDriver.setType(type);
 			ALL_DRIVERS.add(pidDriver);
+
+			// Killing all pids that were active but not found in the system
+			for (int pid : pids) {
+				PidDriver driv = getPidDriver(pid);
+				if (driv == null) {
+					BotController.killProcess(pid);
+					System.out.println("Driver was null, quiting this");
+				}
+			}
+
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			if (runescapeWebsite.create()) {
 				/**
@@ -227,9 +275,19 @@ public class AccountCreationService {
 		}
 
 		else if (type == SeleniumType.RECOVER_ACCOUNT) {
-			pidDriver.setType(PidType.RECOVER);
-			checkPreviousProcessesAndDie(pidDriver.getType());
+			pidDriver.setType(type);
+			// checkPreviousProcessesAndDie(pidDriver.getType());
 			ALL_DRIVERS.add(pidDriver);
+
+			// Killing all pids that were active but not found in the system
+			for (int pid : pids) {
+				PidDriver driv = getPidDriver(pid);
+				if (driv == null) {
+					BotController.killProcess(pid);
+					System.out.println("Driver was null, quiting this");
+				}
+			}
+
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			if (runescapeWebsite.unlock()) {
 				/**
