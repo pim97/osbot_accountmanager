@@ -65,7 +65,9 @@ public class AccountTable {
 	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
 			proxyUsername, proxyPassword;
 
-	private int world, day, month, year, accountStageProgress, questPoints, accountValue;
+	private int world, day, month, year, accountStageProgress, questPoints;
+
+	String accountValue;
 
 	private Calendar date;
 
@@ -277,7 +279,7 @@ public class AccountTable {
 	/**
 	 * @return the accountValue
 	 */
-	public int getAccountValue() {
+	public String getAccountValue() {
 		return accountValue;
 	}
 
@@ -285,7 +287,7 @@ public class AccountTable {
 	 * @param accountValue
 	 *            the accountValue to set
 	 */
-	public void setAccountValue(int accountValue) {
+	public void setAccountValue(String accountValue) {
 		this.accountValue = accountValue;
 	}
 

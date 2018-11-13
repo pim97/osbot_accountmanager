@@ -110,7 +110,7 @@ public class BotHandler {
 		bot.runBot(false);
 	}
 
-	public static void runMule(OsbotController bot, String toTradeWith) {
+	public static void runMule(OsbotController bot, String toTradeWith, String emailOfUserTradingWith) {
 		if (bot == null) {
 			System.out.println("Invalid bot");
 			return;
@@ -139,7 +139,7 @@ public class BotHandler {
 		if (account.hasScript()) {
 			String accountStatus = bot.getAccount().getStage().name().replaceAll("_", "-");
 			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
-					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith);
+					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith + "_" + emailOfUserTradingWith);
 		}
 		bot.runBot(true);
 	}
@@ -240,7 +240,7 @@ public class BotHandler {
 	private static boolean wantsToMule() {
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
-			
+
 			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0) {
 				return true;
 			}
@@ -269,7 +269,35 @@ public class BotHandler {
 			if (osbot != null && osbot.getAccount().getTradeWithOther() != null
 					&& osbot.getAccount().getTradeWithOther().length() > 0
 					&& !BotController.containsInPidList(osbot.getPidId())) {
-				runMule(osbot, osbot.getAccount().getTradeWithOther());
+
+				if (!DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
+						.equalsIgnoreCase(AccountStage.UNKNOWN.name())
+						&& !DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
+								.equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
+
+					System.out.println("Account stage wasn't to mule trade");
+					DatabaseUtilities.setTradingWith(null, osbot.getId());
+					break;
+				}
+				String tradeWithOther = DatabaseUtilities.getTradeWithOther(osbot.getId());
+				OsbotController partner = BotHandler.getMulePartner(osbot);
+
+				if (tradeWithOther != null && partner != null) {
+					String tradeWithOther2 = DatabaseUtilities.getTradeWithOther(partner.getId());
+					OsbotController partner2 = BotHandler.getMulePartner(partner);
+
+					if (!tradeWithOther.equalsIgnoreCase(partner.getAccount().getUsername())
+							|| !tradeWithOther2.equalsIgnoreCase(partner2.getAccount().getUsername())) {
+
+						DatabaseUtilities.setTradingWith(null, osbot.getId());
+						DatabaseUtilities.setTradingWith(null, partner.getId());
+						System.out.println("Trading eachother doesn't match!");
+						break;
+					}
+				}
+
+				runMule(osbot, osbot.getAccount().getTradeWithOther(),
+						DatabaseUtilities.getEmailFromUsername(osbot.getAccount().getTradeWithOther()));
 				System.out.println("Running mule trading " + osbot.getAccount().getUsername());
 
 				try {

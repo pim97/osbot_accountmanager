@@ -34,6 +34,28 @@ public class GeckoHandler {
         return pids;
     }
 	
+	public static List<Integer> getFirefoxExeWindows() {
+        List<Integer> pids = new ArrayList<>();
+        try {
+            Process process = Runtime.getRuntime().exec("tasklist /FI \"IMAGENAME eq firefox.exe\" /NH");
+            try (final InputStream stdout = process.getInputStream();
+                 final InputStreamReader inputStreamReader = new InputStreamReader(stdout);
+                 final BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+                String processInfo;
+                while ((processInfo = bufferedReader.readLine()) != null) {
+                    processInfo = processInfo.trim();
+                    String[] values = processInfo.split("\\s+");
+                    if (!processInfo.contains("No") && values.length >= 2) {
+                		pids.add(Integer.parseInt(values[1]));
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return pids;
+    }
+	
 //	public static void runDriver() {
 //		new Thread(() -> {
 //			try {

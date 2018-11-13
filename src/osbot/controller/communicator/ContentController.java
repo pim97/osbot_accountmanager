@@ -15,6 +15,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import osbot.account.AccountStatus;
+import osbot.account.creator.queue.CaptchaQueue;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.account.webdriver.WebdriverFunctions;
@@ -55,7 +56,7 @@ public class ContentController {
 	TableColumn<AccountTable, String> username;
 
 	@FXML
-	TableColumn<AccountTable, Integer> accValue;
+	TableColumn<AccountTable, String> accValue;
 
 	@FXML
 	TableColumn<AccountTable, String> world;
@@ -103,12 +104,12 @@ public class ContentController {
 	public void show() {
 
 	}
-	
+
 	@FXML
 	private void setAccounts() {
 		try {
 			Config.MAX_BOTS_OPEN = Integer.parseInt(numberOfBotsSetting.getText());
-			System.out.println("Set max bots open to: "+Config.MAX_BOTS_OPEN);
+			System.out.println("Set max bots open to: " + Config.MAX_BOTS_OPEN);
 		} catch (Exception e) {
 			System.out.println("Must be a number");
 		}
@@ -194,7 +195,7 @@ public class ContentController {
 		proxyPort.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("proxyPort"));
 		lowCpuMode.setCellValueFactory(new PropertyValueFactory<AccountTable, Boolean>("lowCpuMode"));
 		status.setCellValueFactory(new PropertyValueFactory<AccountTable, AccountStatus>("status"));
-		accValue.setCellValueFactory(new PropertyValueFactory<AccountTable, Integer>("accountValue"));
+		accValue.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("accountValue"));
 		breaktill.setCellValueFactory(new PropertyValueFactory<AccountTable, String>("dateString"));
 
 		table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -305,7 +306,15 @@ public class ContentController {
 			}
 		}).start();
 
-		DatabaseUtilities.checkPidsProcessesEveryMinutes();
+		DatabaseUtilities.checkPidsProcessesEveryMinutes2();
+
+		
+
+		Thread th3 = new Thread(() -> {
+			DatabaseUtilities.changeTimeoutLockedToNormal();
+		});
+
+		th3.start();
 
 		// if (Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 		// DatabaseUtilities.seleniumCreateAccountThread();

@@ -39,7 +39,7 @@ public class ProtonActions {
 	 * @return
 	 */
 	private boolean openMail() {
-		getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
+		getDriver().get(ProtonConfig.LINK_TO_PROTON);
 
 		System.out.println("Current URL: " + getCurrentURL());
 		if (getCurrentURL().contains("protonmail")) {
@@ -185,41 +185,49 @@ public class ProtonActions {
 	}
 
 	private int clickedIndex = 0;
-	
+
 	private int loop;
 
-	
 	/**
 	 * 
 	 * @return
 	 */
 	public boolean clickMail(String subjectName) {
 		try {
+			
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
+			
 			WebDriverWait wait = new WebDriverWait(driver, 30);
 
 			WebElement element = wait
 					.until(ExpectedConditions.visibilityOfElementLocated(By.className("subject-text")));
-			
-			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
-//			System.out
-//					.println("Trying to click email index: " + clickedIndex + " " + " " + name.get(clickedIndex) != null
-//							? name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)
-//							: "null"+" "+subjectName);
 
-			if (clickedIndex > 30) {//name.size()) {
+			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
+			// System.out
+			// .println("Trying to click email index: " + clickedIndex + " " + " " +
+			// name.get(clickedIndex) != null
+			// ? name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)
+			// : "null"+" "+subjectName);
+
+			if ((clickedIndex > 25) || (clickedIndex > name.size())) {// name.size()) {
 				loop++;
 				clickedIndex = 0;
 			}
-			
+
 			if (loop > 1) {
+				driver.close();
 				driver.quit();
 				System.out.println("Couldn't find e-mail twice, restarting & retrying");
 				return false;
 			}
 
 			// for (WebElement name : email) {
-			
-			if (name.get(clickedIndex) != null && name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)) {
+
+			if (name.get(clickedIndex) != null && clickedIndex < name.size()
+					&& name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)) {
 				name.get(clickedIndex).click();
 				clickedIndex++;
 				// WebElement parent = (WebElement) ((JavascriptExecutor) driver).executeScript(
@@ -244,6 +252,10 @@ public class ProtonActions {
 	 */
 	public boolean login(String username, String password) {
 		while (!isLoggedIn()) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 			if (logInToMail(username, password)) {
 				return true;
 			}

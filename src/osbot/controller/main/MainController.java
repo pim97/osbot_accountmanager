@@ -1,4 +1,5 @@
 package osbot.controller.main;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -11,7 +12,7 @@ import osbot.bot.BotController;
 import osbot.settings.OsbotController;
 
 public class MainController extends Application {
-	
+
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		try {
@@ -21,10 +22,10 @@ public class MainController extends Application {
 			primaryStage.setScene(scene);
 			primaryStage.setResizable(false);
 			primaryStage.setTitle("OSBot account handler");
-			if (!Config.CREATE_AND_VERIFY) {
-				primaryStage.show();
-			}
-			
+			// if (!Config.CREATE_AND_VERIFY) {
+			primaryStage.show();
+			// }
+
 			primaryStage.setOnCloseRequest(e -> {
 				killAll();
 			});
@@ -35,15 +36,15 @@ public class MainController extends Application {
 		}
 	}
 
-	public void killAll(){
+	public void killAll() {
 		for (OsbotController bot : BotController.getBots()) {
 			BotController.killProcess(bot.getPidId());
 		}
 		WebdriverFunctions.killAll();
-//		Platform.exit();
+		// Platform.exit();
 		System.exit(1);
-	    System.out.println("Screen is closing, killing all left overs");
-	    // Save file
+		System.out.println("Screen is closing, killing all left overs");
+		// Save file
 	}
 
 	/**
@@ -53,5 +54,5 @@ public class MainController extends Application {
 	public static void main(String[] args) {
 		launch(args);
 	}
-	
+
 }

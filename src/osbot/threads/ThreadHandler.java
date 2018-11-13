@@ -20,6 +20,19 @@ public class ThreadHandler {
 	private static ArrayList<Thread> threadList = new ArrayList<Thread>();
 
 	/**
+	 * 
+	 */
+	private static void runQueueThread() {
+		Thread queueThread = new Thread(() -> {
+			Config.QUEUE.run();
+		});
+		queueThread.setName("queueThread");
+		queueThread.start();
+
+		threadList.add(queueThread);
+	}
+
+	/**
 	 * The thread for selenium trying to create accounts
 	 */
 	private static void createAccountsThread() {
@@ -138,6 +151,8 @@ public class ThreadHandler {
 						+ getThread("handleBotsRunning"));
 				System.out.println("Thread management: " + isThreadAlive("handleMulesTrading") + " "
 						+ getThread("handleMulesTrading"));
+				System.out
+						.println("Thread management: " + isThreadAlive("queueThread") + " " + getThread("queueThread"));
 
 				checkForAlive();
 
@@ -166,6 +181,11 @@ public class ThreadHandler {
 						&& Config.MULES_TRADING) {
 					handleMulesTrading();
 					System.out.println("Started new thread: handleMulesTrading");
+				}
+
+				if ((!isThreadAlive("queueThread") && getThread("queueThread") == null) && Config.CAPTCHA) {
+					runQueueThread();
+					System.out.println("Started new thread: queueThread");
 				}
 
 				// Thread sleeping & checking every 30 seconds

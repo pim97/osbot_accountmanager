@@ -3,7 +3,6 @@ package osbot.account.creator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -19,6 +18,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import osbot.account.creator.queue.Captcha;
+import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
@@ -122,7 +123,15 @@ public class AccountCreationService {
 		return false;
 	}
 
-	public static boolean LAUNCHING = false;
+	private static boolean launching = false;
+
+	public static synchronized boolean getLaunching() {
+		return launching;
+	}
+
+	public static synchronized void setLaunching(boolean launch) {
+		launching = launch;
+	}
 
 	/**
 	 * Launching the runescape website
@@ -131,20 +140,21 @@ public class AccountCreationService {
 	 * @param account
 	 * @param test
 	 */
-	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
+	public static boolean launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type,
+			Captcha captcha) {
 		// WebdriverFunctions.killAll();
 		// checkProcesses();
 
 		// System.out.println(LAUNCHING);
-		if (LAUNCHING) {
-			// System.out.println("Waiting for the other launching to be done");
-			return;
-		}
-		if (checkPreviousProcessesAndDie(type)) {
-			return;
-		}
+		// if (getLaunching()) {
+		// System.out.println("Waiting for the other launching to be done");
+		// return false;
+		// }
+		// if (checkPreviousProcessesAndDie(type)) {
+		// return;
+		// }
 
-		LAUNCHING = true;
+		setLaunching(true);
 		long begin = System.currentTimeMillis();
 
 		System.setProperty("webdriver.gecko.driver",
@@ -174,11 +184,11 @@ public class AccountCreationService {
 		boolean searching = true;
 		while (searching) {
 			if (tries > 5) {
-				driver.quit();
-				LAUNCHING = false;
+				// driver.quit();
+				setLaunching(false);
 				searching = false;
-				System.out.println("Couldn't find the PID, restarting the browser");
-				return;
+				System.out.println("Couldn't find the PID");
+				// return false;
 			}
 			pidsAfter = GeckoHandler.getGeckodriverExeWindows();
 
@@ -201,24 +211,24 @@ public class AccountCreationService {
 
 		if (pidsAfter.size() == 1) {
 			pidId = pidsAfter.get(0);
-			LAUNCHING = false;
+			setLaunching(false);
 			System.out.println("Pid set to with geckodriver: " + pidsAfter.get(0));
-		} else if (pidsAfter.size() > 2) {
+		} else if (pidsAfter.size() > 1) {
 			// AccountCreationService.checkPreviousProcessesAndDie(type);
-			WebdriverFunctions.killAll();
-			LAUNCHING = false;
-			System.out.println("Quitting driver, couldn't specify the pid");
-			return;
+			// WebdriverFunctions.killAll();
+			setLaunching(false);
+			System.out.println("Couldn't specify the pid");
+			// return false;
 		}
 
 		if (pidId < 0) {
 			System.out.println("Pid couldn't be set");
-			driver.quit();
-			LAUNCHING = false;
-			return;
-		} else {
-			System.out.println("Pid set!");
+			// driver.quit();
+			setLaunching(false);
 		}
+		// else {
+		// System.out.println("Pid set!");
+		// }
 		System.out.println("launched in " + ((System.currentTimeMillis() - begin) / 1000) + " seconds");
 		PidDriver pidDriver = new PidDriver(driver, pidId);
 
@@ -227,7 +237,7 @@ public class AccountCreationService {
 
 		driver.get("moz-extension://49aecb7d-8e81-4baf-8d90-d5e138cc07fd/add-edit-proxy.html"); // old
 
-		//Selecting socks 5
+		// Selecting socks 5
 		Select select = new Select(driver.findElement(By.id("newProxyType")));
 		select.selectByIndex(1);
 
@@ -236,12 +246,13 @@ public class AccountCreationService {
 		driver.findElement(By.id("newProxyUsername")).sendKeys(account.getAccount().getProxyUsername());
 		driver.findElement(By.id("newProxyPassword")).sendKeys(account.getAccount().getProxyPassword());
 		driver.findElement(By.id("newProxySave")).click();
-		
-		System.out.println("Used proxy ip: "+account.getAccount().getProxyIp());
-		System.out.println("Used proxy port: "+account.getAccount().getProxyPort());
-		System.out.println("Used proxy username: "+account.getAccount().getProxyUsername());
-		System.out.println("Used proxy password: "+account.getAccount().getProxyPassword());
 
+		System.out.println("Used proxy ip: " + account.getAccount().getProxyIp());
+		System.out.println("Used proxy port: " + account.getAccount().getProxyPort());
+		System.out.println("Used proxy username: " + account.getAccount().getProxyUsername());
+		System.out.println("Used proxy password: " + account.getAccount().getProxyPassword());
+
+		setLaunching(false);
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
 			pidDriver.setType(type);
 			ALL_DRIVERS.add(pidDriver);
@@ -255,7 +266,7 @@ public class AccountCreationService {
 				}
 			}
 
-			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver, captcha);
 			if (runescapeWebsite.create()) {
 				/**
 				 * The proton e-mail service
@@ -270,6 +281,7 @@ public class AccountCreationService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			driver.close();
 			driver.quit();
 			System.out.println("Account successfully created");
 		}
@@ -288,7 +300,7 @@ public class AccountCreationService {
 				}
 			}
 
-			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver, captcha);
 			if (runescapeWebsite.unlock()) {
 				/**
 				 * Proton e-mail
@@ -303,9 +315,11 @@ public class AccountCreationService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			// driver.quit();
+			driver.close();
+			driver.quit();
 			System.out.println("Account recovered successfully");
 		}
+		return true;
 
 	}
 

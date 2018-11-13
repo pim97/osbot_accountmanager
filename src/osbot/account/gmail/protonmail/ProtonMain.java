@@ -40,7 +40,7 @@ public class ProtonMain {
 			while (!found) {
 				if (getActions().clickMail("Reset your Jagex password")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found, clicking on the next one");
 						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
@@ -58,12 +58,12 @@ public class ProtonMain {
 
 				if (cantFindEmail > 20) {
 					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+					driver.close();
 					driver.quit();
 					break;
 				}
-				
+
 				if (WebdriverFunctions.hasQuit(driver)) {
-					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
@@ -72,25 +72,23 @@ public class ProtonMain {
 
 			while (!getActions().clickLink("https://secure.runescape.com/m=accountappeal/enter_security_code.ws")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
-					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 			System.out.println("Succesfully clicked on the verification link!");
 
 			while (!fillInAllInformation()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
-					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
@@ -103,7 +101,7 @@ public class ProtonMain {
 				}
 				System.out.println("Trying to fill in..");
 			}
-			
+
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -111,7 +109,9 @@ public class ProtonMain {
 				e.printStackTrace();
 			}
 			// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-			driver.quit();
+
+//			driver.close();
+//			driver.quit();
 			System.out.println("Successfully recovered account!");
 		}
 	}
@@ -122,7 +122,7 @@ public class ProtonMain {
 	 * @return
 	 */
 	public boolean fillInAllInformation() {
-		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null, null);
+		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null, null, null);
 
 		return runescapeWebsite.fillInInformationRecovering();
 	}
@@ -139,7 +139,7 @@ public class ProtonMain {
 			while (!found) {
 				if (getActions().clickMail("Welcome to RuneScape!")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found");
 						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
@@ -155,38 +155,36 @@ public class ProtonMain {
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 20) {
-					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
-					driver.quit();
-					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-					break;
-				}
-				
+//				if (cantFindEmail > 20) {
+//					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+//					driver.close();
+//					driver.quit();
+//					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
+//					break;
+//				}
+
 				if (WebdriverFunctions.hasQuit(driver)) {
-					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
-				
+
 			}
 			System.out.println("Got the e-mail");
 
 			while (!getActions().clickLink("https://secure.runescape.com/m=email-register/submit_code.ws")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
-					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 
 			try {
@@ -197,7 +195,8 @@ public class ProtonMain {
 			}
 
 			// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-			driver.quit();
+//			driver.close();
+//			driver.quit();
 			System.out.println("Succesfully clicked on the verification link!");
 		}
 	}
