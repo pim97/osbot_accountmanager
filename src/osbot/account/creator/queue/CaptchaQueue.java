@@ -196,38 +196,33 @@ public class CaptchaQueue implements Runnable {
 	}
 
 	private void openCreation(Captcha captcha) {
-		// if (captcha.getAccount() != null) {
-		Thread t1 = new Thread(() -> {
-			DatabaseProxy proxy = new DatabaseProxy(captcha.getAccount().getAccount().getProxyIp(),
-					captcha.getAccount().getAccount().getProxyPort(),
-					captcha.getAccount().getAccount().getProxyUsername(),
-					captcha.getAccount().getAccount().getProxyPassword());
+//		Thread t1 = new Thread(() -> {
+//			DatabaseProxy proxy = new DatabaseProxy(captcha.getAccount().getAccount().getProxyIp(),
+//					captcha.getAccount().getAccount().getProxyPort(),
+//					captcha.getAccount().getAccount().getProxyUsername(),
+//					captcha.getAccount().getAccount().getProxyPassword());
+//
+//			AccountCreationService.launchRunescapeWebsite(proxy, captcha.getAccount(),
+//					SeleniumType.CREATE_VERIFY_ACCOUNT, captcha);
+//			System.out.println("Opening website for: " + captcha.getType());
+//		});
+//		t1.start();
 
-			AccountCreationService.launchRunescapeWebsite(proxy, captcha.getAccount(),
-					SeleniumType.CREATE_VERIFY_ACCOUNT, captcha);
-			System.out.println("Opening website for: " + captcha.getType());
-		});
-		t1.start();
-
-		// }
 	}
 
 	private void openRecovery(Captcha captcha) {
 
-		// if (captcha.getAccount() != null) {
-		// for (OsbotController account : getAccountsToBeRecovered()) {
-		Thread t2 = new Thread(() -> {
-			DatabaseProxy proxy = new DatabaseProxy(captcha.getAccount().getAccount().getProxyIp(),
-					captcha.getAccount().getAccount().getProxyPort(),
-					captcha.getAccount().getAccount().getProxyUsername(),
-					captcha.getAccount().getAccount().getProxyPassword());
-
-			AccountCreationService.launchRunescapeWebsite(proxy, captcha.getAccount(), SeleniumType.RECOVER_ACCOUNT,
-					captcha);
-			System.out.println("Opening website for: " + captcha.getType());
-		});
-		t2.start();
-		// }
+//		Thread t2 = new Thread(() -> {
+//			DatabaseProxy proxy = new DatabaseProxy(captcha.getAccount().getAccount().getProxyIp(),
+//					captcha.getAccount().getAccount().getProxyPort(),
+//					captcha.getAccount().getAccount().getProxyUsername(),
+//					captcha.getAccount().getAccount().getProxyPassword());
+//
+//			AccountCreationService.launchRunescapeWebsite(proxy, captcha.getAccount(), SeleniumType.RECOVER_ACCOUNT,
+//					captcha);
+//			System.out.println("Opening website for: " + captcha.getType());
+//		});
+//		t2.start();
 	}
 
 	private void getResponseToken(Captcha captcha) {

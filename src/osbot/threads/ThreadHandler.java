@@ -3,6 +3,7 @@ package osbot.threads;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.database.DatabaseUtilities;
@@ -35,7 +36,7 @@ public class ThreadHandler {
 	/**
 	 * The thread for selenium trying to create accounts
 	 */
-	private static void createAccountsThread() {
+	private static void createAccountsThread(int amount) {
 		Thread createAccounts = new Thread(() -> {
 
 			while (programIsRunning) {
@@ -46,8 +47,9 @@ public class ThreadHandler {
 					e.printStackTrace();
 				}
 
-				DatabaseUtilities.seleniumCreateAccountThread();
-
+				for (int i = 0; i < amount; i++) {
+					DatabaseUtilities.seleniumCreateAccountThread();
+				}
 			}
 
 		});
@@ -60,7 +62,7 @@ public class ThreadHandler {
 	/**
 	 * The thread for selenium trying to recover account
 	 */
-	private static void recoverAccountsThread() {
+	private static void recoverAccountsThread(int amount) {
 		Thread recoverAccounts = new Thread(() -> {
 
 			while (programIsRunning) {
@@ -71,7 +73,9 @@ public class ThreadHandler {
 					e.printStackTrace();
 				}
 
-				DatabaseUtilities.seleniumRecoverAccount();
+				for (int i = 0; i < amount; i++) {
+					DatabaseUtilities.seleniumRecoverAccount();
+				}
 
 			}
 
@@ -136,6 +140,90 @@ public class ThreadHandler {
 		threadList.add(handleBotsRunning);
 	}
 
+	private static void checkPids() {
+		Thread checkPidsProcessesEveryMinutes2 = new Thread(() -> {
+			while (programIsRunning) {
+
+				DatabaseUtilities.checkPidsProcessesEveryMinutes2();
+
+				// Checking every 5 seconds if bot is still running
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		checkPidsProcessesEveryMinutes2.setName("checkUsedUsernames");
+		checkPidsProcessesEveryMinutes2.start();
+
+		threadList.add(checkPidsProcessesEveryMinutes2);
+	}
+
+	private static void checkTimeoutLockedBackToNormal() {
+		Thread checkTimeoutLockedBackToNormal = new Thread(() -> {
+			while (programIsRunning) {
+
+				DatabaseUtilities.changeTimeoutLockedToNormal();
+
+				// Checking every 5 seconds if bot is still running
+				try {
+					Thread.sleep(15000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		checkTimeoutLockedBackToNormal.setName("checkTimeoutLockedBackToNormal");
+		checkTimeoutLockedBackToNormal.start();
+
+		threadList.add(checkTimeoutLockedBackToNormal);
+	}
+
+	private static void checkUsedUsernames() {
+		Thread checkUsedUsernames = new Thread(() -> {
+			while (programIsRunning) {
+
+				AccountCreationService.checkUsedUsernames();
+
+				// Checking every 5 seconds if bot is still running
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		checkUsedUsernames.setName("checkUsedUsernames");
+		checkUsedUsernames.start();
+
+		threadList.add(checkUsedUsernames);
+	}
+
+	private static void checkRunningErrors() {
+		Thread checkRunningErrors = new Thread(() -> {
+			while (programIsRunning) {
+
+				DatabaseUtilities.checkRunningErrors();
+
+				// Checking every 5 seconds if bot is still running
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		checkRunningErrors.setName("checkRunningErrors");
+		checkRunningErrors.start();
+
+		threadList.add(checkRunningErrors);
+	}
+
 	/**
 	 * Manages all the threads currently running
 	 */
@@ -153,22 +241,54 @@ public class ThreadHandler {
 						+ getThread("handleMulesTrading"));
 				System.out
 						.println("Thread management: " + isThreadAlive("queueThread") + " " + getThread("queueThread"));
+				System.out.println("Thread management: " + isThreadAlive("checkUsedUsernames") + " "
+						+ getThread("checkUsedUsernames"));
+				System.out.println("Thread management: " + isThreadAlive("checkRunningErrors") + " "
+						+ getThread("checkRunningErrors"));
 
 				checkForAlive();
 
 				if ((!isThreadAlive("recoverAccounts") && getThread("recoverAccounts") == null)
 						&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+					int amount = 3;
 
-					recoverAccountsThread();
-					System.out.println("Started new thread: recoverAccounts");
+					recoverAccountsThread(amount);
+					System.out.println("Started new thread " + amount + "x: recoverAccounts");
+
+				}
+
+				if ((!isThreadAlive("checkTimeoutLockedBackToNormal")
+						&& getThread("checkTimeoutLockedBackToNormal") == null)) {
+					checkTimeoutLockedBackToNormal();
+					System.out.println("Started new thread checkTimeoutLockedBackToNormal");
+
+				}
+
+				if ((!isThreadAlive("checkRunningErrors") && getThread("checkRunningErrors") == null)) {
+					checkRunningErrors();
+					System.out.println("Started new thread checkRunningErrors");
+
+				}
+
+				if ((!isThreadAlive("checkPidsProcessesEveryMinutes2")
+						&& getThread("checkPidsProcessesEveryMinutes2") == null)) {
+					checkPids();
+					System.out.println("Started new thread checkPidsProcessesEveryMinutes2");
+
+				}
+
+				if ((!isThreadAlive("checkUsedUsernames") && getThread("checkUsedUsernames") == null)) {
+					checkUsedUsernames();
+					System.out.println("Started new thread checkUsedUsernames");
 
 				}
 
 				if ((!isThreadAlive("createAccounts") && getThread("createAccounts") == null)
 						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+					int amount = 3;
 
-					createAccountsThread();
-					System.out.println("Started new thread: createAccounts");
+					createAccountsThread(amount);
+					System.out.println("Started new thread " + amount + "x: createAccounts");
 				}
 
 				if ((!isThreadAlive("handleBotsRunning") && getThread("handleBotsRunning") == null)

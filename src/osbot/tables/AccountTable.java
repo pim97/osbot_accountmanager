@@ -65,7 +65,7 @@ public class AccountTable {
 	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
 			proxyUsername, proxyPassword;
 
-	private int world, day, month, year, accountStageProgress, questPoints;
+	private int world, day, month, year, accountStageProgress, questPoints, amountTimeout;
 
 	String accountValue;
 
@@ -362,6 +362,20 @@ public class AccountTable {
 	 */
 	public void setProxyPassword(String proxyPassword) {
 		this.proxyPassword = proxyPassword;
+	}
+
+	/**
+	 * @return the amountTimeout
+	 */
+	public int getAmountTimeout() {
+		return amountTimeout;
+	}
+
+	/**
+	 * @param amountTimeout the amountTimeout to set
+	 */
+	public void setAmountTimeout(int amountTimeout) {
+		this.amountTimeout = amountTimeout;
 	}
 
 }

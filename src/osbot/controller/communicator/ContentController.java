@@ -244,6 +244,7 @@ public class ContentController {
 						accTable.setTradeWithOther(acc.getTradeWithOther());
 						accTable.setProxyUsername(acc.getProxyUsername());
 						accTable.setProxyPassword(acc.getProxyPassword());
+						accTable.setAmountTimeout(acc.getAmountTimeout());
 
 						// Adds the account to the table
 						if (table != null && table.getItems() != null && accTable != null) {
@@ -306,15 +307,15 @@ public class ContentController {
 			}
 		}).start();
 
-		DatabaseUtilities.checkPidsProcessesEveryMinutes2();
+//		DatabaseUtilities.checkPidsProcessesEveryMinutes2();
 
 		
 
-		Thread th3 = new Thread(() -> {
-			DatabaseUtilities.changeTimeoutLockedToNormal();
-		});
-
-		th3.start();
+//		Thread th3 = new Thread(() -> {
+//			DatabaseUtilities.changeTimeoutLockedToNormal();
+//		});
+//
+//		th3.start();
 
 		// if (Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 		// DatabaseUtilities.seleniumCreateAccountThread();

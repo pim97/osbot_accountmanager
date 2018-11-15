@@ -14,6 +14,7 @@ public class Config {
 	
 	public static final CaptchaQueue QUEUE = new CaptchaQueue();
 
+	public static final int AMOUNT_OF_TIMEOUTS_BEFORE_GONE = 3;
 	
 	/**
 	 * Bots settings
@@ -24,11 +25,11 @@ public class Config {
 	 * Configs for threads
 	 */
 
-	public static final boolean CAPTCHA = true;
+	public static final boolean CAPTCHA = false;
 	
-	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
 	
-	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
 	
 	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
 	

@@ -18,13 +18,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import osbot.account.creator.queue.Captcha;
-import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
 import osbot.account.runescape.website.RunescapeActions;
-import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
 import osbot.database.DatabaseProxy;
 import osbot.settings.OsbotController;
@@ -133,6 +130,39 @@ public class AccountCreationService {
 		launching = launch;
 	}
 
+	private static ArrayList<AccountCreate> usedUsernames = new ArrayList<AccountCreate>();
+
+	public static synchronized boolean containsUsername(String user) {
+		for (AccountCreate acc : usedUsernames) {
+			if (acc.getUsername().equalsIgnoreCase(user)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static void addUsernameToUsernames(String username) {
+		AccountCreate acc = new AccountCreate(System.currentTimeMillis(), username);
+		usedUsernames.add(acc);
+	}
+
+	public static void checkUsedUsernames() {
+//		Thread t = new Thread(() -> {
+
+			Iterator<AccountCreate> it = usedUsernames.iterator();
+
+			while (it.hasNext()) {
+				AccountCreate user = it.next();
+				if (System.currentTimeMillis() - user.getTime() > 120_000) {
+					it.remove();
+					System.out.println("Removed username, may continue with recovering");
+				}
+			}
+
+//		});
+//		t.start();
+	}
+
 	/**
 	 * Launching the runescape website
 	 * 
@@ -140,19 +170,19 @@ public class AccountCreationService {
 	 * @param account
 	 * @param test
 	 */
-	public static boolean launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type,
-			Captcha captcha) {
+	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
 		// WebdriverFunctions.killAll();
 		// checkProcesses();
 
 		// System.out.println(LAUNCHING);
-		// if (getLaunching()) {
-		// System.out.println("Waiting for the other launching to be done");
-		// return false;
-		// }
-		// if (checkPreviousProcessesAndDie(type)) {
-		// return;
-		// }
+		if (getLaunching()) {
+			// System.out.println("Waiting for the other launching to be done");
+			return;
+		}
+		if (checkPreviousProcessesAndDie(type)) {
+			return;
+		}
+		addUsernameToUsernames(account.getAccount().getUsername());
 
 		setLaunching(true);
 		long begin = System.currentTimeMillis();
@@ -184,11 +214,11 @@ public class AccountCreationService {
 		boolean searching = true;
 		while (searching) {
 			if (tries > 5) {
-				// driver.quit();
+				driver.quit();
 				setLaunching(false);
 				searching = false;
-				System.out.println("Couldn't find the PID");
-				// return false;
+				System.out.println("Couldn't find the PID, restarting the browser");
+				return;
 			}
 			pidsAfter = GeckoHandler.getGeckodriverExeWindows();
 
@@ -217,18 +247,18 @@ public class AccountCreationService {
 			// AccountCreationService.checkPreviousProcessesAndDie(type);
 			// WebdriverFunctions.killAll();
 			setLaunching(false);
-			System.out.println("Couldn't specify the pid");
-			// return false;
+			System.out.println("Quitting driver, couldn't specify the pid");
+			return;
 		}
 
 		if (pidId < 0) {
 			System.out.println("Pid couldn't be set");
-			// driver.quit();
+			driver.quit();
 			setLaunching(false);
+			return;
+		} else {
+			System.out.println("Pid set!");
 		}
-		// else {
-		// System.out.println("Pid set!");
-		// }
 		System.out.println("launched in " + ((System.currentTimeMillis() - begin) / 1000) + " seconds");
 		PidDriver pidDriver = new PidDriver(driver, pidId);
 
@@ -252,7 +282,6 @@ public class AccountCreationService {
 		System.out.println("Used proxy username: " + account.getAccount().getProxyUsername());
 		System.out.println("Used proxy password: " + account.getAccount().getProxyPassword());
 
-		setLaunching(false);
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
 			pidDriver.setType(type);
 			ALL_DRIVERS.add(pidDriver);
@@ -266,7 +295,7 @@ public class AccountCreationService {
 				}
 			}
 
-			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver, captcha);
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			if (runescapeWebsite.create()) {
 				/**
 				 * The proton e-mail service
@@ -281,7 +310,6 @@ public class AccountCreationService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			driver.close();
 			driver.quit();
 			System.out.println("Account successfully created");
 		}
@@ -300,7 +328,7 @@ public class AccountCreationService {
 				}
 			}
 
-			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver, captcha);
+			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			if (runescapeWebsite.unlock()) {
 				/**
 				 * Proton e-mail
@@ -315,11 +343,9 @@ public class AccountCreationService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			driver.close();
-			driver.quit();
+			// driver.quit();
 			System.out.println("Account recovered successfully");
 		}
-		return true;
 
 	}
 
@@ -334,6 +360,21 @@ public class AccountCreationService {
 		// BotController.addBot(new OsbotController(acc.getId(), acc));
 		// }
 		// launchRunescapeWebsite(BotController.getBotById(7));
+	}
+
+	/**
+	 * @return the usedUsernames
+	 */
+	public static synchronized ArrayList<AccountCreate> getUsedUsernames() {
+		return usedUsernames;
+	}
+
+	/**
+	 * @param usedUsernames
+	 *            the usedUsernames to set
+	 */
+	public static synchronized void setUsedUsernames(ArrayList<AccountCreate> usedUsernames) {
+		AccountCreationService.usedUsernames = usedUsernames;
 	}
 
 }

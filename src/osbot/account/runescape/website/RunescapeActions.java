@@ -1,5 +1,6 @@
 package osbot.account.runescape.website;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,14 +16,14 @@ import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import osbot.account.AccountStage;
-import osbot.account.AccountStatus;
+import com.twocaptcha.api.ProxyType;
+import com.twocaptcha.api.TwoCaptchaService;
+
+import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.HttpRequests;
 import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
-import osbot.account.creator.queue.Captcha;
-import osbot.account.global.Config;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
@@ -35,13 +36,11 @@ public class RunescapeActions {
 	 * @param driver
 	 * @param account
 	 */
-	public RunescapeActions(WebDriver driver, OsbotController account, SeleniumType type, PidDriver pidDriver,
-			Captcha captcha) {
+	public RunescapeActions(WebDriver driver, OsbotController account, SeleniumType type, PidDriver pidDriver) {
 		setAccount(account);
 		setDriver(driver);
 		setType(type);
 		setPidDriver(pidDriver);
-		setCaptcha(captcha);
 	}
 
 	private PidDriver pidDriver;
@@ -51,8 +50,6 @@ public class RunescapeActions {
 	private OsbotController account;
 
 	private SeleniumType type;
-
-	private Captcha captcha;
 
 	/**
 	 * Creates the account
@@ -101,7 +98,10 @@ public class RunescapeActions {
 
 			if (fillInNewPassword()) {
 				if (!clickButtonAndVerifyLink(By.name("submit"), "enter_security_code")) {// account_created
-					
+					if (WebdriverFunctions.hasQuit(driver)) {
+						System.out.println("Breaking out of loop");
+						return true;
+					}
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -114,8 +114,7 @@ public class RunescapeActions {
 			return false;
 		} catch (Exception e) {
 			e.printStackTrace();
-			// driver.close();
-			// driver.quit();
+			driver.quit();
 			return false;
 		}
 	}
@@ -131,7 +130,7 @@ public class RunescapeActions {
 			while (!goToRunescapeRecoverAccount()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
 				try {
 					Thread.sleep(1000);
@@ -141,22 +140,12 @@ public class RunescapeActions {
 				}
 				System.out.println("Waiting on navigating to the Runescape recover page");
 			}
-			System.out.println("On the runescape account");
+			System.out.println("On the runescappe account");
 
 			if (driver.getPageSource().contains("You have been temporarily blocked from using this service.")
 					&& driver.getCurrentUrl().contains("message.ws")) {// message.ws/?message=5
-				if (captcha.getAccount() != null && captcha.getAccount().getAccount() != null
-						&& captcha.getAccount().getAccount().getProxyIp() != null) {
-					DatabaseUtilities.updateStatusOfAccountByIp(AccountStatus.LOCKED_TIMEOUT,
-							captcha.getAccount().getAccount().getProxyIp());
-				}
-				// HttpRequests.updateAccountStatusInDatabase("LOCKED_TIMEOUT",
-				// getAccount().getAccount().getEmail());
+				HttpRequests.updateAccountStatusInDatabase("LOCKED_TIMEOUT", getAccount().getAccount().getEmail());
 				System.out.println("Account couldn't be recovered this way");
-
-				// True so it doesnt add it again
-				captcha.setSuccessfullyUsed(true);
-				driver.close();
 				driver.quit();
 				return false;
 			}
@@ -171,12 +160,12 @@ public class RunescapeActions {
 			}
 
 			while (!hasCaptchaCompleted()) {
-				System.out.println("Waiting on the completion of the captcha");
-
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
+				System.out.println("Waiting on the completion of the captcha");
+
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -185,8 +174,6 @@ public class RunescapeActions {
 				}
 
 			}
-			getCaptcha().setSuccessfullyUsed(true);
-			Config.QUEUE.removeFromQueue(captcha);
 			System.out.println("Captcha has completed!");
 
 			try {
@@ -200,14 +187,12 @@ public class RunescapeActions {
 			while (!clickButtonAndVerifyLink(By.id("passwordRecovery"), "email-confirmation")) {// account-identified
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
-				
 				System.out.println("Verifying the unlock button!");
 				setFailedTries(getFailedTries() + 1);
 
 				if (getFailedTries() > 1) {
-					driver.close();
 					driver.quit();
 					System.out.println("Restarting..");
 					return false;
@@ -243,7 +228,6 @@ public class RunescapeActions {
 			// }
 
 			if (waitUnCaptchaFailed(getType())) {
-				driver.close();
 				driver.quit();
 				System.out.println("Captcha failed, retrying with new driver");
 				return false;
@@ -254,8 +238,7 @@ public class RunescapeActions {
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println("Got error - restarting now");
-			// driver.close();
-			// driver.quit();
+			driver.quit();
 			return false;
 		}
 	}
@@ -265,12 +248,7 @@ public class RunescapeActions {
 		if (driver.getPageSource().contains("Due to your account status, you must")) {
 			HttpRequests.updateAccountStatusInDatabase("LOCKED_INGAME", getAccount().getAccount().getEmail());
 			System.out.println("Account couldn't be recovered this way");
-
-			// True so it doesnt add it again
-			captcha.setSuccessfullyUsed(true);
-
-//			driver.close();
-//			driver.quit();
+			driver.quit();
 			return true;
 		}
 		return false;
@@ -291,9 +269,8 @@ public class RunescapeActions {
 			while (!goToRunescapeCreateAccount()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
-				
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -309,19 +286,16 @@ public class RunescapeActions {
 			// Filling in all the information
 			if (fillInInformation()) {
 				System.out.println("Successfully filled in all information!");
+			} else {
+				createAccount();
+				// Going to the website again -- restarting
 			}
-
-			// else {
-			// createAccount();
-			// // Going to the website again -- restarting
-			// }
 
 			while (!hasCaptchaCompleted()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
-				
 				System.out.println("Waiting on the completion of the captcha");
 
 				try {
@@ -331,20 +305,14 @@ public class RunescapeActions {
 					e.printStackTrace();
 				}
 			}
-			getCaptcha().setSuccessfullyUsed(true);
-			Config.QUEUE.removeFromQueue(captcha);
-
 			System.out.println("Captcha has completed!");
 
-			System.out.println("Waiting 10 seconds to verify inputs");
-			Thread.sleep(10000);
-
-			while (!clickButtonAndVerifyLink(By.id("create-submit"), "account_created")) {// account_created
+			while (!clickButtonAndVerifyLink(By.id("create-submit"),
+					"https://secure.runescape.com/m=account-creation/account_created")) {// account_created
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					break;
+					return true;
 				}
-				
 				System.out.println("Verifying the clicking button!");
 				setFailedTries(getFailedTries() + 1);
 
@@ -352,24 +320,24 @@ public class RunescapeActions {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+//					e.printStackTrace();
+					System.out.println("Error in sleep");
 				}
 			}
 
 			if (waitUnCaptchaFailed(getType())) {
-				driver.close();
-				driver.quit();
 				System.out.println("Captcha failed, retrying with new driver");
+				Thread.sleep(8000);
+				driver.quit();
 				return false;
 			}
 
 			System.out.println("Successfully clicked & account created!");
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			System.out.println("Error - restarting");
-//			driver.close();
-//			driver.quit();
+			driver.quit();
 			return false;
 		}
 	}
@@ -387,9 +355,6 @@ public class RunescapeActions {
 			});
 		} catch (Exception e) {
 			// Ignorning stacktrace
-
-			// True so it doesnt add it again
-			captcha.setSuccessfullyUsed(true);
 			e.printStackTrace();
 			return false;
 		}
@@ -408,30 +373,31 @@ public class RunescapeActions {
 			e.printStackTrace();
 		}
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
-			return (new WebDriverWait(driver, 20)).until(new ExpectedCondition<Boolean>() {
-				public Boolean apply(WebDriver d) {
-					return driver.getPageSource().contains("You can now begin your adventure with your new account.")
-							? false
-							: true;
-				}
-			});
-			// if (driver.getPageSource().contains("You can now begin your adventure with
-			// your new account.")) {
-			// return false;
+			// return (new WebDriverWait(driver, 20)).until(new ExpectedCondition<Boolean>()
+			// {
+			// public Boolean apply(WebDriver d) {
+			// return driver.getPageSource().contains("You can now begin your adventure with
+			// your new account.");
 			// }
-		} else if (type == SeleniumType.RECOVER_ACCOUNT) {
+			// });
+			if (driver.getPageSource().contains("You can now begin your adventure with your new account.")) {
+				return false;
+			}
+		} else if (type == SeleniumType.RECOVER_ACCOUNT)
+
+		{
 			// WebdriverFunctions.waitForElementToBeVisible(driver,
 			// driver.findElement(By.name("continueYes")));
-			return (new WebDriverWait(driver, 20)).until(new ExpectedCondition<Boolean>() {
-				public Boolean apply(WebDriver d) {
-					return driver.getPageSource().contains("A link to reset your password has been sent to") ? false
-							: true;
-				}
-			});
-			// if (driver.getPageSource().contains("A link to reset your password has been
-			// sent to")) {
-			// return false;
+			// return (new WebDriverWait(driver, 20)).until(new ExpectedCondition<Boolean>()
+			// {
+			// public Boolean apply(WebDriver d) {
+			// return driver.getPageSource().contains("A link to reset your password has
+			// been sent to");
 			// }
+			// });
+			if (driver.getPageSource().contains("A link to reset your password has been sent to")) {
+				return false;
+			}
 		}
 
 		return true;
@@ -442,38 +408,27 @@ public class RunescapeActions {
 	 */
 	private void getResponseToken(String link) {
 
-		// new Thread(() -> {
-		// String responseToken = null;
-		// TwoCaptchaService service = new
-		// TwoCaptchaService("8ff2e630e82351bdc3f0b00af2e026b9",
-		// "6LccFA0TAAAAAHEwUJx_c1TfTBWMTAOIphwTtd1b", link, "" +
-		// getAccount().getAccount().getProxyIp(),
-		// "" + getAccount().getAccount().getProxyPort(),
-		// getAccount().getAccount().getProxyUsername(),
-		// getAccount().getAccount().getProxyPassword(), ProxyType.SOCKS5);
-		//
-		// try {
-		// responseToken = service.solveCaptcha();
-		// System.out.println("The response token is: " + responseToken);
-		// } catch (InterruptedException | IOException e) {
-		// // TODO Auto-generated catch block
-		// driver.quit();
-		// e.printStackTrace();
-		// }
-		//
-		// RemoteWebDriver r = (RemoteWebDriver) driver;
-		// String setResponseToken =
-		// "document.getElementById('g-recaptcha-response').value='" + responseToken +
-		// "'";
-		// r.executeScript(setResponseToken);
-		//
-		// }).start();
+		new Thread(() -> {
+			String responseToken = null;
+			TwoCaptchaService service = new TwoCaptchaService("8ff2e630e82351bdc3f0b00af2e026b9",
+					"6LccFA0TAAAAAHEwUJx_c1TfTBWMTAOIphwTtd1b", link, "" + getAccount().getAccount().getProxyIp(),
+					"" + getAccount().getAccount().getProxyPort(), getAccount().getAccount().getProxyUsername(),
+					getAccount().getAccount().getProxyPassword(), ProxyType.SOCKS5);
 
-		RemoteWebDriver r = (RemoteWebDriver) driver;
-		String setResponseToken = "document.getElementById('g-recaptcha-response').value='"
-				+ getCaptcha().getResultKey() + "'";
-		System.out.println("Set key to: " + getCaptcha().getResultKey());
-		r.executeScript(setResponseToken);
+			try {
+				responseToken = service.solveCaptcha();
+				System.out.println("The response token is: " + responseToken);
+			} catch (InterruptedException | IOException e) {
+				// TODO Auto-generated catch block
+				driver.quit();
+				e.printStackTrace();
+			}
+
+			RemoteWebDriver r = (RemoteWebDriver) driver;
+			String setResponseToken = "document.getElementById('g-recaptcha-response').value='" + responseToken + "'";
+			r.executeScript(setResponseToken);
+
+		}).start();
 	}
 
 	/**
@@ -485,12 +440,10 @@ public class RunescapeActions {
 	 */
 	public boolean clickButtonAndVerifyLink(By by, String link) {
 		try {
-
 			if (WebdriverFunctions.hasQuit(driver)) {
 				System.out.println("Breaking out of loop");
 				return true;
 			}
-			
 			WebDriverWait wait = new WebDriverWait(driver, 30);
 			wait.until(ExpectedConditions.visibilityOfElementLocated(by));
 			WebElement button = getDriver().findElement(by);
@@ -508,16 +461,15 @@ public class RunescapeActions {
 				}
 				// Quiting driving when failing to click button
 				if (isAtLinkNoWait("passwordrecovery")) {
-//					driver.close();
-//					driver.quit();
+					driver.quit();
 					return false;
 				}
 
 			}
 		} catch (Exception e) {
 			System.out.println("Couldn't verify clicking the button!");
-			e.printStackTrace();
-			// driver.close();
+			System.out.println("WARNING! BLOCKED STACKTRACE");
+//			e.printStackTrace();
 			// driver.quit();
 		}
 		return false;
@@ -564,8 +516,7 @@ public class RunescapeActions {
 				String a = r.executeScript(setResponseToken).toString();
 
 				if (a.equalsIgnoreCase("ERROR_CAPTCHA_UNSOLVABLE")) {
-//					driver.close();
-//					driver.quit();
+					driver.quit();
 					System.out.println("Driver quit, captcha was unsolvable");
 					return false;
 				}
@@ -608,9 +559,9 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean allInputElementsHaveValue() {
-		if (allElementsHaveValue(new ArrayList<By>(Arrays.asList(By.id("create-email"), By.id("create-password"),
-				By.id("character-name"), By.className("m-date-entry__day-field"),
-				By.className("m-date-entry__month-field"), By.className("m-date-entry__year-field"))))) {
+		if (allElementsHaveValue(new ArrayList<By>(
+				Arrays.asList(By.id("create-email"), By.id("create-password"), By.className("m-date-entry__day-field"),
+						By.className("m-date-entry__month-field"), By.className("m-date-entry__year-field"))))) {
 			return true;
 		}
 		;
@@ -656,20 +607,18 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean fillInRecoverInformation() {
-		while (!allRecoverElementsExist()) {
-			if (WebdriverFunctions.hasQuit(driver)) {
-				System.out.println("Breaking out of loop");
-				break;
-			}
-			
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println("Waiting for all inputs exist on the page");
-		}
+		// while (!allRecoverElementsExist()) {
+		// try {
+		// Thread.sleep(100);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// System.out.println("Waiting for all inputs exist on the page");
+		// }
+
+		WebDriverWait wait = new WebDriverWait(driver, 20);
+		WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("email")));
 
 		driver.findElement(By.id("email")).sendKeys("" + account.getAccount().getEmail());
 
@@ -736,8 +685,8 @@ public class RunescapeActions {
 		// }
 		// System.out.println("Waiting for all inputs exist on the page");
 		// }
-		WebDriverWait wait = new WebDriverWait(driver, 30);
-		wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-email")));
+		WebDriverWait wait = new WebDriverWait(driver, 20);
+		WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-email")));
 
 		int randomNumber = getRandomNumber();
 
@@ -757,33 +706,20 @@ public class RunescapeActions {
 		account.getAccount().setMonth(month);
 		account.getAccount().setYear(year);
 		account.getAccount().setEmail("alphabearman+" + randomNumber + "@protonmail.com");
-		account.getAccount().setUsername(new RandomNameGenerator().generateRandomNameString());
-		account.getAccount().setPassword(new RandomNameGenerator().generateRandomNameString());
-
-		int totalAccounts = DatabaseUtilities.getAvailableAccounts();
-		int totalMules = DatabaseUtilities.getMuleAmount();
-
-		/**
-		 * Automatically creating mules
-		 */
-		if (totalMules == 0) {
-			account.getAccount().setStage(AccountStage.UNKNOWN);
-			account.getAccount().setStatus(AccountStatus.MULE);
-		}
 
 		driver.findElement(By.className("m-date-entry__day-field")).sendKeys("" + account.getAccount().getDay());
 		driver.findElement(By.className("m-date-entry__month-field")).sendKeys("" + account.getAccount().getMonth());
 		driver.findElement(By.className("m-date-entry__year-field")).sendKeys("" + account.getAccount().getYear());
 		driver.findElement(By.id("create-email")).sendKeys("alphabearman+" + randomNumber + "@protonmail.com");
-		driver.findElement(By.id("character-name")).sendKeys(account.getAccount().getUsername());
 		driver.findElement(By.id("create-password")).sendKeys(account.getAccount().getPassword());
+		// driver.findElement(By.id("character-name")).sendKeys(account.getAccount().getUsername());
 		// driver.findElement(By.className("c-cookie-consent__dismiss")).click();
 
-		// if (!allInputElementsHaveValue()) {
-		// goToRunescapeCreateAccount();
-		// System.out.println("Not all inputs had value, restarting the website");
-		// return false;
-		// }
+		if (!allInputElementsHaveValue()) {
+			goToRunescapeCreateAccount();
+			System.out.println("Not all inputs had value, restarting the website");
+			return false;
+		}
 
 		System.out.println("All inputs have values!");
 		return true;
@@ -842,18 +778,17 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeRecoverAccount() {
-		// driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
-		// try {
-		getDriver().get(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
-		// } catch (TimeoutException e) {
-		// System.out.println("Page did not load within 40 seconds!");
-		// System.out.println("Restarting driver and trying again");
-		// e.printStackTrace();
-		// // treat the timeout as needed
-		// driver.close();
-		// driver.quit();
-		// }
+		try {
+			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
+		} catch (TimeoutException e) {
+			System.out.println("Page did not load within 40 seconds!");
+			System.out.println("Restarting driver and trying again");
+			e.printStackTrace();
+			// treat the timeout as needed
+			driver.quit();
+		}
 
 		System.out.println("Current URL: " + getCurrentURL());
 		if (getCurrentURL().contains("runescape")) {
@@ -867,18 +802,17 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeCreateAccount() {
-		// driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
-		// try {
-		getDriver().get(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
-		// } catch (TimeoutException e) {
-		// System.out.println("Page did not load within 40 seconds!");
-		// System.out.println("Restarting driver and trying again");
-		// e.printStackTrace();
-		// // treat the timeout as needed
-		// driver.close();
-		// driver.quit();
-		// }
+		try {
+			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
+		} catch (TimeoutException e) {
+			System.out.println("Page did not load within 40 seconds!");
+			System.out.println("Restarting driver and trying again");
+			e.printStackTrace();
+			// treat the timeout as needed
+			driver.quit();
+		}
 
 		System.out.println("Current URL: " + getCurrentURL());
 		if (getCurrentURL().contains("runescape")) {
@@ -970,20 +904,5 @@ public class RunescapeActions {
 	 */
 	public void setPidDriver(PidDriver pidDriver) {
 		this.pidDriver = pidDriver;
-	}
-
-	/**
-	 * @return the captcha
-	 */
-	public Captcha getCaptcha() {
-		return captcha;
-	}
-
-	/**
-	 * @param captcha
-	 *            the captcha to set
-	 */
-	public void setCaptcha(Captcha captcha) {
-		this.captcha = captcha;
 	}
 }

@@ -17,6 +17,8 @@ public class OsbotController {
 	}
 
 	private int id, pidId;
+	
+	private long startTime = -1;
 
 	/**
 	 * @param isMule
@@ -149,6 +151,20 @@ public class OsbotController {
 	 */
 	public void setAccount(AccountTable account) {
 		this.account = account;
+	}
+
+	/**
+	 * @return the startTime
+	 */
+	public long getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * @param startTime the startTime to set
+	 */
+	public void setStartTime(long startTime) {
+		this.startTime = startTime;
 	}
 
 }
