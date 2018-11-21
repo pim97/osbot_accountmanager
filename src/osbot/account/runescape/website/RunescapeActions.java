@@ -19,6 +19,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.twocaptcha.api.ProxyType;
 import com.twocaptcha.api.TwoCaptchaService;
 
+import osbot.account.AccountStatus;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.HttpRequests;
 import osbot.account.creator.PidDriver;
@@ -57,7 +58,6 @@ public class RunescapeActions {
 	public boolean create() {
 		if (createAccount()) {
 			// Inserting into the database, because successfull
-			DatabaseUtilities.insertIntoTable(account.getAccount());
 			return true;
 		}
 		System.out.println("Failed to create the account");
@@ -93,6 +93,20 @@ public class RunescapeActions {
 			}
 
 			WebdriverFunctions.waitForLoad(driver);
+			
+			Thread.sleep(10000);
+			
+			System.out.println(driver.getPageSource());
+			if (driver.getPageSource().contains("You have been temporarily blocked from using this service.")) {// message.ws/?message=5
+				DatabaseUtilities.updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus.LOCKED_TIMEOUT,
+						getAccount().getAccount().getProxyIp());
+				// HttpRequests.updateAccountStatusInDatabase(AccountStatus.LOCKED_TIMEOUT.name(),
+				// getAccount().getAccount().getEmail());
+				System.out.println("Account locked timeout fraudulent");
+				driver.quit();
+				return false;
+			}
+			
 			// WebdriverFunctions.waitForElementToBeVisible(driver,
 			// driver.findElement(By.name("password")));
 
@@ -130,7 +144,7 @@ public class RunescapeActions {
 			while (!goToRunescapeRecoverAccount()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				try {
 					Thread.sleep(1000);
@@ -144,7 +158,10 @@ public class RunescapeActions {
 
 			if (driver.getPageSource().contains("You have been temporarily blocked from using this service.")
 					&& driver.getCurrentUrl().contains("message.ws")) {// message.ws/?message=5
-				HttpRequests.updateAccountStatusInDatabase("LOCKED_TIMEOUT", getAccount().getAccount().getEmail());
+				DatabaseUtilities.updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus.LOCKED_TIMEOUT,
+						getAccount().getAccount().getProxyIp());
+				// HttpRequests.updateAccountStatusInDatabase(AccountStatus.LOCKED_TIMEOUT.name(),
+				// getAccount().getAccount().getEmail());
 				System.out.println("Account couldn't be recovered this way");
 				driver.quit();
 				return false;
@@ -162,7 +179,7 @@ public class RunescapeActions {
 			while (!hasCaptchaCompleted()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				System.out.println("Waiting on the completion of the captcha");
 
@@ -187,7 +204,7 @@ public class RunescapeActions {
 			while (!clickButtonAndVerifyLink(By.id("passwordRecovery"), "email-confirmation")) {// account-identified
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				System.out.println("Verifying the unlock button!");
 				setFailedTries(getFailedTries() + 1);
@@ -238,7 +255,7 @@ public class RunescapeActions {
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println("Got error - restarting now");
-			driver.quit();
+			// driver.quit();
 			return false;
 		}
 	}
@@ -269,7 +286,7 @@ public class RunescapeActions {
 			while (!goToRunescapeCreateAccount()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				try {
 					Thread.sleep(1000);
@@ -294,7 +311,7 @@ public class RunescapeActions {
 			while (!hasCaptchaCompleted()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				System.out.println("Waiting on the completion of the captcha");
 
@@ -309,9 +326,18 @@ public class RunescapeActions {
 
 			while (!clickButtonAndVerifyLink(By.id("create-submit"),
 					"https://secure.runescape.com/m=account-creation/account_created")) {// account_created
+
+				WebElement el = driver
+						.findElement(By.xpath("//p[contains(text(), 'Please complete the reCAPTCHA box.')]"));
+				if (el.isDisplayed()) {
+					System.out.println("Captcha failed");
+					driver.quit();
+					break;
+				}
+
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
-					return true;
+					break;
 				}
 				System.out.println("Verifying the clicking button!");
 				setFailedTries(getFailedTries() + 1);
@@ -320,9 +346,16 @@ public class RunescapeActions {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
-//					e.printStackTrace();
+					// e.printStackTrace();
 					System.out.println("Error in sleep");
 				}
+			}
+
+			WebElement el = driver.findElement(By.xpath("//p[contains(text(), 'Please complete the reCAPTCHA box.')]"));
+			if (el.isDisplayed()) {
+				System.out.println("Captcha failed");
+				driver.quit();
+				return false;
 			}
 
 			if (waitUnCaptchaFailed(getType())) {
@@ -335,9 +368,9 @@ public class RunescapeActions {
 			System.out.println("Successfully clicked & account created!");
 			return true;
 		} catch (Exception e) {
-//			e.printStackTrace();
+			// e.printStackTrace();
 			System.out.println("Error - restarting");
-			driver.quit();
+			// driver.quit();
 			return false;
 		}
 	}
@@ -467,10 +500,15 @@ public class RunescapeActions {
 
 			}
 		} catch (Exception e) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 			System.out.println("Couldn't verify clicking the button!");
 			System.out.println("WARNING! BLOCKED STACKTRACE");
-//			e.printStackTrace();
-			// driver.quit();
+			// e.printStackTrace();
+			driver.close();
+			driver.quit();
 		}
 		return false;
 	}
@@ -651,9 +689,11 @@ public class RunescapeActions {
 		// }
 
 		WebdriverFunctions.waitForLoad(driver);
-		WebDriverWait wait = new WebDriverWait(driver, 20);
+	
+		
+		WebDriverWait wait = new WebDriverWait(driver, 120);
 		WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
-		WebElement myDynamicElement = (new WebDriverWait(driver, 20))
+		WebElement myDynamicElement = (new WebDriverWait(driver, 120))
 				.until(ExpectedConditions.presenceOfElementLocated(By.name("password")));
 
 		System.out.println("old password: " + getAccount().getAccount().getPassword());

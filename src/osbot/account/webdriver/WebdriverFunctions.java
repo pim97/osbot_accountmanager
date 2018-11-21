@@ -100,7 +100,7 @@ public class WebdriverFunctions {
                         return ((JavascriptExecutor)driver).executeScript("return document.readyState").equals("complete");
                     }
                 };
-        WebDriverWait wait = new WebDriverWait(driver, 30);
+        WebDriverWait wait = new WebDriverWait(driver, 180);
         wait.until(pageLoadCondition);
     }
 }

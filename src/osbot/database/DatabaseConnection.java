@@ -25,18 +25,24 @@ public class DatabaseConnection {
 		return conn;
 	}
 
-	public ResultSet getResult(String query) {
-		try {
-			PreparedStatement statement = getConnection().prepareStatement(query);
-
-			ResultSet resultSet = statement.executeQuery(query);
-			return resultSet;
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
+//	public ResultSet getResult(String query) {
+//		try {
+//			PreparedStatement statement = getConnection().prepareStatement(query);
+//			ResultSet resultSet = statement.executeQuery(query);
+//			try {
+//				return resultSet;
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			} finally {
+//				statement.close();
+//			}
+//			return null;
+//		} catch (SQLException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+//		return null;
+//	}
 
 	// init database constants
 	private static final String DATABASE_DRIVER = "com.mysql.jdbc.Driver";

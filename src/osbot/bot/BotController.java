@@ -52,11 +52,11 @@ public class BotController {
 	
 	public static void killProcess(final int pid) {
         try {
-            if (System.getProperty("os.name").startsWith("Windows")) {
-                Runtime.getRuntime().exec("Taskkill /PID " + pid + " /F");
-            } else {
-                Runtime.getRuntime().exec("kill -9 " + pid);
-            }
+            Runtime.getRuntime().exec("Taskkill /PID " + pid + " /F");
+//            if (System.getProperty("os.name").startsWith("Windows")) {
+//            } else {
+//                Runtime.getRuntime().exec("kill -9 " + pid);
+//            }
         } catch (IOException e) {
             e.printStackTrace();
         }

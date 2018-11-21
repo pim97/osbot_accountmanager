@@ -249,7 +249,7 @@ public class ProtonActions {
 		while (!isLoggedIn()) {
 			if (WebdriverFunctions.hasQuit(driver)) {
 				System.out.println("Breaking out of loop");
-				return true;
+				break;
 			}
 			if (logInToMail(username, password)) {
 				return true;

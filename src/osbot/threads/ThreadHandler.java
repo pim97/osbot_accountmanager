@@ -7,6 +7,7 @@ import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.database.DatabaseUtilities;
+import osbot.random.RandomUtil;
 
 public class ThreadHandler {
 
@@ -36,24 +37,22 @@ public class ThreadHandler {
 	/**
 	 * The thread for selenium trying to create accounts
 	 */
-	private static void createAccountsThread(int amount) {
+	private static void createAccountsThread(int index) {
 		Thread createAccounts = new Thread(() -> {
 
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 20000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
-				for (int i = 0; i < amount; i++) {
-					DatabaseUtilities.seleniumCreateAccountThread();
-				}
+				DatabaseUtilities.seleniumCreateAccountThread();
 			}
 
 		});
-		createAccounts.setName("createAccounts");
+		createAccounts.setName("createAccounts_" + index);
 		createAccounts.start();
 
 		threadList.add(createAccounts);
@@ -62,25 +61,23 @@ public class ThreadHandler {
 	/**
 	 * The thread for selenium trying to recover account
 	 */
-	private static void recoverAccountsThread(int amount) {
+	private static void recoverAccountsThread(int index) {
 		Thread recoverAccounts = new Thread(() -> {
 
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 20000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
-				for (int i = 0; i < amount; i++) {
-					DatabaseUtilities.seleniumRecoverAccount();
-				}
+				DatabaseUtilities.seleniumRecoverAccount();
 
 			}
 
 		});
-		recoverAccounts.setName("recoverAccounts");
+		recoverAccounts.setName("recoverAccounts_" + index);
 		recoverAccounts.start();
 
 		threadList.add(recoverAccounts);
@@ -155,7 +152,7 @@ public class ThreadHandler {
 				}
 			}
 		});
-		checkPidsProcessesEveryMinutes2.setName("checkUsedUsernames");
+		checkPidsProcessesEveryMinutes2.setName("checkPidsProcessesEveryMinutes2");
 		checkPidsProcessesEveryMinutes2.start();
 
 		threadList.add(checkPidsProcessesEveryMinutes2);
@@ -224,17 +221,35 @@ public class ThreadHandler {
 		threadList.add(checkRunningErrors);
 	}
 
-	/**
-	 * Manages all the threads currently running
-	 */
-	public static void runThreads() {
+	public static void mainThread() {
 		Thread mainThread = new Thread(() -> {
 			while (programIsRunning) {
 
-				System.out.println(
-						"Thread management: " + isThreadAlive("recoverAccounts") + " " + getThread("recoverAccounts"));
-				System.out.println(
-						"Thread management: " + isThreadAlive("createAccounts") + " " + getThread("createAccounts"));
+				System.out.println("Waiting 10 seconds for everything to load...");
+				// Sleeping 20 seconds for all the accounts to load
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+
+				int recoverAmount = DatabaseUtilities.getAccountsToBeRecovered().size() != 1
+						? DatabaseUtilities.getAccountsToBeRecovered().size() / 2
+						: DatabaseUtilities.getAccountsToBeRecovered().size();
+
+				int createAmount = DatabaseUtilities.getSizeToCreateAccounts() != 1
+						? DatabaseUtilities.getSizeToCreateAccounts() / 2
+						: DatabaseUtilities.getSizeToCreateAccounts();
+
+				for (int i = 0; i < recoverAmount; i++) {
+					System.out.println("Thread management: " + isThreadAlive("recoverAccounts_" + recoverAmount) + " "
+							+ getThread("recoverAccounts_" + recoverAmount));
+				}
+				for (int i = 0; i < createAmount; i++) {
+					System.out.println("Thread management: " + isThreadAlive("createAccounts_" + createAmount) + " "
+							+ getThread("createAccounts_" + createAmount));
+				}
 				System.out.println("Thread management: " + isThreadAlive("handleBotsRunning") + " "
 						+ getThread("handleBotsRunning"));
 				System.out.println("Thread management: " + isThreadAlive("handleMulesTrading") + " "
@@ -248,13 +263,15 @@ public class ThreadHandler {
 
 				checkForAlive();
 
-				if ((!isThreadAlive("recoverAccounts") && getThread("recoverAccounts") == null)
-						&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
-					int amount = 3;
+				System.out.println("Recover accounts thread to be: " + recoverAmount);
+				for (int i = 0; i < recoverAmount; i++) {
+					if ((!isThreadAlive("recoverAccounts_" + i) && getThread("recoverAccounts_" + i) == null)
+							&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
 
-					recoverAccountsThread(amount);
-					System.out.println("Started new thread " + amount + "x: recoverAccounts");
+						recoverAccountsThread(i);
+						System.out.println("Started new thread: recoverAccounts_" + i);
 
+					}
 				}
 
 				if ((!isThreadAlive("checkTimeoutLockedBackToNormal")
@@ -283,12 +300,14 @@ public class ThreadHandler {
 
 				}
 
-				if ((!isThreadAlive("createAccounts") && getThread("createAccounts") == null)
-						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
-					int amount = 3;
+				System.out.println("Create accounts thread to be: " + createAmount);
+				for (int i = 0; i < createAmount; i++) {
+					if ((!isThreadAlive("createAccounts_" + i) && getThread("createAccounts_" + i) == null)
+							&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 
-					createAccountsThread(amount);
-					System.out.println("Started new thread " + amount + "x: createAccounts");
+						createAccountsThread(i);
+						System.out.println("Started new thread: createAccounts_" + i);
+					}
 				}
 
 				if ((!isThreadAlive("handleBotsRunning") && getThread("handleBotsRunning") == null)
@@ -322,6 +341,42 @@ public class ThreadHandler {
 		mainThread.start();
 
 		threadList.add(mainThread);
+	}
+
+	/**
+	 * Manages all the threads currently running
+	 */
+	public static void runThreads() {
+
+		mainThread();
+
+		Thread backupThread = new Thread(() -> {
+
+			while (programIsRunning) {
+
+				checkForAlive();
+
+				System.out.println("[BACKUP] Thread management: " + isThreadAlive("backupThread") + " "
+						+ getThread("backupThread"));
+
+				if ((!isThreadAlive("backupThread") && getThread("backupThread") == null)) {
+					mainThread();
+					System.out.println("Started new thread: backupThread");
+				}
+
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		});
+		backupThread.setName("backupThread");
+		backupThread.start();
+
+		threadList.add(backupThread);
 
 	}
 

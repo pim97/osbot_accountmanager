@@ -16,7 +16,7 @@ public class OsbotController {
 		setAccount(account);
 	}
 
-	private int id, pidId;
+	private int id, pidId = -1;
 	
 	private long startTime = -1;
 

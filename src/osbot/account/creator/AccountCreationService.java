@@ -132,7 +132,7 @@ public class AccountCreationService {
 
 	private static ArrayList<AccountCreate> usedUsernames = new ArrayList<AccountCreate>();
 
-	public static synchronized boolean containsUsername(String user) {
+	public static boolean containsUsername(String user) {
 		for (AccountCreate acc : usedUsernames) {
 			if (acc.getUsername().equalsIgnoreCase(user)) {
 				return true;
@@ -147,20 +147,22 @@ public class AccountCreationService {
 	}
 
 	public static void checkUsedUsernames() {
-//		Thread t = new Thread(() -> {
+		Thread t = new Thread(() -> {
 
 			Iterator<AccountCreate> it = usedUsernames.iterator();
+			System.out.println("List checked usernames: " + usedUsernames.size());
 
 			while (it.hasNext()) {
 				AccountCreate user = it.next();
-				if (System.currentTimeMillis() - user.getTime() > 120_000) {
+				System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
+				if (((System.currentTimeMillis() - user.getTime()) > 500_000)) {
 					it.remove();
 					System.out.println("Removed username, may continue with recovering");
 				}
 			}
 
-//		});
-//		t.start();
+		});
+		t.start();
 	}
 
 	/**
@@ -171,18 +173,12 @@ public class AccountCreationService {
 	 * @param test
 	 */
 	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
-		// WebdriverFunctions.killAll();
-		// checkProcesses();
-
-		// System.out.println(LAUNCHING);
-		if (getLaunching()) {
-			// System.out.println("Waiting for the other launching to be done");
-			return;
-		}
-		if (checkPreviousProcessesAndDie(type)) {
-			return;
-		}
-		addUsernameToUsernames(account.getAccount().getUsername());
+		// if (getLaunching()) {
+		// return;
+		// }
+		// if (checkPreviousProcessesAndDie(type)) {
+		// return;
+		// }
 
 		setLaunching(true);
 		long begin = System.currentTimeMillis();
@@ -212,53 +208,54 @@ public class AccountCreationService {
 
 		int tries = 0;
 		boolean searching = true;
-		while (searching) {
-			if (tries > 5) {
-				driver.quit();
-				setLaunching(false);
-				searching = false;
-				System.out.println("Couldn't find the PID, restarting the browser");
-				return;
-			}
-			pidsAfter = GeckoHandler.getGeckodriverExeWindows();
+		// while (searching) {
+		// if (tries > 5) {
+		// driver.quit();
+		// setLaunching(false);
+		// searching = false;
+		// System.out.println("Couldn't find the PID, restarting the browser");
+		// return;
+		// }
+		// pidsAfter = GeckoHandler.getGeckodriverExeWindows();
+		//
+		// if (pids.size() != pidsAfter.size()) {
+		// pidsAfter.removeAll(pids);
+		//
+		// searching = false;
+		// System.out.println("Found pid!");
+		//
+		// pidsAfter.stream().forEach(pid -> {
+		// System.out.println("pid found : " + pid);
+		// });
+		// } else {
+		// System.out.println("Couldn't find Pid yet, " + pids.size() + " " +
+		// pidsAfter.size());
+		// }
+		//
+		// System.out.println("Trying to find the pid");
+		// tries++;
+		// }
 
-			if (pids.size() != pidsAfter.size()) {
-				pidsAfter.removeAll(pids);
+		// if (pidsAfter.size() == 1) {
+		// pidId = pidsAfter.get(0);
+		// setLaunching(false);
+		// System.out.println("Pid set to with geckodriver: " + pidsAfter.get(0));
+		// } else if (pidsAfter.size() > 1) {
+		// // AccountCreationService.checkPreviousProcessesAndDie(type);
+		// // WebdriverFunctions.killAll();
+		// setLaunching(false);
+		// System.out.println("Quitting driver, couldn't specify the pid");
+		// return;
+		// }
 
-				searching = false;
-				System.out.println("Found pid!");
-
-				pidsAfter.stream().forEach(pid -> {
-					System.out.println("pid found : " + pid);
-				});
-			} else {
-				System.out.println("Couldn't find Pid yet, " + pids.size() + " " + pidsAfter.size());
-			}
-
-			System.out.println("Trying to find the pid");
-			tries++;
-		}
-
-		if (pidsAfter.size() == 1) {
-			pidId = pidsAfter.get(0);
-			setLaunching(false);
-			System.out.println("Pid set to with geckodriver: " + pidsAfter.get(0));
-		} else if (pidsAfter.size() > 1) {
-			// AccountCreationService.checkPreviousProcessesAndDie(type);
-			// WebdriverFunctions.killAll();
-			setLaunching(false);
-			System.out.println("Quitting driver, couldn't specify the pid");
-			return;
-		}
-
-		if (pidId < 0) {
-			System.out.println("Pid couldn't be set");
-			driver.quit();
-			setLaunching(false);
-			return;
-		} else {
-			System.out.println("Pid set!");
-		}
+		// if (pidId < 0) {
+		// System.out.println("Pid couldn't be set");
+		// driver.quit();
+		// setLaunching(false);
+		// return;
+		// } else {
+		// System.out.println("Pid set!");
+		// }
 		System.out.println("launched in " + ((System.currentTimeMillis() - begin) / 1000) + " seconds");
 		PidDriver pidDriver = new PidDriver(driver, pidId);
 
@@ -284,25 +281,21 @@ public class AccountCreationService {
 
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
 			pidDriver.setType(type);
-			ALL_DRIVERS.add(pidDriver);
+			// ALL_DRIVERS.add(pidDriver);
 
 			// Killing all pids that were active but not found in the system
-			for (int pid : pids) {
-				PidDriver driv = getPidDriver(pid);
-				if (driv == null) {
-					BotController.killProcess(pid);
-					System.out.println("Driver was null, quiting this");
-				}
-			}
+			// for (int pid : pids) {
+			// PidDriver driv = getPidDriver(pid);
+			// if (driv == null) {
+			// BotController.killProcess(pid);
+			// System.out.println("Driver was null, quiting this");
+			// }
+			// }
 
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
-			if (runescapeWebsite.create()) {
-				/**
-				 * The proton e-mail service
-				 */
-				ProtonMain proton = new ProtonMain(driver, account, pidDriver);
-				proton.verifyAccount();
-			}
+			runescapeWebsite.create();
+			ProtonMain proton = new ProtonMain(driver, account, pidDriver);
+			proton.verifyAccount();
 
 			try {
 				Thread.sleep(10000);
@@ -316,37 +309,32 @@ public class AccountCreationService {
 
 		else if (type == SeleniumType.RECOVER_ACCOUNT) {
 			pidDriver.setType(type);
-			// checkPreviousProcessesAndDie(pidDriver.getType());
-			ALL_DRIVERS.add(pidDriver);
+			// ALL_DRIVERS.add(pidDriver);
 
 			// Killing all pids that were active but not found in the system
-			for (int pid : pids) {
-				PidDriver driv = getPidDriver(pid);
-				if (driv == null) {
-					BotController.killProcess(pid);
-					System.out.println("Driver was null, quiting this");
-				}
-			}
+
+			// for (int pid : pids) {
+			// PidDriver driv = getPidDriver(pid);
+			// if (driv == null) {
+			// BotController.killProcess(pid);
+			// System.out.println("Driver was null, quiting this");
+			// }
+			// }
 
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
-			if (runescapeWebsite.unlock()) {
-				/**
-				 * Proton e-mail
-				 */
-				ProtonMain proton = new ProtonMain(driver, account, pidDriver);
-				proton.unlockAccount();
-			}
-
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			// driver.quit();
-			System.out.println("Account recovered successfully");
+			runescapeWebsite.unlock();
+			ProtonMain proton = new ProtonMain(driver, account, pidDriver);
+			proton.unlockAccount();
 		}
 
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// driver.quit();
+		System.out.println("Account recovered successfully");
 	}
 
 	public static void main(String args[]) {

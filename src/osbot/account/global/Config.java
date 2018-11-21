@@ -25,6 +25,8 @@ public class Config {
 	 * Configs for threads
 	 */
 
+	public static final boolean GUI = false;
+	
 	public static final boolean CAPTCHA = false;
 	
 	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
@@ -32,6 +34,8 @@ public class Config {
 	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
 	
 	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
+	
+	public static final boolean CLOSE_ON_INACTIVITY = true;
 	
 	public static final boolean MULES_TRADING = true;
 }

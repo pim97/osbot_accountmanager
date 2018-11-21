@@ -2,6 +2,7 @@ package osbot.tables;
 
 import java.util.Calendar;
 
+import javafx.beans.property.SimpleStringProperty;
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 

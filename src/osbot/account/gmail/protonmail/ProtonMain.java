@@ -9,6 +9,7 @@ import osbot.account.creator.PidDriver;
 import osbot.account.creator.SeleniumType;
 import osbot.account.runescape.website.RunescapeActions;
 import osbot.account.webdriver.WebdriverFunctions;
+import osbot.database.DatabaseUtilities;
 import osbot.settings.OsbotController;
 
 public class ProtonMain {
@@ -197,6 +198,7 @@ public class ProtonMain {
 			}
 
 			// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
+			DatabaseUtilities.insertIntoTable(account.getAccount());
 			driver.quit();
 			System.out.println("Succesfully clicked on the verification link!");
 		}

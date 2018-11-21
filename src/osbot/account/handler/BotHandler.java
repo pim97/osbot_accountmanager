@@ -303,9 +303,34 @@ public class BotHandler {
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
 
-			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0) {
+			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0
+					&& osbot.getPidId() <= 0) {
 				return true;
 			}
+		}
+		return false;
+	}
+
+	public static boolean containsMiningAndNotRunning() {
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+
+			if (osbot != null
+					&& ((osbot.getAccount().getStage() == AccountStage.MINING_IRON_ORE)
+							|| (osbot.getAccount().getStage() == AccountStage.MINING_LEVEL_TO_15)
+							|| (osbot.getAccount().getStage() == AccountStage.RIMMINGTON_IRON_ORE))
+					&& osbot.getPidId() <= 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean isMining(OsbotController osbot) {
+		if (osbot.getAccount().getStage() == AccountStage.MINING_IRON_ORE
+				|| osbot.getAccount().getStage() == AccountStage.MINING_LEVEL_TO_15
+				|| osbot.getAccount().getStage() == AccountStage.RIMMINGTON_IRON_ORE) {
+			return true;
 		}
 		return false;
 	}
@@ -377,16 +402,24 @@ public class BotHandler {
 								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
 						continue;
 					}
+
 					if (wantsToMule()) {
 						System.out.println("A bot wants to mule, so giving them priority");
 						continue;
 					}
 
+//					if (containsMiningAndNotRunning() && !isMining(osbot) && i != BotController.getBots().size()) {
+//						System.out.println("Giving priority to a miner instead of a non-miner");
+//						continue;
+//					} else if (i == BotController.getBots().size()) {
+//						System.out.println("Giving priority to a miner went wrong - starting anyways");
+//					}
+
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
 					try {
-						Thread.sleep(15000);
+						Thread.sleep(10000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

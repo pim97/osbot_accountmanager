@@ -62,37 +62,37 @@ public class PopupController {
 
 	@FXML
 	private void addToTable() {
-		String user = username.getText();
-		String pass = password.getText();
-		String bank = bankpin.getText();
-		String proxIp = proxyIp.getText();
-		String proxPort = proxyPort.getText();
-		String worldNum = worldNumber.getText();
-		boolean lowCpuMode = false;
-
-		if (user != null && pass != null && worldNum != null) {
-			try {
-				int id = ContentController.dataAccountTable.size() + 1;
-				AccountTable acc = new AccountTable(id, null, user, Integer.parseInt(worldNumber.getText()), proxIp,
-						proxPort, lowCpuMode, AccountStatus.AVAILABLE, null, 0);
-				acc.setBankPin(bank);
-				acc.setPassword(pass);
-				OsbotController botController = new OsbotController(acc.getId(), acc);
-				BotController.addBot(botController);
-
-				DatabaseUtilities.insertIntoTable(acc);
-				ContentController.dataAccountTable.add(acc);
-			} catch (Exception e) {
-				WarningController error = new WarningController();
-				try {
-					error.start(new Stage());
-				} catch (Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				e.printStackTrace();
-			}
-		}
+//		String user = username.getText();
+//		String pass = password.getText();
+//		String bank = bankpin.getText();
+//		String proxIp = proxyIp.getText();
+//		String proxPort = proxyPort.getText();
+//		String worldNum = worldNumber.getText();
+//		boolean lowCpuMode = false;
+//
+//		if (user != null && pass != null && worldNum != null) {
+//			try {
+//				int id = ContentController.dataAccountTable.size() + 1;
+//				AccountTable acc = new AccountTable(id, null, user, Integer.parseInt(worldNumber.getText()), proxIp,
+//						proxPort, lowCpuMode, AccountStatus.AVAILABLE, null, 0);
+//				acc.setBankPin(bank);
+//				acc.setPassword(pass);
+//				OsbotController botController = new OsbotController(acc.getId(), acc);
+//				BotController.addBot(botController);
+//
+//				DatabaseUtilities.insertIntoTable(acc);
+//				ContentController.dataAccountTable.add(acc);
+//			} catch (Exception e) {
+//				WarningController error = new WarningController();
+//				try {
+//					error.start(new Stage());
+//				} catch (Exception e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
+//				e.printStackTrace();
+//			}
+//		}
 
 	}
 

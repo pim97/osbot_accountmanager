@@ -7,6 +7,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -21,6 +22,7 @@ import osbot.account.LoginStatus;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
+import osbot.account.global.Config;
 import osbot.account.handler.GeckoHandler;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
@@ -62,6 +64,7 @@ public class DatabaseUtilities {
 
 			// execute the preparedstatement
 			preparedStmt.execute();
+			preparedStmt.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -79,6 +82,7 @@ public class DatabaseUtilities {
 
 			// execute the preparedstatement
 			preparedStmt.execute();
+			preparedStmt.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -92,39 +96,59 @@ public class DatabaseUtilities {
 	 */
 	public static ArrayList<DatabaseProxy> getTotalProxies() {
 		String sql = "SELECT * FROM proxies as p WHERE p.mule_proxy=0";
-
-		ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
-			while (resultSet.next()) {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
-				proxiesInDatabase.add(new DatabaseProxy(resultSet.getString("ip_addres"), resultSet.getString("port"),
-						resultSet.getString("username"), resultSet.getString("password")));
+			try {
+				while (resultSet.next()) {
+
+					proxiesInDatabase
+							.add(new DatabaseProxy(resultSet.getString("ip_addres"), resultSet.getString("port"),
+									resultSet.getString("username"), resultSet.getString("password")));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
 		return proxiesInDatabase;
 	}
 
 	/**
 	 * 
 	 * @return
+	 * @throws SQLException
 	 */
 	public static String getEmailFromUsername(String username) {
 		String sql = "SELECT email FROM account WHERE email=\"" + username + "\"";
-
-		ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-
 		String email = null;
 
 		try {
-			while (resultSet.next()) {
-				email = resultSet.getString("email");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
+			try {
+				while (resultSet.next()) {
+					email = resultSet.getString("email");
+
+				}
+				return email;
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
-			return email;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -137,19 +161,29 @@ public class DatabaseUtilities {
 	 */
 	public static ArrayList<DatabaseProxy> getUsedProxies() {
 		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\"";
-
-		ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
 		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
-			while (resultSet.next()) {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
-				proxiesOutDatabase.add(new DatabaseProxy(resultSet.getString("proxy_ip"),
-						resultSet.getString("proxy_port"), resultSet.getString("p_us"), resultSet.getString("p_pass")));
+			try {
+				while (resultSet.next()) {
 
+					proxiesOutDatabase
+							.add(new DatabaseProxy(resultSet.getString("proxy_ip"), resultSet.getString("proxy_port"),
+									resultSet.getString("p_us"), resultSet.getString("p_pass")));
+
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -164,11 +198,21 @@ public class DatabaseUtilities {
 		String sql = "SELECT MAX(id) as max FROM `account`";
 
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-			while (resultSet.next()) {
-				int max = resultSet.getInt("max");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
-				return max + 1;
+			try {
+				while (resultSet.next()) {
+					int max = resultSet.getInt("max");
+
+					return max + 1;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -193,6 +237,7 @@ public class DatabaseUtilities {
 
 			// execute the java preparedstatement
 			preparedStmt.executeUpdate();
+			preparedStmt.close();
 
 			System.out.println("Updated account in database with new password!");
 
@@ -205,39 +250,88 @@ public class DatabaseUtilities {
 	}
 
 	public static void checkRunningErrors() {
-		for (OsbotController account : BotController.getBots()) {
-			if (getLoginStatus(account.getId()) != null && getLoginStatus(account.getId()) == LoginStatus.INITIALIZING
-					&& account.getStartTime() > 0 && (System.currentTimeMillis() - account.getStartTime()) > 120_000
-					&& account.getPidId() > 0) { // about
-				System.out.println("Took too long to start the bot! Restarting right now!");
-				while (BotController.getJavaPIDsWindows().contains(account.getPidId())) {
-					System.out.println(BotController.getJavaPIDsWindows().contains(account.getPidId()));
-					System.out.println("Waiting for to go offline");
-					BotController.killProcess(account.getPidId());
+		if (Config.CLOSE_ON_INACTIVITY) {
+			for (OsbotController account : BotController.getBots()) {
+				if (getLoginStatus(account.getId()) != null
+						&& getLoginStatus(account.getId()) == LoginStatus.INITIALIZING && account.getStartTime() > 0
+						&& (System.currentTimeMillis() - account.getStartTime()) > 120_000 && account.getPidId() > 0) { // about
+					System.out.println("Took too long to start the bot! Restarting right now!");
+
+					int tries = 0;
+					boolean running = true;
+					while (running) {
+
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						if (account.getPidId() > 0) {
+							System.out.println(BotController.getJavaPIDsWindows().contains(account.getPidId()));
+							System.out.println("Waiting for to go offline");
+							BotController.killProcess(account.getPidId());
+						}
+						if (BotController.getJavaPIDsWindows().contains(account.getPidId())) {
+							running = false;
+						}
+						if (tries > 10) {
+							running = false;
+						}
+						tries++;
+
+					}
+					System.out.println("Successfully killed the process!");
+					account.setStartTime(-1);
+					account.setPidId(-1);
+					updateLoginStatus(LoginStatus.DEFAULT, account.getId());
 				}
-				System.out.println("Successfully killed the process!");
-				account.setStartTime(-1);
-				account.setPidId(-1);
-				updateLoginStatus(LoginStatus.DEFAULT, account.getId());
 			}
 		}
 	}
 
-	public static LoginStatus getLoginStatus(int accountId) {
-		LoginStatus status = null;
-		try {
-			String query = "SELECT login_status FROM account WHERE id=" + accountId + "";
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(query);
-			while (resultSet.next()) {
-				String loginStatus = resultSet.getString("login_status");
-				status = LoginStatus.valueOf(loginStatus);
-			}
-			return status;
+	// String sql = "SELECT MAX(id) as max FROM `account`";
+	//
+	// try {
+	// ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
+	// while (resultSet.next()) {
+	// int max = resultSet.getInt("max");
+	//
+	// resultSet.close();
+	// return max + 1;
+	// }
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// }
+	// return -1;
 
+	public static LoginStatus getLoginStatus(int accountId) {
+		String sql = "SELECT login_status FROM account WHERE id=" + accountId + "";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				LoginStatus status = null;
+
+				while (resultSet.next()) {
+					String loginStatus = resultSet.getString("login_status");
+					status = LoginStatus.valueOf(loginStatus);
+				}
+				return status;
+
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return status;
 		}
+		return null;
 	}
 
 	public static boolean updateLoginStatus(LoginStatus status, int accountId) {
@@ -249,6 +343,7 @@ public class DatabaseUtilities {
 
 			// execute the java preparedstatement
 			preparedStmt.executeUpdate();
+			preparedStmt.close();
 
 			System.out.println("Updated account in database with login status: " + status.name().toUpperCase());
 
@@ -260,9 +355,34 @@ public class DatabaseUtilities {
 		}
 	}
 
-	public static boolean updateStatusOfAccountByIp(AccountStatus status, String ip) {
+	public static boolean updateStatusOfAccountByIp(AccountStatus status, String ip, String email) {
 		try {
-			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND status=\"LOCKED_TIMEOUT\" AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
+			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND email = ? AND status=\"LOCKED_TIMEOUT\" AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
+			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
+			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, status.name());
+			preparedStmt.setString(2, ip);
+			preparedStmt.setString(3, email);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+
+			System.out.println(preparedStmt.toString());
+			System.out.println("Updated account status in database with ip! " + status.name() + " ip: " + ip);
+			preparedStmt.close();
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus status, String ip) {
+		try {
+			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND status='LOCKED' AND updated_at BETWEEN SUBDATE(NOW(),2) AND NOW()";
 			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
 			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
 			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
@@ -274,6 +394,7 @@ public class DatabaseUtilities {
 
 			System.out.println(preparedStmt.toString());
 			System.out.println("Updated account status in database with ip! " + status.name() + " ip: " + ip);
+			preparedStmt.close();
 
 			return true;
 
@@ -282,38 +403,50 @@ public class DatabaseUtilities {
 			return false;
 		}
 	}
-
+	
 	public static void changeTimeoutLockedToNormal() {
-		String sql = "SELECT proxy_ip,updated_at FROM account WHERE status=\"LOCKED_TIMEOUT\"";
+		String sql = "SELECT proxy_ip,email,updated_at FROM account WHERE status=\"LOCKED_TIMEOUT\"";
 
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-			while (resultSet.next()) {
-				String updatedAt = resultSet.getString("updated_at");
-				String ip = resultSet.getString("proxy_ip");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
-				Calendar calendar = Calendar.getInstance();
-				calendar.add(Calendar.MINUTE, 15);
-				java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			try {
+				while (resultSet.next()) {
+					String updatedAt = resultSet.getString("updated_at");
+					String ip = resultSet.getString("proxy_ip");
+					String email = resultSet.getString("email");
 
-				try {
-					Date date2 = sdf.parse(updatedAt);
-					calendar.setTime(date2);
+					Calendar calendar = Calendar.getInstance();
+					calendar.add(Calendar.MINUTE, 45);
+					java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-					Calendar calendar2 = Calendar.getInstance();
-					calendar2.setTime(new Date());
+					try {
+						Date date2 = sdf.parse(updatedAt);
+						calendar.setTime(date2);
 
-					if (calendar2.after(calendar)) {
-						System.out.println("Updated the LOCKED_TIMEOUT back to LOCKED, due to 15 minutes have past");
-						updateStatusOfAccountByIp(AccountStatus.LOCKED, ip);
+						Calendar calendar2 = Calendar.getInstance();
+						calendar2.setTime(new Date());
+
+						if (calendar2.after(calendar)) {
+							System.out
+									.println("Updated the LOCKED_TIMEOUT back to LOCKED, due to 60 minutes have past");
+							updateStatusOfAccountByIp(AccountStatus.LOCKED, ip, email);
+						}
+
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 
-				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					// return max + 1;
 				}
-
-				// return max + 1;
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -331,6 +464,7 @@ public class DatabaseUtilities {
 
 			// execute the java preparedstatement
 			preparedStmt.executeUpdate();
+			preparedStmt.close();
 
 			System.out.println("Updated account in database with new stage!");
 
@@ -346,11 +480,20 @@ public class DatabaseUtilities {
 		String sql = "SELECT account_stage FROM account WHERE id = " + accountId + "";
 
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-			while (resultSet.next()) {
-				String stage = resultSet.getString("account_stage");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				while (resultSet.next()) {
+					String stage = resultSet.getString("account_stage");
 
-				return stage;
+					return stage;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -362,12 +505,22 @@ public class DatabaseUtilities {
 		String sql = "SELECT COUNT(*) as cnt FROM account WHERE trade_with_other = '" + name + "'";
 
 		try {
-			// System.out.println(sql);
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-			while (resultSet.next()) {
-				int cnt = resultSet.getInt("cnt");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
 
-				return cnt;
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				// System.out.println(sql);
+				while (resultSet.next()) {
+					int cnt = resultSet.getInt("cnt");
+
+					return cnt;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -379,11 +532,21 @@ public class DatabaseUtilities {
 		String sql = "SELECT trade_with_other FROM account WHERE id = " + accountId + "";
 
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-			while (resultSet.next()) {
-				String stage = resultSet.getString("trade_with_other");
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
 
-				return stage;
+			try {
+				while (resultSet.next()) {
+					String stage = resultSet.getString("trade_with_other");
+
+					return stage;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -400,6 +563,7 @@ public class DatabaseUtilities {
 
 			// execute the java preparedstatement
 			preparedStmt.executeUpdate();
+			preparedStmt.close();
 
 			System.out.println("Updated account in database trading with: " + tradeWith);
 
@@ -420,6 +584,7 @@ public class DatabaseUtilities {
 
 			// execute the java preparedstatement
 			preparedStmt.executeUpdate();
+			preparedStmt.close();
 
 			System.out.println("Updated account in database trading with: " + tradeWith);
 
@@ -445,68 +610,75 @@ public class DatabaseUtilities {
 		// \"BANNED\"";
 
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
 
-			while (resultSet.next()) {
-				int id = resultSet.getInt("id");
-				String email = resultSet.getString("email");
-				String name = resultSet.getString("name");
-				String password = resultSet.getString("password");
-				int world = resultSet.getInt("world_number");
-				int qp = resultSet.getInt("quest_points");
-				String proxyIp = resultSet.getString("proxy_ip");
-				String proxyPort = resultSet.getString("proxy_port");
-				String scriptName = resultSet.getString("account_stage");
-				String tradingWith = resultSet.getString("trade_with_other");
-				String proxyUsername = resultSet.getString("p_us");
-				String proxyPassword = resultSet.getString("p_pass");
-				boolean lowCpuMode = resultSet.getBoolean("low_cpu_mode");
-				String accountValue = resultSet.getString("account_value");
-				AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
-				String date = resultSet.getString("break_till");
-				int amountTimeout = resultSet.getInt("amount_timeout");
+				while (resultSet.next()) {
+					int id = resultSet.getInt("id");
+					String email = resultSet.getString("email");
+					String name = resultSet.getString("name");
+					String password = resultSet.getString("password");
+					int world = resultSet.getInt("world_number");
+					int qp = resultSet.getInt("quest_points");
+					String proxyIp = resultSet.getString("proxy_ip");
+					String proxyPort = resultSet.getString("proxy_port");
+					String scriptName = resultSet.getString("account_stage");
+					String tradingWith = resultSet.getString("trade_with_other");
+					String proxyUsername = resultSet.getString("p_us");
+					String proxyPassword = resultSet.getString("p_pass");
+					boolean lowCpuMode = resultSet.getBoolean("low_cpu_mode");
+					String accountValue = resultSet.getString("account_value");
+					AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
+					String date = resultSet.getString("break_till");
+					int amountTimeout = resultSet.getInt("amount_timeout");
 
-				Calendar calendar = Calendar.getInstance();
-				// calendar.add(Calendar.MINUTE, 30);
-				java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Calendar calendar = Calendar.getInstance();
+					// calendar.add(Calendar.MINUTE, 30);
+					java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-				try {
-					Date date2 = sdf.parse(date);
-					calendar.setTime(date2);
+					try {
+						Date date2 = sdf.parse(date);
+						calendar.setTime(date2);
 
-				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+					AccountStage stage = null;
+					if (resultSet.getString("account_stage") != null) {
+						stage = AccountStage.valueOf(resultSet.getString("account_stage"));
+					}
+					int account_stage_progress = resultSet.getInt("account_stage_progress");
+
+					AccountTable account = new AccountTable(id, null, name, world, proxyIp, proxyPort, lowCpuMode,
+							status, stage, account_stage_progress);
+					account.setProxyUsername(proxyUsername);
+					account.setAmountTimeout(amountTimeout);
+					account.setProxyPassword(proxyPassword);
+					account.setPassword(password);
+					account.setScript(scriptName);
+					account.setEmail(email);
+					account.setQuestPoints(qp);
+					account.setAccountValue(formatNumbers(accountValue));
+					account.setDate(calendar);
+					account.setDateString(date);
+					account.setTradeWithOther(tradingWith);
+
+					accounts.add(account);
+
 				}
 
-				AccountStage stage = null;
-				if (resultSet.getString("account_stage") != null) {
-					stage = AccountStage.valueOf(resultSet.getString("account_stage"));
-				}
-				int account_stage_progress = resultSet.getInt("account_stage_progress");
-
-				AccountTable account = new AccountTable(id, null, name, world, proxyIp, proxyPort, lowCpuMode, status,
-						stage, account_stage_progress);
-				account.setProxyUsername(proxyUsername);
-				account.setAmountTimeout(amountTimeout);
-				account.setProxyPassword(proxyPassword);
-				account.setPassword(password);
-				account.setScript(scriptName);
-				account.setEmail(email);
-				account.setQuestPoints(qp);
-				account.setAccountValue(formatNumbers(accountValue));
-				account.setDate(calendar);
-				account.setDateString(date);
-				account.setTradeWithOther(tradingWith);
-
-				accounts.add(account);
-
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
-
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			// DatabaseConnection.getDatabase().disconnect();
 		}
 		return accounts;
 	}
@@ -552,20 +724,30 @@ public class DatabaseUtilities {
 
 	public static ArrayList<OsbotController> getAccountsToBeRecovered() {
 		ArrayList<OsbotController> bots = new ArrayList<OsbotController>();
-		String sql = "SELECT * FROM account WHERE status = \"LOCKED\"";
 		try {
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
+			String sql = "SELECT * FROM account WHERE status = \"LOCKED\"";
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
 
-			while (resultSet.next()) {
-				int id = resultSet.getInt("id");
-				// System.out.println("Account id: " + id + " has to get recovered");
+				while (resultSet.next()) {
+					int id = resultSet.getInt("id");
+					// System.out.println("Account id: " + id + " has to get recovered");
 
-				OsbotController bot = BotController.getBotById(id);
-				if (bot != null) {
-					bots.add(bot);
+					OsbotController bot = BotController.getBotById(id);
+					if (bot != null) {
+						bots.add(bot);
+					}
+
 				}
-
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				preparedStatement.close();
+				resultSet.close();
 			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -574,7 +756,13 @@ public class DatabaseUtilities {
 
 	public static void main(String[] args) {
 
-		DatabaseUtilities.changeTimeoutLockedToNormal();
+		// AccountCreationService.addUsernameToUsernames("abc");
+		//
+		// AccountCreationService.getUsedUsernames().forEach(a -> {
+		// System.out.println("test:" + a.getUsername() + " " + a.getTime());
+		// });
+
+		// DatabaseUtilities.changeTimeoutLockedToNormal();
 
 		// seleniumRecoverAccount();
 		// seleniumCreateAccountThread();
@@ -600,10 +788,10 @@ public class DatabaseUtilities {
 		return false;
 	}
 
-	private static List<PidCheck> FIREFOX_PIDS2 = new ArrayList<PidCheck>();
+	private static List<PidCheck> GECKO_PIDS = new ArrayList<PidCheck>();
 
 	private static boolean containsInPid2(int pid) {
-		for (PidCheck localPid : FIREFOX_PIDS2) {
+		for (PidCheck localPid : GECKO_PIDS) {
 			if (localPid.getPid() == pid) {
 				return true;
 			}
@@ -628,12 +816,12 @@ public class DatabaseUtilities {
 		for (Integer pid : GeckoHandler.getFirefoxExeWindows()) {
 			if (!containsInPid2(pid)) {
 				PidCheck c = new PidCheck(pid);
-				FIREFOX_PIDS2.add(c);
+				GECKO_PIDS.add(c);
 				System.out.println("Added new firefox/2 pid: " + c.getPid());
 			}
 		}
 
-		Iterator<PidCheck> i = FIREFOX_PIDS2.iterator();
+		Iterator<PidCheck> i = GECKO_PIDS.iterator();
 
 		while (i.hasNext()) {
 			PidCheck pid = i.next();
@@ -641,16 +829,14 @@ public class DatabaseUtilities {
 			if (!containsInRealTimePid2(pid.getPid())) {
 				BotController.killProcess(pid.getPid());
 				i.remove();
-				// System.out.println("Pid /2 " + pid + " was removed, was already open for 5
-				// minutes");
+				System.out.println("Pid /2 " + pid + " was removed, was already open for 5 minutes");
 				continue;
 			}
 
 			if (pid.getMatches() > 300) {
 				BotController.killProcess(pid.getPid());
 				i.remove();
-				// System.out.println("Pid /2 " + pid + " was removed, was already open for 5
-				// minutes");
+				System.out.println("Pid /2 " + pid + " was removed, was already open for 5 minutes");
 				continue;
 			} else {
 				// System.out.println("Firefox /2 pid: " + pid.getPid() + " closing in " +
@@ -739,37 +925,57 @@ public class DatabaseUtilities {
 	// }
 
 	public static int getAvailableAccounts() {
+		String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"";
+
 		try {
-			String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"";
-			int availableAccounts = 0;
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				int availableAccounts = 0;
 
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-
-			while (resultSet.next()) {
-				availableAccounts = resultSet.getInt("available_accounts");
+				while (resultSet.next()) {
+					availableAccounts = resultSet.getInt("available_accounts");
+				}
+				return availableAccounts;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return 0;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
-			return availableAccounts;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return 0;
 		}
+		return 0;
 	}
 
 	public static int getMuleAmount() {
+		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE account_stage = \"UNKNOWN\" AND status = \"MULE\"";
+
 		try {
-			String sql = "SELECT COUNT(*) as mule_count FROM account WHERE account_stage = \"UNKNOWN\" AND status = \"MULE\"";
-			int muleCount = 0;
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				int muleCount = 0;
 
-			ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-
-			while (resultSet.next()) {
-				muleCount = resultSet.getInt("mule_count");
+				while (resultSet.next()) {
+					muleCount = resultSet.getInt("mule_count");
+				}
+				return muleCount;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return 0;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
 			}
-			return muleCount;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return 0;
 		}
+		return 0;
 	}
 
 	/**
@@ -779,27 +985,38 @@ public class DatabaseUtilities {
 
 		// AccountCreationService.checkPreviousProcessesAndDie(SeleniumType.RECOVER_ACCOUNT);
 
-		if (!AccountCreationService.getLaunching()) {
-			AccountCreationService.checkProcesses();
-		}
+		// if (!AccountCreationService.getLaunching()) {
+		// AccountCreationService.checkProcesses();
+		// }
 
-		if (AccountCreationService.getLaunching()) {
-			return;
-		}
+		// if (AccountCreationService.getLaunching()) {
+		// return;
+		// }
 
 		System.out.println(
 				"[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size() + " accounts left to recover currently");
 
-		System.out.println("[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size() + " accounts timed out");
+		System.out.println(
+				"[ACCOUNT RECOVERING] " + AccountCreationService.getUsedUsernames().size() + " accounts timed out");
 
-		for (OsbotController account : getAccountsToBeRecovered()) {
+		ArrayList<OsbotController> accs = getAccountsToBeRecovered();
+		Collections.shuffle(accs);
+
+		for (OsbotController account : accs) {
+			if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
+				System.out.println("Breaking because too many geckodrivers active!");
+				break;
+			}
 			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
+				System.out.println("Recovering account: " + account.getAccount().getUsername());
+				AccountCreationService.addUsernameToUsernames(account.getAccount().getUsername());
 
 				DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
 						account.getAccount().getProxyPort(), account.getAccount().getProxyUsername(),
 						account.getAccount().getProxyPassword());
 
 				AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
+				break;
 				// System.out.println("Recovering account: " +
 				// account.getAccount().getUsername());
 			}
@@ -808,18 +1025,33 @@ public class DatabaseUtilities {
 
 	}
 
+	public static int getSizeToCreateAccounts() {
+		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+
+		int count = 0;
+		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+			DatabaseProxy key = entry.getKey();
+			Integer value = entry.getValue();
+
+			if (value < 2) {
+				count += value;
+			}
+		}
+		return count;
+	}
+
 	/**
 	 * 
 	 */
 	public static void seleniumCreateAccountThread() {
 
-		if (!AccountCreationService.getLaunching()) {
-			AccountCreationService.checkProcesses();
-		}
+		// if (!AccountCreationService.getLaunching()) {
+		// AccountCreationService.checkProcesses();
+		// }
 
-		if (AccountCreationService.getLaunching()) {
-			return;
-		}
+		// if (AccountCreationService.getLaunching()) {
+		// return;
+		// }
 
 		// AccountCreationService.checkPreviousProcessesAndDie(SeleniumType.CREATE_VERIFY_ACCOUNT);
 
@@ -837,6 +1069,10 @@ public class DatabaseUtilities {
 
 		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] " + count + " accounts left to create accounts with!");
 		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+			if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
+				System.out.println("Breaking because too many geckodrivers active!");
+				break;
+			}
 			DatabaseProxy key = entry.getKey();
 			Integer value = entry.getValue();
 
@@ -855,8 +1091,10 @@ public class DatabaseUtilities {
 				table.setProxyPassword(key.getProxyPassword());
 				table.setBankPin("0000");
 				OsbotController bot = new OsbotController(-1, table);
+				System.out.println("Creating account: " + table.getUsername());
 
 				AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
+				break;
 			}
 
 		}
