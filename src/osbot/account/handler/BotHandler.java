@@ -1,11 +1,19 @@
 package osbot.account.handler;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.List;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
@@ -59,17 +67,73 @@ public class BotHandler {
 	 * Checks the processes
 	 */
 	public static void checkProcesses() {
-		Iterator<Integer> it = BotController.getJavaPIDsWindows().iterator();
 
-		while (it.hasNext()) {
-			int nextPid = it.next();
-
-			if (!isProcessIdRunningOnWindows(nextPid)) {
-				System.out.println("Removed pid: " + nextPid + " from the processes list, was no longer running");
-				it.remove();
+		for (OsbotController bot : BotController.getBots()) {
+			if (bot.getPidId() <= 0) {
+				continue;
 			}
+			if (!isProcessIdRunningOnWindows(bot.getPidId())) {
+				BotController.killProcess(bot.getPidId());
+				bot.setPidId(-1);
+				System.out.println("Set pid to: " + bot.getPidId());
+			}
+
+			// System.out.println("PID OF BOT: " + bot.getPidId());
+
 		}
 
+		// Iterator<Integer> it = BotController.getJavaPIDsWindows().iterator();
+		//
+		// while (it.hasNext()) {
+		// int nextPid = it.next();
+		//
+		// if (!isProcessIdRunningOnWindows(nextPid)) {
+		// OsbotController bot = BotController.getBotByPid(nextPid);
+		// if (bot != null) {
+		// System.out.println("SET PID TO -1!!");
+		// bot.setPidId(-1);
+		// }
+		// System.out.println("Removed pid: " + nextPid + " from the processes list, was
+		// no longer running");
+		// it.remove();
+		// }
+		// }
+
+	}
+
+	public static long MAIN_PID = -1;
+
+	/**
+	 * Pids to remove
+	 */
+	public static void checkJavaPidsTimeout() {
+		List<Integer> allCurrentJavaPids = BotController.getJavaPIDsWindows();
+		ArrayList<Integer> programPids = new ArrayList<Integer>();
+
+		for (OsbotController bot : BotController.getBots()) {
+			if (bot.getPidId() > 0) {
+				programPids.add(bot.getPidId());
+			}
+		}
+		allCurrentJavaPids.removeAll(programPids);
+
+		for (Integer pidToRemove : allCurrentJavaPids) {
+			if (pidToRemove != MAIN_PID) {
+				BotController.killProcess(pidToRemove);
+				System.out.println("Removed pid: " + pidToRemove + " due to not being registered in the system");
+			}
+		}
+	}
+
+	public static void sortByStage() {
+		Collections.sort(BotController.getBots(), new Comparator<Object>() {
+			@Override
+			public int compare(Object o1, Object o2) {
+				OsbotController bot1 = (OsbotController) o1;
+				OsbotController bot2 = (OsbotController) o2;
+				return bot1.getAccount().getStage().ordinal() - bot2.getAccount().getStage().ordinal();
+			}
+		});
 	}
 
 	/**
@@ -82,6 +146,7 @@ public class BotHandler {
 			System.out.println("Invalid bot");
 			return;
 		}
+
 		AccountTable account = bot.getAccount();
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
@@ -90,7 +155,15 @@ public class BotHandler {
 		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
 
 		// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
-		bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		if (Config.LOW_CPU) {
+			// if (bot.getAccount().getStage() == AccountStage.GE_SELL_BUY_MINING) {
+			// bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+			// } else {
+			bot.addArguments(CliArgs.ALLOW, false, "norandoms,lowcpu");
+			// }
+		} else {
+			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		}
 		// }
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
@@ -110,6 +183,7 @@ public class BotHandler {
 		}
 		bot.setStartTime(System.currentTimeMillis());
 		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
+
 		bot.runBot(false);
 	}
 
@@ -118,6 +192,7 @@ public class BotHandler {
 			System.out.println("Invalid bot");
 			return;
 		}
+
 		AccountTable account = bot.getAccount();
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
@@ -125,8 +200,12 @@ public class BotHandler {
 		bot.addArguments(CliArgs.DATA, false, 0);
 		bot.addArguments(CliArgs.WORLD, false, 394);
 
-		// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
-		bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		if (Config.LOW_CPU) {
+			// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
+			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		} else {
+			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
+		}
 		// }
 
 		if (account.hasUsernameAndPasswordAndBankpin()) {
@@ -146,7 +225,39 @@ public class BotHandler {
 		}
 		bot.setStartTime(System.currentTimeMillis());
 		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
+
+		if (bot.getAccount().getStatus() == AccountStatus.MULE) {
+			createBatFile(bot);
+		}
 		bot.runBot(true);
+	}
+
+	public static void createBatFile(OsbotController bot) {
+		if (!Config.CREATE_BATCH_FILES_FOR_MULES) {
+			System.out.println("Not creating a batch file");
+			return;
+		}
+		String fileName = "mule/" + bot.getAccount().getEmail() + "_" + bot.getAccount().getUsername() + ".bat";
+		File file = new File(fileName);
+		if (!file.exists()) {
+			PrintWriter writer = null;
+			try {
+				writer = new PrintWriter(fileName, "UTF-8");
+			} catch (FileNotFoundException | UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			try {
+				file.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (writer != null) {
+				writer.println(bot.getCliArgs().toString());
+				writer.close();
+			}
+		}
 	}
 
 	/**
@@ -216,7 +327,8 @@ public class BotHandler {
 			OsbotController partner = getOsbotByName(tradeWithOther);
 
 			if (tradeWithOther != null && (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
-					|| osbot.getAccount().getStage() == AccountStage.UNKNOWN)) {
+					|| (osbot.getAccount().getStage() == AccountStage.UNKNOWN
+							&& osbot.getAccount().getStatus() == AccountStatus.MULE))) {
 
 				// Cant find the partner
 				if (partner == null) {
@@ -341,11 +453,12 @@ public class BotHandler {
 	public static void handleBots() {
 		// Will check the PID processes if they are still running or not, when not, they
 		// get deleted in the PID list
-		BotHandler.checkProcesses();
 
 		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Calendar calendar2 = Calendar.getInstance();
 		calendar2.setTime(new Date());
+
+		sortByStage();
 
 		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
 
@@ -372,7 +485,7 @@ public class BotHandler {
 				System.out.println("Running mule trading " + osbot.getAccount().getUsername());
 
 				try {
-					Thread.sleep(15000);
+					Thread.sleep(3500);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -395,7 +508,7 @@ public class BotHandler {
 						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
 						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
 						&& !BotController.containsInPidList(osbot.getPidId())
-						&& getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
+						&& getAmountOfBotsActive() < Config.MAX_BOTS_OPEN && osbot.getAccount().getEmail() != null) {
 
 					if (!calendar2.after(osbot.getAccount().getDate())) {
 						System.out.println(
@@ -408,18 +521,20 @@ public class BotHandler {
 						continue;
 					}
 
-//					if (containsMiningAndNotRunning() && !isMining(osbot) && i != BotController.getBots().size()) {
-//						System.out.println("Giving priority to a miner instead of a non-miner");
-//						continue;
-//					} else if (i == BotController.getBots().size()) {
-//						System.out.println("Giving priority to a miner went wrong - starting anyways");
-//					}
+					// if (containsMiningAndNotRunning() && !isMining(osbot) && i !=
+					// BotController.getBots().size()) {
+					// System.out.println("Giving priority to a miner instead of a non-miner");
+					// continue;
+					// } else if (i == BotController.getBots().size()) {
+					// System.out.println("Giving priority to a miner went wrong - starting
+					// anyways");
+					// }
 
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
 					try {
-						Thread.sleep(10000);
+						Thread.sleep(3500);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

@@ -9,6 +9,8 @@ public class DatabaseProxy {
 		this.setProxyPassword(proxyPassword);
 	}
 
+	private int usedCount;
+	
 	private String proxyIp;
 	
 	private String proxyPort, proxyUsername, proxyPassword;
@@ -67,5 +69,19 @@ public class DatabaseProxy {
 	 */
 	public void setProxyUsername(String proxyUsername) {
 		this.proxyUsername = proxyUsername;
+	}
+
+	/**
+	 * @return the usedCount
+	 */
+	public int getUsedCount() {
+		return usedCount;
+	}
+
+	/**
+	 * @param usedCount the usedCount to set
+	 */
+	public void setUsedCount(int usedCount) {
+		this.usedCount = usedCount;
 	}
 }

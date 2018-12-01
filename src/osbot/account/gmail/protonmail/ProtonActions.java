@@ -121,6 +121,25 @@ public class ProtonActions {
 		return false;
 	}
 
+	public boolean blackFridayDeals() {
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 2);
+
+			WebElement element = wait.until(ExpectedConditions
+					.visibilityOfElementLocated(By.xpath("//button[@class='fa fa-times close']")));
+			System.out.println("element found: " + element);
+			if (element != null && element.isDisplayed()) {
+				element.click();
+				return true;
+			}
+			return false;
+		} catch (Exception e) {
+			 e.printStackTrace();
+			System.out.println("Couldnt find the friday deals!");
+			return false;
+		}
+	}
+
 	/**
 	 * 
 	 * @return

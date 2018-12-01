@@ -625,7 +625,7 @@ public class RunescapeActions {
 	 */
 	private int getRandomNumber() {
 		Random rand = new Random();
-		return rand.nextInt(1000000) + 1;
+		return rand.nextInt(2146000000) + 1;
 	}
 
 	/**
@@ -842,12 +842,12 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeCreateAccount() {
-		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
 		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 40 seconds!");
+			System.out.println("Page did not load within 120 seconds!");
 			System.out.println("Restarting driver and trying again");
 			e.printStackTrace();
 			// treat the timeout as needed

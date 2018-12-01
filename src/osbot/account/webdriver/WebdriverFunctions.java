@@ -59,7 +59,7 @@ public class WebdriverFunctions {
 		try {
 			Thread.sleep(1000);
 			System.out.println("Waiting for element visibility");
-			WebDriverWait wait = new WebDriverWait(driver, 15);
+			WebDriverWait wait = new WebDriverWait(driver, 40);
 			wait.until(ExpectedConditions.urlToBe(url));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

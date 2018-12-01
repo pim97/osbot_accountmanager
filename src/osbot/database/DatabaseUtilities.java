@@ -12,13 +12,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.LoginStatus;
+import osbot.account.creator.AccountCreate;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
@@ -38,8 +39,8 @@ public class DatabaseUtilities {
 	public static void insertIntoTable(AccountTable account) {
 
 		// the mysql insert statement
-		String query = " insert into account (name, password, bank_pin, day, month, year, proxy_ip, proxy_port, world_number, low_cpu_mode, status, email)"
-				+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String query = " insert into account (name, password, bank_pin, day, month, year, proxy_ip, proxy_port, world_number, low_cpu_mode, status, email, account_stage)"
+				+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 		// create the mysql insert preparedstatement
 		PreparedStatement preparedStmt;
@@ -61,6 +62,7 @@ public class DatabaseUtilities {
 			preparedStmt.setBoolean(10, account.isLowCpuMode());
 			preparedStmt.setString(11, account.getStatus().name());
 			preparedStmt.setString(12, account.getEmail());
+			preparedStmt.setString(13, account.getStage().name());
 
 			// execute the preparedstatement
 			preparedStmt.execute();
@@ -155,6 +157,59 @@ public class DatabaseUtilities {
 		return email;
 	}
 
+	public static boolean checkAlreadyLockedProxies(String proxy, String email) {
+
+		String sql = "SELECT email,proxy_ip,updated_at FROM account WHERE status=\"LOCKED_TIMEOUT\" AND proxy_ip= '"
+				+ proxy + "' AND email <> '" + email + "'";
+
+		System.out.println("USING SQL: " + sql);
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+
+				boolean alreadyLocked = false;
+				while (resultSet.next()) {
+					alreadyLocked = true;
+				}
+
+				if (alreadyLocked) {
+					try {
+						String query = "UPDATE account SET status = ? WHERE email=?";
+						PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection()
+								.prepareStatement(query);
+						preparedStmt.setString(1, AccountStatus.LOCKED_TIMEOUT.name());
+						preparedStmt.setString(2, email);
+
+						// execute the java preparedstatement
+						preparedStmt.executeUpdate();
+						preparedStmt.close();
+
+						System.out.println("Updated account to locked_timeout because ip was timed out E10");
+
+						return true;
+
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+
+	}
+
 	/**
 	 * 
 	 * @return
@@ -174,6 +229,66 @@ public class DatabaseUtilities {
 					proxiesOutDatabase
 							.add(new DatabaseProxy(resultSet.getString("proxy_ip"), resultSet.getString("proxy_port"),
 									resultSet.getString("p_us"), resultSet.getString("p_pass")));
+
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return proxiesOutDatabase;
+	}
+
+	public static int accountsToCreate2() {
+		ArrayList<DatabaseProxy> proxy = getUsedProxies2();
+		int count = 0;
+
+		for (DatabaseProxy pro : proxy) {
+			int amount = (2 - pro.getUsedCount()) > 0 ? (2 - pro.getUsedCount()) : 0;
+
+			count += amount;
+		}
+		return count;
+	}
+
+	public static int totalAccountsAvailable() {
+		ArrayList<DatabaseProxy> proxy = getUsedProxies2();
+		int count = 0;
+
+		for (DatabaseProxy pro : proxy) {
+			count += pro.getUsedCount();
+		}
+		return count;
+	}
+
+	public static ArrayList<DatabaseProxy> getUsedProxies2() {
+		String sql = "SELECT * FROM ( SELECT SUM(CASE WHEN ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\" THEN 1 ELSE 0 END) AS count, p.ip_addres AS proxy, p.port, p.username, p.password, p.mule_proxy FROM proxies AS p LEFT JOIN account AS ac ON ac.proxy_ip=p.ip_addres AND ac.proxy_port=p.port GROUP BY p.ip_addres, p.port, p.username, p.password) AS proxy WHERE mule_proxy <> 1";
+		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+
+					int count = resultSet.getInt("count");
+					String ip = resultSet.getString("proxy");
+					String port = resultSet.getString("port");
+					String username = resultSet.getString("username");
+					String password = resultSet.getString("password");
+
+					DatabaseProxy proxy = new DatabaseProxy(ip, port, username, password);
+					proxy.setUsedCount(count);
+
+					proxiesOutDatabase.add(proxy);
 
 				}
 			} catch (SQLException e) {
@@ -251,10 +366,20 @@ public class DatabaseUtilities {
 
 	public static void checkRunningErrors() {
 		if (Config.CLOSE_ON_INACTIVITY) {
-			for (OsbotController account : BotController.getBots()) {
+
+			Iterator<OsbotController> accounts = BotController.getBots().iterator();
+
+			while (accounts.hasNext()) {
+				OsbotController account = accounts.next();
+				int startPid = account.getPidId();
+
+				// System.out.println("START TIME: " + account.getStartTime());
+				// System.out.println("TIME: " + (System.currentTimeMillis() -
+				// account.getStartTime()));
+
 				if (getLoginStatus(account.getId()) != null
 						&& getLoginStatus(account.getId()) == LoginStatus.INITIALIZING && account.getStartTime() > 0
-						&& (System.currentTimeMillis() - account.getStartTime()) > 120_000 && account.getPidId() > 0) { // about
+						&& (System.currentTimeMillis() - account.getStartTime()) > 180_000 && account.getPidId() > 0) { // about
 					System.out.println("Took too long to start the bot! Restarting right now!");
 
 					int tries = 0;
@@ -272,8 +397,9 @@ public class DatabaseUtilities {
 							System.out.println("Waiting for to go offline");
 							BotController.killProcess(account.getPidId());
 						}
-						if (BotController.getJavaPIDsWindows().contains(account.getPidId())) {
+						if (!BotController.getJavaPIDsWindows().contains(account.getPidId())) {
 							running = false;
+							System.out.println("DIDN'T CONTAIN IN LIST ANYMORE!");
 						}
 						if (tries > 10) {
 							running = false;
@@ -282,9 +408,14 @@ public class DatabaseUtilities {
 
 					}
 					System.out.println("Successfully killed the process!");
-					account.setStartTime(-1);
-					account.setPidId(-1);
-					updateLoginStatus(LoginStatus.DEFAULT, account.getId());
+					if (startPid == account.getPidId()) {
+						account.setStartTime(-1);
+						account.setPidId(-1);
+						updateLoginStatus(LoginStatus.DEFAULT, account.getId());
+					} else {
+						System.out.println("Pid didn't match eachother!");
+					}
+
 				}
 			}
 		}
@@ -355,9 +486,33 @@ public class DatabaseUtilities {
 		}
 	}
 
+	public static boolean updateStatusOfAccountByIp(AccountStatus status, String ip) {
+		try {
+			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND status=\"LOCKED_TIMEOUT\"";
+			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
+			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, status.name());
+			preparedStmt.setString(2, ip);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+
+			System.out.println(preparedStmt.toString());
+			System.out.println("Updated account status in database with ip! " + status.name() + " ip: " + ip);
+			preparedStmt.close();
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	public static boolean updateStatusOfAccountByIp(AccountStatus status, String ip, String email) {
 		try {
-			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND email = ? AND status=\"LOCKED_TIMEOUT\" AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
+			String query = "UPDATE account SET status = ? WHERE proxy_ip=? AND email = ? AND status=\"LOCKED_TIMEOUT\"";
 			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
 			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
 			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
@@ -370,6 +525,31 @@ public class DatabaseUtilities {
 
 			System.out.println(preparedStmt.toString());
 			System.out.println("Updated account status in database with ip! " + status.name() + " ip: " + ip);
+			preparedStmt.close();
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean updateStatusOfAccountById(AccountStatus status, int id) {
+		try {
+			String query = "UPDATE account SET status = ? WHERE id=?";
+			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
+			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, status.name());
+			preparedStmt.setInt(2, id);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+
+			System.out.println(preparedStmt.toString());
+			// System.out.println("Updated account status in database with ip! " +
+			// status.name() + " ip: " + ip);
 			preparedStmt.close();
 
 			return true;
@@ -403,7 +583,7 @@ public class DatabaseUtilities {
 			return false;
 		}
 	}
-	
+
 	public static void changeTimeoutLockedToNormal() {
 		String sql = "SELECT proxy_ip,email,updated_at FROM account WHERE status=\"LOCKED_TIMEOUT\"";
 
@@ -419,26 +599,27 @@ public class DatabaseUtilities {
 					String email = resultSet.getString("email");
 
 					Calendar calendar = Calendar.getInstance();
-					calendar.add(Calendar.MINUTE, 45);
+
 					java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date date2 = sdf.parse(updatedAt);
+					calendar.setTime(date2);
+					calendar.add(Calendar.MINUTE, 45);
 
-					try {
-						Date date2 = sdf.parse(updatedAt);
-						calendar.setTime(date2);
+					// try {
 
-						Calendar calendar2 = Calendar.getInstance();
-						calendar2.setTime(new Date());
+					Calendar calendar2 = Calendar.getInstance();
+					calendar2.setTime(new Date());
 
-						if (calendar2.after(calendar)) {
-							System.out
-									.println("Updated the LOCKED_TIMEOUT back to LOCKED, due to 60 minutes have past");
-							updateStatusOfAccountByIp(AccountStatus.LOCKED, ip, email);
-						}
-
-					} catch (ParseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					if (calendar2.after(calendar)) {
+						System.out.println("Updated ALL LOCKED_TIMEOUT back to LOCKED for ip: " + ip
+								+ ", due to 45 minutes have past");
+						updateStatusOfAccountByIp(AccountStatus.LOCKED, ip);
 					}
+
+					// } catch (ParseException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
 
 					// return max + 1;
 				}
@@ -925,7 +1106,7 @@ public class DatabaseUtilities {
 	// }
 
 	public static int getAvailableAccounts() {
-		String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"";
+		String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"LOCKED_TIMEOUT\"";
 
 		try {
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
@@ -1008,6 +1189,11 @@ public class DatabaseUtilities {
 				break;
 			}
 			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
+				if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
+						account.getAccount().getEmail())) {
+					System.out.println("Didn't recover, because IP is flagged for some time");
+					continue;
+				}
 				System.out.println("Recovering account: " + account.getAccount().getUsername());
 				AccountCreationService.addUsernameToUsernames(account.getAccount().getUsername());
 
@@ -1025,19 +1211,144 @@ public class DatabaseUtilities {
 
 	}
 
-	public static int getSizeToCreateAccounts() {
-		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+	// public static int getSizeToCreateAccounts() {
+	// HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(),
+	// getUsedProxies());
+	//
+	// int count = 0;
+	// for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+	// DatabaseProxy key = entry.getKey();
+	// Integer value = entry.getValue();
+	//
+	// if (value < 2) {
+	// count += value;
+	// }
+	// }
+	// return count;
+	// }
 
-		int count = 0;
-		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
-			DatabaseProxy key = entry.getKey();
-			Integer value = entry.getValue();
+	private static long lastAttempt = 0;
 
-			if (value < 2) {
-				count += value;
+	public static void transformIntoMuleHandler() {
+		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
+				+ (System.currentTimeMillis() - lastAttempt));
+
+		// if (DatabaseUtilities.getMuleAmount() < 2) {
+		// System.out.println("Not enough mules -- creating/setting a new mule");
+		//
+		// OsbotController mule = null;
+		// for (OsbotController newMule : BotController.getBots()) {
+		// if (newMule.getAccount().getStatus() == AccountStatus.AVAILABLE
+		// && Integer.parseInt(newMule.getAccount().getAccountValue()) <= 1000
+		// && newMule.getAccount().getStage() != AccountStage.TUT_ISLAND
+		// && (newMule.getAccount().getStage() == AccountStage.QUEST_COOK_ASSISTANT
+		// || getMuleAmount() <= 0)) {
+		// mule = newMule;
+		// System.out.println("Found a new mule!");
+		// break;
+		// }
+		// }
+		// if (mule != null) {
+		// mule.getAccount().setStage(AccountStage.UNKNOWN);
+		// mule.getAccount().setStatus(AccountStatus.MULE);
+		// System.out.println("Set account: " + mule.getAccount().getUsername() + " to a
+		// mule!");
+		// DatabaseUtilities.updateStatusOfAccountById(AccountStatus.MULE,
+		// mule.getId());
+		// DatabaseUtilities.updateAccountStage(AccountStage.UNKNOWN, mule.getId());
+		// }
+		// }
+
+		/**
+		 * Making mules with that specific IP-adress
+		 */
+
+		if (DatabaseUtilities.getMuleAmount() < 1) {
+			// Make an account once every 20 minutes
+			for (OsbotController mule : BotController.getBots()) {
+				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
+						&& mule.getAccount().getStatus() == AccountStatus.AVAILABLE
+						&& Config.isMuleProxy(mule.getAccount().getProxyIp(), mule.getAccount().getProxyPort())) {
+
+					System.out.println("Mule completed tutorial island, setting to official mule now!");
+					mule.getAccount().setStage(AccountStage.UNKNOWN);
+					mule.getAccount().setStatus(AccountStatus.MULE);
+
+					updateAccountStage(mule.getAccount().getStage(), mule.getId());
+					updateStatusOfAccountById(mule.getAccount().getStatus(), mule.getId());
+				}
 			}
 		}
-		return count;
+
+		if (DatabaseUtilities.getMuleAmount() < 1 && (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
+			lastAttempt = System.currentTimeMillis();
+
+			RandomNameGenerator name = new RandomNameGenerator();
+
+			String[] proxyString = Config.getRandomMuleProxy().split(":");
+
+			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
+					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
+
+			table.setPassword(name.generateRandomNameString());
+			table.setProxyUsername("hjeg53");
+			table.setProxyPassword("L9MbdJ");
+			table.setBankPin("0000");
+
+			DatabaseProxy proxy = new DatabaseProxy(table.getProxyUsername(), table.getProxyPort(),
+					table.getProxyUsername(), table.getProxyPassword());
+
+			OsbotController bot = new OsbotController(-1, table);
+			System.out.println("Creating account: " + table.getUsername() + " stage: " + bot.getAccount().getStage());
+
+			AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
+
+		}
+	}
+
+	public static List<AccountCreate> USED_IPS_TO_CREATE_WITH = new CopyOnWriteArrayList<AccountCreate>();
+
+	public static boolean ipExists(String ip) {
+		boolean exists = false;
+		for (AccountCreate create : USED_IPS_TO_CREATE_WITH) {
+			if (create.getUsername().equalsIgnoreCase(ip)) {
+				exists = true;
+			}
+		}
+		return exists;
+	}
+
+	public static void addToUsedIpsCreateAccount(String ip) {
+		boolean exists = false;
+		for (AccountCreate create : USED_IPS_TO_CREATE_WITH) {
+			if (create.getUsername().equalsIgnoreCase(ip)) {
+				exists = true;
+			}
+		}
+		if (exists) {
+			System.out.println("SKIPPING BECAUSE IP TO CREATE ALREADY EXISTS FOR NOW");
+			return;
+		}
+
+		USED_IPS_TO_CREATE_WITH.add(new AccountCreate(System.currentTimeMillis(), ip));
+
+		System.out.println("Added to CREATE LIST: " + ip);
+	}
+
+	public static void checkUsedIPs() {
+		ArrayList<AccountCreate> toRemove = new ArrayList<AccountCreate>();
+
+		for (AccountCreate create : USED_IPS_TO_CREATE_WITH) {
+
+			if (System.currentTimeMillis() - create.getTime() > 350_000) {
+				toRemove.add(create);
+			}
+		}
+
+		for (AccountCreate create : toRemove) {
+			USED_IPS_TO_CREATE_WITH.remove(create);
+			System.out.println("Removed: " + create + " from the create list, because was longer than 350_000 secs");
+		}
 	}
 
 	/**
@@ -1045,38 +1356,52 @@ public class DatabaseUtilities {
 	 */
 	public static void seleniumCreateAccountThread() {
 
-		// if (!AccountCreationService.getLaunching()) {
-		// AccountCreationService.checkProcesses();
-		// }
-
-		// if (AccountCreationService.getLaunching()) {
-		// return;
-		// }
-
+		// // if (!AccountCreationService.getLaunching()) {
+		// // AccountCreationService.checkProcesses();
+		// // }
+		//
+		// // if (AccountCreationService.getLaunching()) {
+		// // return;
+		// // }
+		//
+		// //
 		// AccountCreationService.checkPreviousProcessesAndDie(SeleniumType.CREATE_VERIFY_ACCOUNT);
 
-		HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(), getUsedProxies());
+		// HashMap<DatabaseProxy, Integer> hash = oneExistsInOther(getTotalProxies(),
+		// getUsedProxies());
 
-		int count = 0;
-		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
-			DatabaseProxy key = entry.getKey();
-			Integer value = entry.getValue();
+		// int count = 0;
+		// for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+		// DatabaseProxy key = entry.getKey();
+		// Integer value = entry.getValue();
+		//
+		// if (value < 2) {
+		// count += value;
+		// }
+		// }
 
-			if (value < 2) {
-				count += value;
-			}
-		}
+		checkUsedIPs();
 
-		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] " + count + " accounts left to create accounts with!");
-		for (Entry<DatabaseProxy, Integer> entry : hash.entrySet()) {
+		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] " + accountsToCreate2()
+				+ " accounts left to create accounts with! Total accounts available: " + totalAccountsAvailable());
+
+		ArrayList<DatabaseProxy> proxies = getUsedProxies2();
+		Collections.shuffle(proxies);
+
+		for (DatabaseProxy proxy : proxies) {
 			if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
 				System.out.println("Breaking because too many geckodrivers active!");
 				break;
 			}
-			DatabaseProxy key = entry.getKey();
-			Integer value = entry.getValue();
-
-			if (value < 2) {
+			if (ipExists(proxy.getProxyIp() + ":" + proxy.getProxyPort())) {
+				System.out.println("Skipping IP: " + proxy.getProxyIp() + ":" + proxy.getProxyPort()
+						+ " because already exists in creating for this IP-addres");
+				continue;
+			}
+			// DatabaseProxy key = entry.getKey();
+			// Integer value = entry.getValue();
+			if (proxy.getUsedCount() < 2
+					&& totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 5))) {
 				/**
 				 * public AccountTable(int id, String script, String username, int world, String
 				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
@@ -1084,16 +1409,24 @@ public class DatabaseUtilities {
 				RandomNameGenerator name = new RandomNameGenerator();
 
 				AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 318,
-						key.getProxyIp(), key.getProxyPort(), true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND,
-						0);
+						proxy.getProxyIp(), proxy.getProxyPort(), true, AccountStatus.AVAILABLE,
+						AccountStage.TUT_ISLAND, 0);
 				table.setPassword(name.generateRandomNameString());
-				table.setProxyUsername(key.getProxyUsername());
-				table.setProxyPassword(key.getProxyPassword());
+				table.setProxyUsername(proxy.getProxyUsername());
+				table.setProxyPassword(proxy.getProxyPassword());
 				table.setBankPin("0000");
+
+				if (Config.isMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
+					System.out.println("IS MULE PROXY, SKIPPING!");
+					break;
+				}
+
+				addToUsedIpsCreateAccount(proxy.getProxyIp() + ":" + proxy.getProxyPort());
+
 				OsbotController bot = new OsbotController(-1, table);
 				System.out.println("Creating account: " + table.getUsername());
 
-				AccountCreationService.launchRunescapeWebsite(key, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
+				AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
 				break;
 			}
 

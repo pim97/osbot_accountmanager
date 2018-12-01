@@ -2,6 +2,7 @@ package osbot.controller.communicator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -267,7 +268,7 @@ public class ContentController {
 					ArrayList<AccountTable> toBeDeleted = containsInBoth(BotController.getBots(), account);
 
 					for (AccountTable del : toBeDeleted) {
-						removeFromList(del.getUsername());
+						removeFromList(del.getId());
 						System.out.println(del.getUsername()
 								+ " deleted from the botcontroller, didn't exist as available anymore");
 					}
@@ -329,14 +330,14 @@ public class ContentController {
 	 * Will look if two arraylists contains the same values. The one with the most
 	 * values to check on must be first in the paramaters
 	 * 
-	 * @param one
+	 * @param list
 	 * @param two
 	 * @return
 	 */
-	public static ArrayList<AccountTable> containsInBoth(ArrayList<OsbotController> one, ArrayList<AccountTable> two) {
+	public static ArrayList<AccountTable> containsInBoth(List<OsbotController> list, ArrayList<AccountTable> two) {
 		ArrayList<AccountTable> notFoundInBoth = new ArrayList<AccountTable>();
 
-		for (OsbotController a : one) {
+		for (OsbotController a : list) {
 			boolean found = false;
 			for (AccountTable b : two) {
 				if (a.getAccount().getUsername().equalsIgnoreCase(b.getUsername())) {
@@ -413,7 +414,7 @@ public class ContentController {
 					ArrayList<AccountTable> toBeDeleted = containsInBoth(BotController.getBots(), account);
 
 					for (AccountTable del : toBeDeleted) {
-						removeFromList(del.getUsername());
+						removeFromList(del.getId());
 						System.out.println(del.getUsername()
 								+ " deleted from the botcontroller, didn't exist as available anymore");
 					}
@@ -436,16 +437,19 @@ public class ContentController {
 	 * 
 	 * @param accountName
 	 */
-	private static void removeFromList(String accountName) {
-		Iterator<OsbotController> bot = BotController.getBots().iterator();
+	private static void removeFromList(int id) {
+		OsbotController bot = BotController.getBotById(id);
+		BotController.getBots().remove(bot);
+		// Iterator<OsbotController> bot = BotController.getBots().iterator();
+		//
+		// while (bot.hasNext()) {
+		// OsbotController b = bot.next();
+		//
+		// if (b.getId() == id) {
+		// bot.remove();
+		// }
+		// }
 
-		while (bot.hasNext()) {
-			OsbotController b = bot.next();
-
-			if (b.getAccount().getUsername().equalsIgnoreCase(accountName)) {
-				bot.remove();
-			}
-		}
 	}
 
 	/**

@@ -3,6 +3,7 @@ package osbot.account.creator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -50,7 +51,7 @@ public class AccountCreationService {
 	/**
 	 * Drivers
 	 */
-	public static final ArrayList<PidDriver> ALL_DRIVERS = new ArrayList<PidDriver>();
+	public static final List<PidDriver> ALL_DRIVERS = new CopyOnWriteArrayList<PidDriver>();
 
 	/**
 	 * Checks the processes
@@ -149,15 +150,17 @@ public class AccountCreationService {
 	public static void checkUsedUsernames() {
 		Thread t = new Thread(() -> {
 
-			Iterator<AccountCreate> it = usedUsernames.iterator();
-			System.out.println("List checked usernames: " + usedUsernames.size());
+			synchronized (usedUsernames) {
+				Iterator<AccountCreate> it = usedUsernames.iterator();
+				System.out.println("List checked usernames: " + usedUsernames.size());
 
-			while (it.hasNext()) {
-				AccountCreate user = it.next();
-				System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
-				if (((System.currentTimeMillis() - user.getTime()) > 500_000)) {
-					it.remove();
-					System.out.println("Removed username, may continue with recovering");
+				while (it.hasNext()) {
+					AccountCreate user = it.next();
+					System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
+					if (((System.currentTimeMillis() - user.getTime()) > 600_000)) {
+						it.remove();
+						System.out.println("Removed username, may continue with recovering");
+					}
 				}
 			}
 
@@ -353,7 +356,7 @@ public class AccountCreationService {
 	/**
 	 * @return the usedUsernames
 	 */
-	public static synchronized ArrayList<AccountCreate> getUsedUsernames() {
+	public static synchronized List<AccountCreate> getUsedUsernames() {
 		return usedUsernames;
 	}
 

@@ -56,6 +56,24 @@ public class MainController extends Application {
 		// System.out.println("Enter the amount of bots: ");
 		// Scanner scanner = new Scanner(System.in);
 		// int amount = Integer.parseInt(scanner.nextLine());
+
+		Config.DATABASE_NAME = args[2];
+		Config.DATABASE_USER_NAME = args[3];
+
+		if (args[4].equalsIgnoreCase("null")) {
+			Config.DATABASE_PASSWORD = "";
+		} else {
+			Config.DATABASE_PASSWORD = args[4];
+		}
+		
+		Config.DATABASE_IP = args[5];
+
+		System.out.println("DATABASE SETTIGNS: ");
+		System.out.println("Database username: " + Config.DATABASE_USER_NAME);
+		System.out.println("Database name: " + Config.DATABASE_NAME);
+		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
+		System.out.println("Database IP: " + Config.DATABASE_IP);
+
 		if (!Config.GUI) {
 			Config.MAX_BOTS_OPEN = Integer.parseInt(args[1]);
 			// System.out.println("Entered: " + Config.MAX_BOTS_OPEN + " bots to run");

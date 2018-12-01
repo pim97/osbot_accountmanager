@@ -37,8 +37,22 @@ public class ProtonMain {
 
 			boolean found = false;
 			int cantFindEmail = 0;
-
+//			boolean friday = false;
+//			int fridayTries = 0;
+			
+			
 			while (!found) {
+				
+//				if (!friday && getActions().blackFridayDeals()) {
+//					System.out.println("Solving this black fridays thing");
+//					friday = true;
+//				}
+//				if (fridayTries > 10) {
+//					System.out.println("Couldn't find friday, requesting to not click it again");
+//					friday = true;
+//				}
+//				fridayTries++;
+				
 				if (getActions().clickMail("Reset your Jagex password")) {
 					if (!getActions().clickedCorrectEmail()) {
 //						getActions().deleteEmail();
@@ -136,8 +150,21 @@ public class ProtonMain {
 			System.out.println("Successfully logged in");
 			boolean found = false;
 			int cantFindEmail = 0;
+//			boolean friday = false;
+//			int fridayTries = 0;
 
 			while (!found) {
+				
+//				if (!friday && getActions().blackFridayDeals()) {
+//					System.out.println("Solving this black fridays thing");
+//					friday = true;
+//				}
+//				if (fridayTries > 10) {
+//					System.out.println("Couldn't find friday, requesting to not click it again");
+//					friday = true;
+//				}
+//				fridayTries++;
+				
 				if (getActions().clickMail("Welcome to RuneScape!")) {
 					if (!getActions().clickedCorrectEmail()) {
 //						getActions().deleteEmail();

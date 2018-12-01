@@ -2,10 +2,13 @@ package osbot.threads;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
+import osbot.bot.BotController;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
 
@@ -19,10 +22,10 @@ public class ThreadHandler {
 	/**
 	 * A list of all the threads in the program
 	 */
-	private static ArrayList<Thread> threadList = new ArrayList<Thread>();
+	private static List<Thread> threadList = new CopyOnWriteArrayList<Thread>();
 
 	/**
-	 * 
+	 * The queue of captchas which turned out to be useless, so not using anymore
 	 */
 	private static void runQueueThread() {
 		Thread queueThread = new Thread(() -> {
@@ -34,6 +37,32 @@ public class ThreadHandler {
 		threadList.add(queueThread);
 	}
 
+	private static void transformIntoMuleHandler() {
+		Thread transformIntoMuleHandler = new Thread(() -> {
+
+			while (programIsRunning) {
+
+				DatabaseUtilities.transformIntoMuleHandler();
+				BotHandler.checkJavaPidsTimeout();
+
+				try {
+					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+
+		});
+		transformIntoMuleHandler.setName("transformIntoMuleHandler");
+		transformIntoMuleHandler.start();
+
+		threadList.add(transformIntoMuleHandler);
+	}
+
+	// Setting a delay so it doesn't double launch and double recover an account
+	private static int createDelay = 5000;
+
 	/**
 	 * The thread for selenium trying to create accounts
 	 */
@@ -43,10 +72,20 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 20000));
+					Thread.sleep(createDelay);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+
+				/**
+				 * Setting a delay so it doesn't double launch and double recover an account
+				 */
+				createDelay += 5000;
+
+				if (createDelay > 25000) {
+					createDelay = 5000;
+				}
+				System.out.println("CREATE delay is: " + createDelay + " ms currently");
 
 				DatabaseUtilities.seleniumCreateAccountThread();
 			}
@@ -58,6 +97,9 @@ public class ThreadHandler {
 		threadList.add(createAccounts);
 	}
 
+	// Setting a delay so it doesn't double launch and double recover an account
+	private static int recoverDelay = 5000;
+
 	/**
 	 * The thread for selenium trying to recover account
 	 */
@@ -67,10 +109,20 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 20000));
+					Thread.sleep(recoverDelay);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+
+				/**
+				 * Setting a delay so it doesn't double launch and double recover an account
+				 */
+				recoverDelay += 5000;
+
+				if (recoverDelay > 25000) {
+					recoverDelay = 5000;
+				}
+				System.out.println("RECOVERING delay is: " + recoverDelay + " ms currently");
 
 				DatabaseUtilities.seleniumRecoverAccount();
 
@@ -118,18 +170,20 @@ public class ThreadHandler {
 	 */
 	private static void handleBotsRunning() {
 		Thread handleBotsRunning = new Thread(() -> {
+
 			while (programIsRunning) {
 
 				BotHandler.handleBots();
 
-				// Checking every 5 seconds if bot is still running
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(500);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
 			}
+
 		});
 		handleBotsRunning.setName("handleBotsRunning");
 		handleBotsRunning.start();
@@ -142,6 +196,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.checkPidsProcessesEveryMinutes2();
+				BotHandler.checkProcesses();
 
 				// Checking every 5 seconds if bot is still running
 				try {
@@ -222,10 +277,11 @@ public class ThreadHandler {
 	}
 
 	public static void mainThread() {
+		System.out.println("Waiting 10 seconds for everything to load...");
+
 		Thread mainThread = new Thread(() -> {
 			while (programIsRunning) {
 
-				System.out.println("Waiting 10 seconds for everything to load...");
 				// Sleeping 20 seconds for all the accounts to load
 				try {
 					Thread.sleep(10000);
@@ -234,13 +290,27 @@ public class ThreadHandler {
 					e1.printStackTrace();
 				}
 
+				if (BotHandler.MAIN_PID == -1) {
+					String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+					long pid = Long.parseLong(processName.split("@")[0]);
+					BotHandler.MAIN_PID = pid;
+
+					System.out.println("Set program pid to: " + BotHandler.MAIN_PID);
+				}
+
 				int recoverAmount = DatabaseUtilities.getAccountsToBeRecovered().size() != 1
 						? DatabaseUtilities.getAccountsToBeRecovered().size() / 2
 						: DatabaseUtilities.getAccountsToBeRecovered().size();
 
-				int createAmount = DatabaseUtilities.getSizeToCreateAccounts() != 1
-						? DatabaseUtilities.getSizeToCreateAccounts() / 2
-						: DatabaseUtilities.getSizeToCreateAccounts();
+				int createAmount = DatabaseUtilities.accountsToCreate2() != 1
+						? DatabaseUtilities.accountsToCreate2() / 2
+						: DatabaseUtilities.accountsToCreate2();
+				if (createAmount > 5) {
+					createAmount = 5;
+				}
+				if (recoverAmount > 5) {
+					recoverAmount = 5;
+				}
 
 				for (int i = 0; i < recoverAmount; i++) {
 					System.out.println("Thread management: " + isThreadAlive("recoverAccounts_" + recoverAmount) + " "
@@ -316,6 +386,12 @@ public class ThreadHandler {
 					System.out.println("Started new thread: handleBotsRunning");
 				}
 
+				if ((!isThreadAlive("transformIntoMuleHandler") && getThread("transformIntoMuleHandler") == null
+						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE)) {
+					transformIntoMuleHandler();
+					System.out.println("Started new thread: transformIntoMuleHandler");
+				}
+
 				if ((!isThreadAlive("handleMulesTrading") && getThread("handleMulesTrading") == null)
 						&& Config.MULES_TRADING) {
 					handleMulesTrading();
@@ -329,12 +405,13 @@ public class ThreadHandler {
 
 				// Thread sleeping & checking every 30 seconds
 				try {
-					Thread.sleep(120_000);
+					Thread.sleep(2_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				System.out.println("Checking every 120 seconds for threads to be alive or not");
+				// System.out.println("Checking every 2 seconds for threads to be alive or
+				// not");
 			}
 		});
 		mainThread.setName("mainThread");
@@ -365,7 +442,7 @@ public class ThreadHandler {
 				}
 
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(20_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -429,7 +506,7 @@ public class ThreadHandler {
 	/**
 	 * @return the threadList
 	 */
-	public static ArrayList<Thread> getThreadList() {
+	public static List<Thread> getThreadList() {
 		return threadList;
 	}
 
