@@ -41,6 +41,9 @@ public class BotController {
 	 * @return
 	 */
 	public static boolean containsInPidList(int id) {
+		if (id <= 0) {
+			return false;
+		}
 		for (int pid : getJavaPIDsWindows()) {
 			if (pid == id) {
 				return true;

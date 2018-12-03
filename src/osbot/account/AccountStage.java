@@ -14,4 +14,5 @@ public enum AccountStage {
 	QUEST_DORICS_QUEST,
 	QUEST_COOK_ASSISTANT,
 	TUT_ISLAND,
+	OUT_OF_MONEY,
 }

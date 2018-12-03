@@ -784,11 +784,8 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\"";
-		// String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM
-		// account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE
-		// ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <>
-		// \"BANNED\"";
+		String sql = 
+				"SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\") AND (ac.status <> \"TASK_TIMEOUT\" AND amount_timeout > 10 OR ac.status=\"MULE\")  AND (ac.status <> \"TIMEOUT\" AND amount_timeout > 10 OR ac.status=\"MULE\")";
 
 		try {
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()

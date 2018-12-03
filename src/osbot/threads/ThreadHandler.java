@@ -22,7 +22,7 @@ public class ThreadHandler {
 	/**
 	 * A list of all the threads in the program
 	 */
-	private static List<Thread> threadList = new CopyOnWriteArrayList<Thread>();
+	private static List<Thread> threadList = new ArrayList<Thread>();
 
 	/**
 	 * The queue of captchas which turned out to be useless, so not using anymore
@@ -72,20 +72,10 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(createDelay);
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 50000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
-				/**
-				 * Setting a delay so it doesn't double launch and double recover an account
-				 */
-				createDelay += 5000;
-
-				if (createDelay > 25000) {
-					createDelay = 5000;
-				}
-				System.out.println("CREATE delay is: " + createDelay + " ms currently");
 
 				DatabaseUtilities.seleniumCreateAccountThread();
 			}
@@ -109,20 +99,10 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(recoverDelay);
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 50000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
-				/**
-				 * Setting a delay so it doesn't double launch and double recover an account
-				 */
-				recoverDelay += 5000;
-
-				if (recoverDelay > 25000) {
-					recoverDelay = 5000;
-				}
-				System.out.println("RECOVERING delay is: " + recoverDelay + " ms currently");
 
 				DatabaseUtilities.seleniumRecoverAccount();
 
@@ -176,7 +156,7 @@ public class ThreadHandler {
 				BotHandler.handleBots();
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
