@@ -43,7 +43,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.transformIntoMuleHandler();
-				BotHandler.checkJavaPidsTimeout();
+//				BotHandler.checkJavaPidsTimeout();
 
 				try {
 					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
@@ -176,7 +176,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.checkPidsProcessesEveryMinutes2();
-				BotHandler.checkProcesses();
+				DatabaseUtilities.closeBotsWhenNotActive();
 
 				// Checking every 5 seconds if bot is still running
 				try {
@@ -239,11 +239,11 @@ public class ThreadHandler {
 		Thread checkRunningErrors = new Thread(() -> {
 			while (programIsRunning) {
 
-				DatabaseUtilities.checkRunningErrors();
+//				DatabaseUtilities.checkRunningErrors();
 
 				// Checking every 5 seconds if bot is still running
 				try {
-					Thread.sleep(500);
+					Thread.sleep(30_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

@@ -1,7 +1,15 @@
 package osbot.settings;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.FileUtils;
+import org.zeroturnaround.exec.ProcessExecutor;
 
 import osbot.account.handler.BotHandler;
 import osbot.bot.BotController;
@@ -17,8 +25,28 @@ public class OsbotController {
 	}
 
 	private int id, pidId = -1;
-	
+
 	private long startTime = -1;
+
+	private boolean startingUp = false;
+
+	private ProcessExecutor zz = null;
+
+	public static synchronized long getPidOfProcess(Process p) {
+		long pid = -1;
+
+		try {
+			if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+				Field f = p.getClass().getDeclaredField("pid");
+				f.setAccessible(true);
+				pid = f.getLong(p);
+				f.setAccessible(false);
+			}
+		} catch (Exception e) {
+			pid = -1;
+		}
+		return pid;
+	}
 
 	/**
 	 * @param isMule
@@ -26,38 +54,132 @@ public class OsbotController {
 	 * 
 	 */
 	public void runBot(boolean isMule) {
-		new Thread(() -> {
-			try {
-				List<Integer> pids = BotController.getJavaPIDsWindows();
-				Process p = Runtime.getRuntime().exec(getCliArgs().toString());
-				System.out.println("Waiting for OSBot to launch..");
-				p.waitFor();
-				System.out.println(getCliArgs().toString());
-				List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
-				pidsAfter.removeAll(pids);
 
-				if (pidsAfter.size() == 1) {
-					setPidId(pidsAfter.get(0));
-					System.out.println("Pid set to: " + pidsAfter.get(0));
-				}
-				setCliArgs(new StringBuilder());
+		try {
+			List<Integer> pids = BotController.getJavaPIDsWindows();
+			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
+			System.out.println("Waiting for OSBot to launch..");
 
-				if (isMule) {
-					OsbotController partner = BotHandler.getMulePartner(this);
-					if (partner != null && partner.getPidId() > 0
-							&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
-						System.out.println("Both mules are running, others may start again!");
-					}
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (!p.waitFor(5, TimeUnit.SECONDS)) {
+				System.out.println("Destroyed, couldn't start up in time");
+				p.destroy();
+				setStartingUp(false);
+				return;
 			}
-		}).start();
 
+			System.out.println(getCliArgs().toString());
+			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
+			pidsAfter.removeAll(pids);
+
+			if (pidsAfter.size() == 1) {
+				setPidId(pidsAfter.get(0));
+				System.out.println("Pid set to: " + pidsAfter.get(0));
+			} else {
+				p.destroy();
+				System.out.println("Destroyed, couldn't set pid, too many");
+				setStartingUp(false);
+				return;
+			}
+			setCliArgs(new StringBuilder());
+
+			if (isMule) {
+				OsbotController partner = BotHandler.getMulePartner(this);
+				if (partner != null && partner.getPidId() > 0
+						&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
+					System.out.println("Both mules are running, others may start again!");
+				}
+			}
+			setStartingUp(false);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// try {
+		// List<Integer> pids = BotController.getJavaPIDsWindows();
+		//
+		// ArrayList<String> args = new ArrayList<String>();
+		// args.add("java");
+		// args.add("-cp");
+		// args.add("lib/*");
+		// args.add("org.osbot.Boot");
+		//
+		// String[] arg = getCliArgs().toString().split(" ");
+		// for (String abc : arg) {
+		// args.add(abc);
+		// }
+		//
+		//// Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+		//// String logFileOutput = ("logs/" + getAccount().getUsername() + "/output_" +
+		// getAccount().getUsername() + "_"
+		//// + getId() + "_" + timestamp + ".txt").replace(" ", "_").replaceAll(":",
+		// "_");
+		//// String logFileOutputError = ("logs/" + getAccount().getUsername() +
+		// "/error_" + getAccount().getUsername()
+		//// + "_" + getId() + "_" + timestamp + ".txt").replace(" ",
+		// "_").replaceAll(":", "_");
+		////
+		//// File f1 = new File("logs/" + getAccount().getUsername());
+		//// f1.mkdir();
+		////
+		//// File logFileOutputFile = new File(logFileOutput);
+		//// if (!logFileOutputFile.exists()) {
+		//// logFileOutputFile.createNewFile();
+		//// }
+		//// File logFileOutputFileError = new File(logFileOutputError);
+		//// if (!logFileOutputFileError.exists()) {
+		//// logFileOutputFileError.createNewFile();
+		//// }
+		//
+		// // java -cp \"lib/*\" org.osbot.Boot
+		// ProcessBuilder processBuilder = new ProcessBuilder(args);
+		//// .redirectError(new File(logFileOutputError))
+		//// .redirectOutput(new File(logFileOutput));
+		// Process p = processBuilder.start();
+		//
+		// // Process p = Runtime.getRuntime().exec(getCliArgs().toString());
+		// System.out.println("Waiting for OSBot to launch..");
+		//
+		// if (!p.waitFor(5, TimeUnit.SECONDS)) {
+		// System.out.println("Destroyed, couldn't start up in time");
+		// p.destroy();
+		// }
+		//
+		//// try {
+		//// System.out.println(FileUtils.readFileToString(new File("output")));
+		//// System.out.println(FileUtils.readFileToString(new File("error")));
+		//// } catch (IOException e) {
+		//// // TODO Auto-generated catch block
+		//// e.printStackTrace();
+		//// }
+		//
+		// System.out.println(getCliArgs().toString());
+		// List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
+		// pidsAfter.removeAll(pids);
+		//
+		// if (pidsAfter.size() == 1) {
+		// setPidId(pidsAfter.get(0));
+		// System.out.println("Pid set to: " + pidsAfter.get(0));
+		// } else {
+		// p.destroy();
+		// System.out.println("Destroyed, couldn't set pid, too many");
+		// }
+		// setCliArgs(new StringBuilder());
+		//
+		// if (isMule) {
+		// OsbotController partner = BotHandler.getMulePartner(this);
+		// if (partner != null && partner.getPidId() > 0
+		// && BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
+		// System.out.println("Both mules are running, others may start again!");
+		// }
+		// }
+		// setStartingUp(false);
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
 	}
 
 	/**
@@ -67,7 +189,8 @@ public class OsbotController {
 	 */
 	public void addArguments(CliArgs args, boolean addDoublePoint, Object... value) {
 		if (getCliArgs().length() == 0) {
-			getCliArgs().append("java -jar osbot.jar");
+			// getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot -debug");
+			getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot");
 		}
 		getCliArgs().append(" ");
 		getCliArgs().append("-" + args.name().toLowerCase());
@@ -161,10 +284,26 @@ public class OsbotController {
 	}
 
 	/**
-	 * @param startTime the startTime to set
+	 * @param startTime
+	 *            the startTime to set
 	 */
 	public void setStartTime(long startTime) {
 		this.startTime = startTime;
+	}
+
+	/**
+	 * @return the startingUp
+	 */
+	public boolean isStartingUp() {
+		return startingUp;
+	}
+
+	/**
+	 * @param startingUp
+	 *            the startingUp to set
+	 */
+	public void setStartingUp(boolean startingUp) {
+		this.startingUp = startingUp;
 	}
 
 }

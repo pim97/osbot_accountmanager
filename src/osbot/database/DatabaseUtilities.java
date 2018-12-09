@@ -24,6 +24,7 @@ import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
 import osbot.account.global.Config;
+import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.bot.BotController;
@@ -364,77 +365,69 @@ public class DatabaseUtilities {
 		}
 	}
 
-	public static void checkRunningErrors() {
-		if (Config.CLOSE_ON_INACTIVITY) {
+	/**
+	 * 
+	 */
+	public static void closeBotsWhenNotActive() {
+		for (OsbotController bot : BotController.getBots()) {
 
-			Iterator<OsbotController> accounts = BotController.getBots().iterator();
+			// If starting it, then it may not harm that process to prevent any weird things
+			if (bot.isStartingUp()) {
+				System.out.println("May not harm this process, it is starting up right now.");
+				continue;
+			}
+			
+			// Is not logged in but in database still logged in
+			if ((getLoginStatus(bot.getId()) == LoginStatus.INITIALIZING
+					|| getLoginStatus(bot.getId()) == LoginStatus.LOGGED_IN) && bot.getPidId() <= 0) {
+				System.out.println("KILLING: 5");
+				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
+			}
 
-			while (accounts.hasNext()) {
-				OsbotController account = accounts.next();
-				int startPid = account.getPidId();
+			// If the pid ID is lower than 0, then it's not launched
+			if (bot.getPidId() <= 0) {
+				continue;
+			}
 
-				// System.out.println("START TIME: " + account.getStartTime());
-				// System.out.println("TIME: " + (System.currentTimeMillis() -
-				// account.getStartTime()));
+			// When account has started, but not logged in between 80 seconds
+			if (getLoginStatus(bot.getId()) != null && getLoginStatus(bot.getId()) == LoginStatus.INITIALIZING
+					&& (System.currentTimeMillis() - bot.getStartTime() > 150_000)) {
+				BotController.killProcess(bot.getPidId());
+				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
+				System.out.println("KILLING: 2");
+			}
 
-				if (getLoginStatus(account.getId()) != null
-						&& getLoginStatus(account.getId()) == LoginStatus.INITIALIZING && account.getStartTime() > 0
-						&& (System.currentTimeMillis() - account.getStartTime()) > 180_000 && account.getPidId() > 0) { // about
-					System.out.println("Took too long to start the bot! Restarting right now!");
+			// When the pid is not on the machine active anymore
+			if (!BotHandler.isProcessIdRunningOnWindows(bot.getPidId())) {
+				BotController.killProcess(bot.getPidId());
+				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
+				System.out.println("KILLING: 1");
+			}
 
-					int tries = 0;
-					boolean running = true;
-					while (running) {
-
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						if (account.getPidId() > 0) {
-							System.out.println(BotController.getJavaPIDsWindows().contains(account.getPidId()));
-							System.out.println("Waiting for to go offline");
-							BotController.killProcess(account.getPidId());
-						}
-						if (!BotController.getJavaPIDsWindows().contains(account.getPidId())) {
-							running = false;
-							System.out.println("DIDN'T CONTAIN IN LIST ANYMORE!");
-						}
-						if (tries > 10) {
-							running = false;
-						}
-						tries++;
-
-					}
-					System.out.println("Successfully killed the process!");
-					if (startPid == account.getPidId()) {
-						account.setStartTime(-1);
-						account.setPidId(-1);
-						updateLoginStatus(LoginStatus.DEFAULT, account.getId());
-					} else {
-						System.out.println("Pid didn't match eachother!");
-					}
-
-				}
+			// When the process is running, but not logged in, then set status back to
+			// default
+			if (BotHandler.isProcessIdRunningOnWindows(bot.getPidId())
+					&& DatabaseUtilities.getLoginStatus(bot.getId()) == LoginStatus.DEFAULT) {
+				BotController.killProcess(bot.getPidId());
+				System.out.println("Killing 4");
 			}
 		}
-	}
 
-	// String sql = "SELECT MAX(id) as max FROM `account`";
-	//
-	// try {
-	// ResultSet resultSet = DatabaseConnection.getDatabase().getResult(sql);
-	// while (resultSet.next()) {
-	// int max = resultSet.getInt("max");
-	//
-	// resultSet.close();
-	// return max + 1;
-	// }
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// }
-	// return -1;
+		// When a pid is active on the system, but not in the program
+		List<Integer> runningPidsOnMachine = BotController.getJavaPIDsWindows();
+		ArrayList<Integer> currentPidsInProgram = new ArrayList<Integer>();
+
+		// Creating the left overs
+		currentPidsInProgram.addAll(BotController.getJavaPIDsWindows());
+		runningPidsOnMachine.removeAll(currentPidsInProgram);
+
+		runningPidsOnMachine.forEach(b -> {
+			if (b != BotHandler.MAIN_PID) {
+				BotController.killProcess(b);
+				System.out.println("KILLING: 3");
+			}
+		});
+	}
 
 	public static LoginStatus getLoginStatus(int accountId) {
 		String sql = "SELECT login_status FROM account WHERE id=" + accountId + "";
@@ -784,8 +777,7 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = 
-				"SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\") AND (ac.status <> \"TASK_TIMEOUT\" AND amount_timeout > 10 OR ac.status=\"MULE\")  AND (ac.status <> \"TIMEOUT\" AND amount_timeout > 10 OR ac.status=\"MULE\")";
+		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < 10) OR (ac.status=\"TIMEOUT\" AND amount_timeout < 10)";
 
 		try {
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()

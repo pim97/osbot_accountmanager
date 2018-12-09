@@ -55,9 +55,9 @@ public class DatabaseConnection {
 	public Connection connect() {
 		if (connection == null) {
 			try {
-				Class.forName(DATABASE_DRIVER);
+//				Class.forName(DATABASE_DRIVER);
 				connection = DriverManager.getConnection(DATABASE_URL, getProperties());
-			} catch (ClassNotFoundException | SQLException e) {
+			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}

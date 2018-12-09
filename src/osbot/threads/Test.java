@@ -19,6 +19,8 @@ import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
+import osbot.account.worlds.World;
+import osbot.account.worlds.WorldType;
 import osbot.bot.BotController;
 import osbot.database.DatabaseUtilities;
 import osbot.settings.OsbotController;
@@ -34,8 +36,8 @@ public class Test {
 
 			for (AccountTable acc : account) {
 				AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
-						acc.getWorld(), acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(),
-						acc.getStatus(), acc.getStage(), acc.getAccountStageProgress());
+						acc.getWorld(), acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(), acc.getStatus(),
+						acc.getStage(), acc.getAccountStageProgress());
 				accTable.setQuestPoints(acc.getQuestPoints());
 				accTable.setPassword(acc.getPassword());
 				accTable.setBankPin(acc.getBankPin());
@@ -63,11 +65,10 @@ public class Test {
 				}
 			}
 
-		
 		}
 
 	}
-	
+
 	public static void test() {
 		long begin = System.currentTimeMillis();
 
@@ -162,7 +163,7 @@ public class Test {
 		System.out.println("Used proxy port: " + account.getAccount().getProxyPort());
 		System.out.println("Used proxy username: " + account.getAccount().getProxyUsername());
 		System.out.println("Used proxy password: " + account.getAccount().getProxyPassword());
-		
+
 		System.out.println("launched in " + ((System.currentTimeMillis() - begin) / 1000) + " seconds");
 		PidDriver pidDriver = new PidDriver(driver, pidId);
 
@@ -182,7 +183,7 @@ public class Test {
 		} else {
 			Config.DATABASE_PASSWORD = args[4];
 		}
-		
+
 		Config.DATABASE_IP = args[5];
 
 		System.out.println("DATABASE SETTIGNS: ");
@@ -190,18 +191,21 @@ public class Test {
 		System.out.println("Database name: " + Config.DATABASE_NAME);
 		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
 		System.out.println("Database IP: " + Config.DATABASE_IP);
-		
-		load();
-		
-		BotHandler.sortByStage();
-		
-		for (OsbotController bot : BotController.getBots()) {
-			System.out.println(bot.getAccount().getStage());
-		}
 
-//		BotHandler.createBatFile(BotController.getBots().get(0));
-//		BotHandler.runMule(BotController.getBots().get(0), "", "");
-		
-//		test();
+		load();
+
+		BotHandler.sortByStage();
+
+		// for (OsbotController bot : BotController.getBots()) {
+		// System.out.println(bot.getAccount().getStage());
+		// }
+
+		World.getWorldsWithoutTotalRequirements(WorldType.F2P).stream().forEach(
+				world -> System.out.println(world.getType() + " " + world.getNumber() + " " + world.getPlayerAmount()));
+
+		// BotHandler.createBatFile(BotController.getBots().get(0));
+		// BotHandler.runMule(BotController.getBots().get(0), "", "");
+
+		// test();
 	}
 }

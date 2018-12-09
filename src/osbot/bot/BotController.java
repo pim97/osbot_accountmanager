@@ -64,10 +64,7 @@ public class BotController {
 	public static void killProcess(final int pid) {
 		try {
 			Runtime.getRuntime().exec("Taskkill /PID " + pid + " /F");
-			// if (System.getProperty("os.name").startsWith("Windows")) {
-			// } else {
-			// Runtime.getRuntime().exec("kill -9 " + pid);
-			// }
+//			return (abc.exitValue() == 0);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

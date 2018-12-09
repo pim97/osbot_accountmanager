@@ -19,6 +19,8 @@ import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.LoginStatus;
 import osbot.account.global.Config;
+import osbot.account.worlds.World;
+import osbot.account.worlds.WorldType;
 import osbot.bot.BotController;
 import osbot.database.DatabaseUtilities;
 import osbot.settings.CliArgs;
@@ -63,75 +65,7 @@ public class BotHandler {
 
 	}
 
-	/**
-	 * Checks the processes
-	 */
-	public static void checkProcesses() {
-
-		for (OsbotController bot : BotController.getBots()) {
-			if (bot.getPidId() <= 0) {
-				continue;
-			}
-			if (!isProcessIdRunningOnWindows(bot.getPidId())) {
-				bot.setPidId(-1);
-				bot.setStartTime(-1);
-				BotController.killProcess(bot.getPidId());
-				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
-				System.out.println("Set pid to: " + bot.getPidId());
-			}
-
-			// System.out.println("PID OF BOT: " + bot.getPidId());
-
-		}
-
-		// Iterator<Integer> it = BotController.getJavaPIDsWindows().iterator();
-		//
-		// while (it.hasNext()) {
-		// int nextPid = it.next();
-		//
-		// if (!isProcessIdRunningOnWindows(nextPid)) {
-		// OsbotController bot = BotController.getBotByPid(nextPid);
-		// if (bot != null) {
-		// System.out.println("SET PID TO -1!!");
-		// bot.setPidId(-1);
-		// }
-		// System.out.println("Removed pid: " + nextPid + " from the processes list, was
-		// no longer running");
-		// it.remove();
-		// }
-		// }
-
-	}
-
 	public static long MAIN_PID = -1;
-
-	/**
-	 * Pids to remove
-	 */
-	public static void checkJavaPidsTimeout() {
-		List<Integer> allCurrentJavaPids = BotController.getJavaPIDsWindows();
-		ArrayList<Integer> programPids = new ArrayList<Integer>();
-
-		for (OsbotController bot : BotController.getBots()) {
-			if (bot.getPidId() > 0) {
-				programPids.add(bot.getPidId());
-			}
-		}
-		allCurrentJavaPids.removeAll(programPids);
-
-		for (Integer pidToRemove : allCurrentJavaPids) {
-			if (pidToRemove != MAIN_PID) {
-				OsbotController bot = BotController.getBotByPid(pidToRemove);
-				if (bot != null) {
-					bot.setStartTime(-1);
-					bot.setPidId(-1);
-					DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
-				}
-				BotController.killProcess(pidToRemove);
-				System.out.println("Removed pid: " + pidToRemove + " due to not being registered in the system");
-			}
-		}
-	}
 
 	public static void sortByStage() {
 		Collections.sort(BotController.getBots(), new Comparator<Object>() {
@@ -142,6 +76,16 @@ public class BotHandler {
 				return bot1.getAccount().getStage().ordinal() - bot2.getAccount().getStage().ordinal();
 			}
 		});
+	}
+
+	public static void resetVariables(OsbotController bot) {
+		// if (!bot.isStartingUp()) {
+		// BotController.killProcess(bot.getPidId());
+		// bot.setPidId(-1);
+		// bot.setStartTime(-1);
+		// DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
+		// System.out.println("Kiellingz2");
+		// }
 	}
 
 	/**
@@ -155,12 +99,22 @@ public class BotHandler {
 			return;
 		}
 
+		if (bot.isStartingUp()) {
+			System.out.println("[ERROR] Bot is already running!");
+			return;
+		}
+
 		AccountTable account = bot.getAccount();
+		World randomWorld = World.getRandomWorldWithLessPopulation(WorldType.F2P, 20);
+
+		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
+		bot.setStartingUp(true);
+		bot.setStartTime(System.currentTimeMillis());
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
-		bot.addArguments(CliArgs.WORLD, false, account.getWorld());
+		bot.addArguments(CliArgs.WORLD, false, randomWorld.getNumber());
 
 		// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
 		if (Config.LOW_CPU) {
@@ -189,9 +143,6 @@ public class BotHandler {
 			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(), account.getEmail() + "_" + account.getPassword()
 					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + account.getUsername());
 		}
-		bot.setStartTime(System.currentTimeMillis());
-		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
-
 		bot.runBot(false);
 	}
 
@@ -200,13 +151,21 @@ public class BotHandler {
 			System.out.println("Invalid bot");
 			return;
 		}
+		if (bot.isStartingUp()) {
+			System.out.println("[ERROR] Bot is already running!");
+			return;
+		}
 
 		AccountTable account = bot.getAccount();
+
+		bot.setStartingUp(true);
+		bot.setStartTime(System.currentTimeMillis());
+		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
-		bot.addArguments(CliArgs.WORLD, false, 394);
+		bot.addArguments(CliArgs.WORLD, false, 301);
 
 		if (Config.LOW_CPU) {
 			// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
@@ -231,8 +190,6 @@ public class BotHandler {
 			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
 					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith + "_" + emailOfUserTradingWith);
 		}
-		bot.setStartTime(System.currentTimeMillis());
-		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
 
 		if (bot.getAccount().getStatus() == AccountStatus.MULE) {
 			createBatFile(bot);
@@ -419,16 +376,17 @@ public class BotHandler {
 
 	}
 
-	private static boolean wantsToGe() {
+	private static int wantsToGe() {
+		int amount = 0;
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
 
 			if (osbot.getAccount().getStage() == AccountStage.GE_SELL_BUY_MINING
 					&& osbot.getAccount().getStatus() == AccountStatus.AVAILABLE && osbot.getPidId() <= 0) {
-				return true;
+				amount++;
 			}
 		}
-		return false;
+		return amount;
 	}
 
 	private static boolean wantsToMule() {
@@ -475,6 +433,7 @@ public class BotHandler {
 		// get deleted in the PID list
 
 		// System.out.println("HB: 1");
+		int javaPidsSize = BotController.getJavaPIDsWindows().size();
 
 		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Calendar calendar2 = Calendar.getInstance();
@@ -494,17 +453,18 @@ public class BotHandler {
 
 			if (osbot != null && !BotController.containsInPidList(osbot.getPidId())
 					&& osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
-					&& osbot.getAccount().getStage() == AccountStage.GE_SELL_BUY_MINING) {
+					&& osbot.getAccount().getStage() == AccountStage.GE_SELL_BUY_MINING
+					&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT) {
 
 				runBot(osbot);
 				System.out.println("Running GE TRADING trading " + osbot.getAccount().getUsername());
 
-				try {
-					Thread.sleep(3250);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Thread.sleep(5000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 			}
 		}
 
@@ -517,6 +477,7 @@ public class BotHandler {
 			// Running mules
 			if (osbot != null && osbot.getAccount().getTradeWithOther() != null
 					&& osbot.getAccount().getTradeWithOther().length() > 0
+					&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT
 					&& !BotController.containsInPidList(osbot.getPidId())) {
 
 				if (!DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
@@ -533,12 +494,12 @@ public class BotHandler {
 						DatabaseUtilities.getEmailFromUsername(osbot.getAccount().getTradeWithOther()));
 				System.out.println("Running mule trading " + osbot.getAccount().getUsername());
 
-				try {
-					Thread.sleep(6000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Thread.sleep(5000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 			}
 		}
 
@@ -558,13 +519,22 @@ public class BotHandler {
 					break;
 				}
 
-				if (wantsToGe()) {
+				if (wantsToGe() > 5) {
 					System.out.println("A bot wants to ge, so giving prio");
 					break;
 				}
 
+				if (BotController.containsInPidList(osbot.getPidId())) {
+					continue;
+				}
+
+				// long time = System.currentTimeMillis();
+
 				// System.out.println("HB: 9 " + osbot.getAccount().getStatus() + " " +
 				// osbot.getAccount().getStage());
+
+				// System.out.println("login
+				// status:"+DatabaseUtilities.getLoginStatus(osbot.getId()));
 
 				if (osbot != null
 						&& (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
@@ -576,10 +546,12 @@ public class BotHandler {
 						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
 						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
 						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING
-						&& !BotController.containsInPidList(osbot.getPidId())
-						&& getAmountOfBotsActive() < Config.MAX_BOTS_OPEN && osbot.getAccount().getEmail() != null) {
+						&& javaPidsSize < Config.MAX_BOTS_OPEN && osbot.getAccount().getEmail() != null
+						&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT) {
 
-//					System.out.println("HB: 10");
+					// System.out.println("Took time: "+(System.currentTimeMillis() - time));
+
+					// System.out.println("HB: 10");
 
 					if (!calendar2.after(osbot.getAccount().getDate())) {
 						System.out.println(
@@ -601,12 +573,12 @@ public class BotHandler {
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
-					try {
-						Thread.sleep(3250);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+//					try {
+//						Thread.sleep(5000);
+//					} catch (InterruptedException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
 
 					// System.out.println("HB: 12");
 				} else if (osbot == null) {

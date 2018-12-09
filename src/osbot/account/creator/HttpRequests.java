@@ -10,7 +10,7 @@ public class HttpRequests {
 
 	private static final String API_KEY = "SDFJNLKDASNFJK798283423NJASKF";
 
-	private static final String LINK = "http://localhost/osbot/public/osbot/api";
+	private static final String LINK = "http://localhost:8000/osbot/api";
 
 	/**
 	 * Updates the account status (banned, locked etc) in the database
