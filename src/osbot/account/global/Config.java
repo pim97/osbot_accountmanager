@@ -24,16 +24,18 @@ public class Config {
 
 	public static String DATABASE_IP = "";
 
+	public static String PREFIX_EMAIL = "";
+
 	public static final CaptchaQueue QUEUE = new CaptchaQueue();
 
 	public static final int AMOUNT_OF_TIMEOUTS_BEFORE_GONE = 10;
 
 	public static final ArrayList<String> MULE_PROXY_IP = new ArrayList<String>(Arrays.asList("196.16.115.30:8000"));
-	
+
 	public static String getRandomMuleProxy() {
 		return MULE_PROXY_IP.get(RandomUtil.getRandomNumberInRange(0, MULE_PROXY_IP.size() - 1));
 	}
-	
+
 	public static boolean isMuleProxy(String ip, String port) {
 		StringBuilder proxyString = new StringBuilder();
 		proxyString.append(ip);

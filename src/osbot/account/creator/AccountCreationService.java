@@ -186,8 +186,8 @@ public class AccountCreationService {
 		setLaunching(true);
 		long begin = System.currentTimeMillis();
 
-		System.setProperty("webdriver.gecko.driver",
-				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
+		System.setProperty("webdriver.gecko.driver", "geckodriver.exe");
+//				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
 		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
 		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
 

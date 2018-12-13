@@ -105,9 +105,12 @@ public class BotHandler {
 		}
 
 		AccountTable account = bot.getAccount();
+
+		bot.setCliArgs(new StringBuilder());
+
 		World randomWorld = World.getRandomWorldWithLessPopulation(WorldType.F2P, 20);
 
-		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
+		new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
 		bot.setStartingUp(true);
 		bot.setStartTime(System.currentTimeMillis());
 
@@ -133,15 +136,18 @@ public class BotHandler {
 		} else if (account.hasUsernameAndPassword()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
-		bot.addArguments(CliArgs.MEM, false, 2048);
+		bot.addArguments(CliArgs.MEM, false, 1500);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
 		}
 		if (account.hasScript()) {
 			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
-			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(), account.getEmail() + "_" + account.getPassword()
-					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + account.getUsername());
+			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
+					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId() + "_" + accountStatus + "_"
+							+ account.getUsername() + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%") + "_"
+							+ Config.DATABASE_NAME.replaceAll("_", "%") + "_"
+							+ Config.DATABASE_PASSWORD.replaceAll("_", "%"));
 		}
 		bot.runBot(false);
 	}
@@ -158,14 +164,16 @@ public class BotHandler {
 
 		AccountTable account = bot.getAccount();
 
+		bot.setCliArgs(new StringBuilder());
+
 		bot.setStartingUp(true);
 		bot.setStartTime(System.currentTimeMillis());
-		DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId());
+		new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
-		bot.addArguments(CliArgs.WORLD, false, 301);
+		bot.addArguments(CliArgs.WORLD, false, 453);
 
 		if (Config.LOW_CPU) {
 			// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
@@ -180,7 +188,7 @@ public class BotHandler {
 		} else if (account.hasUsernameAndPassword()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
-		bot.addArguments(CliArgs.MEM, false, 2048);
+		bot.addArguments(CliArgs.MEM, false, 1500);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
@@ -188,7 +196,9 @@ public class BotHandler {
 		if (account.hasScript()) {
 			String accountStatus = bot.getAccount().getStage().name().replaceAll("_", "-");
 			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
-					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + toTradeWith + "_" + emailOfUserTradingWith);
+					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%")
+					+ "_" + Config.DATABASE_NAME.replaceAll("_", "%") + "_"
+					+ Config.DATABASE_PASSWORD.replaceAll("_", "%") + "_" + toTradeWith + "_" + emailOfUserTradingWith);
 		}
 
 		if (bot.getAccount().getStatus() == AccountStatus.MULE) {
@@ -394,7 +404,7 @@ public class BotHandler {
 			OsbotController osbot = BotController.getBots().get(i);
 
 			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0
-					&& osbot.getPidId() <= 0) {
+					&& !BotController.containsInPidList(osbot.getPidId())) {
 				return true;
 			}
 		}
@@ -423,6 +433,46 @@ public class BotHandler {
 			return true;
 		}
 		return false;
+	}
+
+	public static void runMule() {
+		List<OsbotController> botz = new ArrayList<OsbotController>();
+		botz.addAll(BotController.getBots());
+
+		// Reversering so the mule isn't the first one to launch (at most of the times),
+		// but the worker
+		Collections.reverse(botz);
+
+		for (int i2 = 0; i2 < botz.size(); i2++) {
+			OsbotController osbot2 = botz.get(i2);
+
+			if (osbot2 != null && osbot2.getAccount().getTradeWithOther() != null
+					&& osbot2.getAccount().getTradeWithOther().length() > 0
+					// && DatabaseUtilities.getLoginStatus(osbot2.getId()) == LoginStatus.DEFAULT
+					&& !BotController.containsInPidList(osbot2.getPidId())) {
+
+				if (!DatabaseUtilities.getAccountStageInDatabase(osbot2.getId())
+						.equalsIgnoreCase(AccountStage.UNKNOWN.name())
+						&& !DatabaseUtilities.getAccountStageInDatabase(osbot2.getId())
+								.equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
+
+					System.out.println("Account stage wasn't to mule trade");
+					DatabaseUtilities.setTradingWith(null, osbot2.getId());
+					break;
+				}
+
+				runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
+						DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
+				System.out.println("Running mule trading " + osbot2.getAccount().getUsername());
+			}
+		}
+
+		try {
+			Thread.sleep(2500);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -459,49 +509,59 @@ public class BotHandler {
 				runBot(osbot);
 				System.out.println("Running GE TRADING trading " + osbot.getAccount().getUsername());
 
-//				try {
-//					Thread.sleep(5000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(5000);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 		}
 
 		// System.out.println("HB: 4");
 
-		for (int i = 0; i < BotController.getBots().size(); i++) {
-			OsbotController osbot = BotController.getBots().get(i);
-
-			// System.out.println("HB: 5");
-			// Running mules
-			if (osbot != null && osbot.getAccount().getTradeWithOther() != null
-					&& osbot.getAccount().getTradeWithOther().length() > 0
-					&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT
-					&& !BotController.containsInPidList(osbot.getPidId())) {
-
-				if (!DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
-						.equalsIgnoreCase(AccountStage.UNKNOWN.name())
-						&& !DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
-								.equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
-
-					System.out.println("Account stage wasn't to mule trade");
-					DatabaseUtilities.setTradingWith(null, osbot.getId());
-					break;
-				}
-
-				runMule(osbot, osbot.getAccount().getTradeWithOther(),
-						DatabaseUtilities.getEmailFromUsername(osbot.getAccount().getTradeWithOther()));
-				System.out.println("Running mule trading " + osbot.getAccount().getUsername());
-
-//				try {
-//					Thread.sleep(5000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-			}
-		}
+		// Copying the BotController bots
+		// List<OsbotController> bots = new ArrayList<OsbotController>();
+		// bots.addAll(BotController.getBots());
+		//
+		// // Reversering so the mule isn't the first one to launch (at most of the
+		// times),
+		// // but the worker
+		// Collections.reverse(bots);
+		//
+		// for (int i = 0; i < bots.size(); i++) {
+		// OsbotController osbot = bots.get(i);
+		//
+		// // System.out.println("HB: 5");
+		// // Running mules
+		// if (osbot != null && osbot.getAccount().getTradeWithOther() != null
+		// && osbot.getAccount().getTradeWithOther().length() > 0
+		// && DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT
+		// && !BotController.containsInPidList(osbot.getPidId())) {
+		//
+		// if (!DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
+		// .equalsIgnoreCase(AccountStage.UNKNOWN.name())
+		// && !DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
+		// .equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
+		//
+		// System.out.println("Account stage wasn't to mule trade");
+		// DatabaseUtilities.setTradingWith(null, osbot.getId());
+		// break;
+		// }
+		//
+		// runMule(osbot, osbot.getAccount().getTradeWithOther(),
+		// DatabaseUtilities.getEmailFromUsername(osbot.getAccount().getTradeWithOther()));
+		// System.out.println("Running mule trading " +
+		// osbot.getAccount().getUsername());
+		//
+		// try {
+		// Thread.sleep(5000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// }
+		// }
 
 		// System.out.println("HB: 6");
 
@@ -516,7 +576,8 @@ public class BotHandler {
 
 				if (wantsToMule()) {
 					System.out.println("A bot wants to mule, so giving them priority");
-					break;
+					runMule();
+					continue;
 				}
 
 				if (wantsToGe() > 5) {
@@ -544,6 +605,7 @@ public class BotHandler {
 								|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT && osbot.getAccount()
 										.getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE))
 						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
+						&& osbot.getAccount().getStage() != AccountStage.OUT_OF_MONEY
 						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
 						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING
 						&& javaPidsSize < Config.MAX_BOTS_OPEN && osbot.getAccount().getEmail() != null
@@ -573,12 +635,12 @@ public class BotHandler {
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
-//					try {
-//						Thread.sleep(5000);
-//					} catch (InterruptedException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
+					// try {
+					// Thread.sleep(5000);
+					// } catch (InterruptedException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
 
 					// System.out.println("HB: 12");
 				} else if (osbot == null) {

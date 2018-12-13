@@ -62,12 +62,15 @@ public class BotController {
 	}
 
 	public static void killProcess(final int pid) {
-		try {
-			Runtime.getRuntime().exec("Taskkill /PID " + pid + " /F");
-//			return (abc.exitValue() == 0);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		new Thread(() -> {
+			try {
+				Runtime.getRuntime().exec("Taskkill /PID " + pid + " /F");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}).start();
+		// return (abc.exitValue() == 0);
 	}
 
 	/**

@@ -97,17 +97,17 @@ public class World {
 	}
 
 	public static World getRandomWorldWithLessPopulation(WorldType type, int minAmountOfWorlds) {
-		return getWorldsWithoutTotalRequirements(type).get(RandomUtil.getRandomNumberInRange(0,
-				getWorldsWithoutTotalRequirements(type).size() < minAmountOfWorlds
-						? getWorldsWithoutTotalRequirements(type).size()
-						: minAmountOfWorlds));
+		List<World> w = getWorldsWithoutTotalRequirements(type);
+		return w.get(RandomUtil.getRandomNumberInRange(0, w.size() - 1));
 	}
 
 	public static List<World> getWorldsWithoutTotalRequirements(WorldType type) {
 		if (worlds == null) {
 			loadWorlds();
 		}
-		return worlds.stream().filter(world -> world.getType() == type && !world.getDetail().contains("skill total"))
+		return worlds.stream()
+				.filter(world -> world.getType() == type && !world.getDetail().contains("skill total")
+						&& !world.getDetail().contains("PvP") && world.getPlayerAmount() < 600)
 				.collect(Collectors.toList());
 	}
 

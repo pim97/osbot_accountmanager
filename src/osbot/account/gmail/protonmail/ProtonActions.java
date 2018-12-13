@@ -9,6 +9,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import osbot.account.global.Config;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.settings.OsbotController;
 
@@ -125,8 +126,8 @@ public class ProtonActions {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, 2);
 
-			WebElement element = wait.until(ExpectedConditions
-					.visibilityOfElementLocated(By.xpath("//button[@class='fa fa-times close']")));
+			WebElement element = wait.until(
+					ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@class='fa fa-times close']")));
 			System.out.println("element found: " + element);
 			if (element != null && element.isDisplayed()) {
 				element.click();
@@ -134,7 +135,7 @@ public class ProtonActions {
 			}
 			return false;
 		} catch (Exception e) {
-			 e.printStackTrace();
+			e.printStackTrace();
 			System.out.println("Couldnt find the friday deals!");
 			return false;
 		}
@@ -290,7 +291,7 @@ public class ProtonActions {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			if (sendKeysAndVerifyValue(By.id("username"), username)) {
+			if (sendKeysAndVerifyValue(By.id("username"), Config.PREFIX_EMAIL + "@protonmail.com")) {
 				if (sendKeysAndVerifyValue(By.id("password"), password)) {
 					if (clickButtonAndVerifyLink(By.id("login_btn"), ProtonConfig.LINK_TO_PROTON)) {
 						return true;

@@ -65,14 +65,16 @@ public class MainController extends Application {
 		} else {
 			Config.DATABASE_PASSWORD = args[4];
 		}
-		
+
 		Config.DATABASE_IP = args[5];
+		Config.PREFIX_EMAIL = args[6];
 
 		System.out.println("DATABASE SETTIGNS: ");
 		System.out.println("Database username: " + Config.DATABASE_USER_NAME);
 		System.out.println("Database name: " + Config.DATABASE_NAME);
 		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
 		System.out.println("Database IP: " + Config.DATABASE_IP);
+		System.out.println("Email prefix: " + Config.PREFIX_EMAIL);
 
 		if (!Config.GUI) {
 			Config.MAX_BOTS_OPEN = Integer.parseInt(args[1]);

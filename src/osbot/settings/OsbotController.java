@@ -60,7 +60,7 @@ public class OsbotController {
 			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
 			System.out.println("Waiting for OSBot to launch..");
 
-			if (!p.waitFor(5, TimeUnit.SECONDS)) {
+			if (!p.waitFor(10, TimeUnit.SECONDS)) {
 				System.out.println("Destroyed, couldn't start up in time");
 				p.destroy();
 				setStartingUp(false);
@@ -70,6 +70,9 @@ public class OsbotController {
 			System.out.println(getCliArgs().toString());
 			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
 			pidsAfter.removeAll(pids);
+
+			// System.out.println("CURRENT PIDS: ");
+			// pidsAfter.forEach(pid -> System.out.println("GOT: " + pid));
 
 			if (pidsAfter.size() == 1) {
 				setPidId(pidsAfter.get(0));
@@ -190,7 +193,7 @@ public class OsbotController {
 	public void addArguments(CliArgs args, boolean addDoublePoint, Object... value) {
 		if (getCliArgs().length() == 0) {
 			// getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot -debug");
-			getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot");
+			getCliArgs().append("java -XX:ErrorFile=nul -cp \"lib/*\" org.osbot.Boot");
 		}
 		getCliArgs().append(" ");
 		getCliArgs().append("-" + args.name().toLowerCase());

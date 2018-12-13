@@ -43,7 +43,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.transformIntoMuleHandler();
-//				BotHandler.checkJavaPidsTimeout();
+				// BotHandler.checkJavaPidsTimeout();
 
 				try {
 					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
@@ -72,7 +72,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 50000));
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -99,7 +99,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 50000));
+					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -122,17 +122,11 @@ public class ThreadHandler {
 		Thread handleMulesTrading = new Thread(() -> {
 			while (programIsRunning) {
 
-				try {
-					Thread.sleep(5000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
 				BotHandler.handleMules();
 
 				// Checking every 15 seconds for a mule
 				try {
-					Thread.sleep(10000);
+					Thread.sleep(2500);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -239,7 +233,7 @@ public class ThreadHandler {
 		Thread checkRunningErrors = new Thread(() -> {
 			while (programIsRunning) {
 
-//				DatabaseUtilities.checkRunningErrors();
+				// DatabaseUtilities.checkRunningErrors();
 
 				// Checking every 5 seconds if bot is still running
 				try {

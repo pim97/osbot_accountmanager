@@ -25,7 +25,10 @@ import osbot.account.creator.HttpRequests;
 import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
+import osbot.account.global.Config;
 import osbot.account.webdriver.WebdriverFunctions;
+import osbot.account.worlds.World;
+import osbot.account.worlds.WorldType;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
 import osbot.settings.OsbotController;
@@ -93,9 +96,9 @@ public class RunescapeActions {
 			}
 
 			WebdriverFunctions.waitForLoad(driver);
-			
+
 			Thread.sleep(10000);
-			
+
 			System.out.println(driver.getPageSource());
 			if (driver.getPageSource().contains("You have been temporarily blocked from using this service.")) {// message.ws/?message=5
 				DatabaseUtilities.updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus.LOCKED_TIMEOUT,
@@ -106,12 +109,12 @@ public class RunescapeActions {
 				driver.quit();
 				return false;
 			}
-			
+
 			// WebdriverFunctions.waitForElementToBeVisible(driver,
 			// driver.findElement(By.name("password")));
 
 			if (fillInNewPassword()) {
-				if (!clickButtonAndVerifyLink(By.name("submit"), "enter_security_code")) {// account_created
+				if (!clickButtonAndVerifyLink(By.name("submit"), "enter_security_code", false, -1)) {// account_created
 					if (WebdriverFunctions.hasQuit(driver)) {
 						System.out.println("Breaking out of loop");
 						return true;
@@ -201,7 +204,7 @@ public class RunescapeActions {
 			}
 
 			setFailedTries(0);
-			while (!clickButtonAndVerifyLink(By.id("passwordRecovery"), "email-confirmation")) {// account-identified
+			while (!clickButtonAndVerifyLink(By.id("passwordRecovery"), "email-confirmation", true, 1)) {// account-identified
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
 					break;
@@ -325,7 +328,7 @@ public class RunescapeActions {
 			System.out.println("Captcha has completed!");
 
 			while (!clickButtonAndVerifyLink(By.id("create-submit"),
-					"https://secure.runescape.com/m=account-creation/account_created")) {// account_created
+					"https://secure.runescape.com/m=account-creation/account_created", true, 0)) {// account_created
 
 				WebElement el = driver
 						.findElement(By.xpath("//p[contains(text(), 'Please complete the reCAPTCHA box.')]"));
@@ -443,10 +446,11 @@ public class RunescapeActions {
 
 		new Thread(() -> {
 			String responseToken = null;
-			TwoCaptchaService service = new TwoCaptchaService("8ff2e630e82351bdc3f0b00af2e026b9",
-					"6LccFA0TAAAAAHEwUJx_c1TfTBWMTAOIphwTtd1b", link, "" + getAccount().getAccount().getProxyIp(),
-					"" + getAccount().getAccount().getProxyPort(), getAccount().getAccount().getProxyUsername(),
-					getAccount().getAccount().getProxyPassword(), ProxyType.SOCKS5);
+			osbot.account.TwoCaptchaService service = new osbot.account.TwoCaptchaService(
+					"8ff2e630e82351bdc3f0b00af2e026b9", "6Lcsv3oUAAAAAGFhlKrkRb029OHio098bbeyi_Hv", link,
+					"" + getAccount().getAccount().getProxyIp(), "" + getAccount().getAccount().getProxyPort(),
+					getAccount().getAccount().getProxyUsername(), getAccount().getAccount().getProxyPassword(),
+					ProxyType.SOCKS5, true);
 
 			try {
 				responseToken = service.solveCaptcha();
@@ -459,7 +463,16 @@ public class RunescapeActions {
 
 			RemoteWebDriver r = (RemoteWebDriver) driver;
 			String setResponseToken = "document.getElementById('g-recaptcha-response').value='" + responseToken + "'";
+
+			// "document.getElementById('g-recaptcha-response').innerHTML='" + responseToken
+			// + "'";
+
 			r.executeScript(setResponseToken);
+
+			String setResponseToken2 = "return document.getElementById('g-recaptcha-response').value";
+			String a = r.executeScript(setResponseToken2).toString();
+
+			System.out.println("Set resonse token on element to: " + a);
 
 		}).start();
 	}
@@ -469,9 +482,10 @@ public class RunescapeActions {
 	 * 
 	 * @param by
 	 * @param link
-	 * @return
+	 * @return type = 0 - acc creation type = 1 - acc recover
 	 */
-	public boolean clickButtonAndVerifyLink(By by, String link) {
+	public boolean clickButtonAndVerifyLink(By by, String link, boolean javascriptExecutorInsteadOfFormRequest,
+			int type) {
 		try {
 			if (WebdriverFunctions.hasQuit(driver)) {
 				System.out.println("Breaking out of loop");
@@ -482,7 +496,25 @@ public class RunescapeActions {
 			WebElement button = getDriver().findElement(by);
 
 			if (button != null) {
-				button.click();
+
+				if (!javascriptExecutorInsteadOfFormRequest) {
+					button.click();
+				} else {
+					// Execute javascript to click the button
+					RemoteWebDriver r = (RemoteWebDriver) driver;
+					String toExecute = "";
+//					if (type == 0) {
+//						toExecute = "$('#create-email-form').submit();";
+//
+//						// "document.getElementById('create-email-form').submit();";
+//
+//					} else if (type == 1) {
+//						toExecute = "$('#password-recovery-form').submit();";
+//						// toExecute = "document.getElementById('password-recovery-form').submit();";
+//					}
+					String setResponseToken = "onSubmit()";
+					r.executeScript(setResponseToken);
+				}
 
 				if (isAtLink(link)) {
 					return true;
@@ -689,8 +721,7 @@ public class RunescapeActions {
 		// }
 
 		WebdriverFunctions.waitForLoad(driver);
-	
-		
+
 		WebDriverWait wait = new WebDriverWait(driver, 120);
 		WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
 		WebElement myDynamicElement = (new WebDriverWait(driver, 120))
@@ -735,22 +766,39 @@ public class RunescapeActions {
 		int year = getRandomValueBetweenUpperAndLower(1990, 2000);
 
 		// New worlds selection of more F2P worlds
-		List<Integer> worldsAvailable = new ArrayList<Integer>(
-				Arrays.asList(474, 477, 470, 479, 472, 476, 473, 478, 475, 471, 469, 394, 453, 456, 452, 458, 460, 455,
-						459, 451, 454, 457, 398, 397, 399, 383, 498, 497, 499, 504, 502, 503, 501, 500, 505, 506));
+		World worldsAvailable = World.getRandomWorldWithLessPopulation(WorldType.F2P, 20);
+		// new ArrayList<Integer>(
+		// Arrays.asList(474, 477, 470, 479, 472, 476, 473, 478, 475, 471, 469, 394,
+		// 453, 456, 452, 458, 460, 455,
+		// 459, 451, 454, 457, 398, 397, 399, 383, 498, 497, 499, 504, 502, 503, 501,
+		// 500, 505, 506));
 
-		int world = worldsAvailable.get(RandomUtil.getRandomNumberInRange(0, worldsAvailable.size() - 1));
+		int world = worldsAvailable.getNumber();
 
 		account.getAccount().setWorld(world);
 		account.getAccount().setDay(day);
 		account.getAccount().setMonth(month);
 		account.getAccount().setYear(year);
-		account.getAccount().setEmail("alphabearman+" + randomNumber + "@protonmail.com");
+		StringBuilder email = new StringBuilder();
 
-		driver.findElement(By.className("m-date-entry__day-field")).sendKeys("" + account.getAccount().getDay());
-		driver.findElement(By.className("m-date-entry__month-field")).sendKeys("" + account.getAccount().getMonth());
-		driver.findElement(By.className("m-date-entry__year-field")).sendKeys("" + account.getAccount().getYear());
-		driver.findElement(By.id("create-email")).sendKeys("alphabearman+" + randomNumber + "@protonmail.com");
+		// Email stringbuilder
+		email.append(Config.PREFIX_EMAIL + "+");
+		email.append(randomNumber);
+		email.append("@protonmail.com");
+
+		account.getAccount().setEmail(email.toString());
+
+		// Dates
+		driver.findElement(By.className("m-date-entry__day-field"))
+				.sendKeys(new StringBuilder().append(account.getAccount().getDay()).toString());
+
+		driver.findElement(By.className("m-date-entry__month-field"))
+				.sendKeys(new StringBuilder().append(account.getAccount().getMonth()).toString());
+
+		driver.findElement(By.className("m-date-entry__year-field"))
+				.sendKeys(new StringBuilder().append(account.getAccount().getYear()).toString());
+		driver.findElement(By.id("create-email")).sendKeys(account.getAccount().getEmail());
+
 		driver.findElement(By.id("create-password")).sendKeys(account.getAccount().getPassword());
 		// driver.findElement(By.id("character-name")).sendKeys(account.getAccount().getUsername());
 		// driver.findElement(By.className("c-cookie-consent__dismiss")).click();
