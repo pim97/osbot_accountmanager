@@ -136,7 +136,7 @@ public class BotHandler {
 		} else if (account.hasUsernameAndPassword()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
-		bot.addArguments(CliArgs.MEM, false, 1500);
+		bot.addArguments(CliArgs.MEM, false, 1250);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
@@ -168,6 +168,8 @@ public class BotHandler {
 
 		bot.setStartingUp(true);
 		bot.setStartTime(System.currentTimeMillis());
+
+		// System.out.println("1");
 		new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
 
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
@@ -175,6 +177,7 @@ public class BotHandler {
 		bot.addArguments(CliArgs.DATA, false, 0);
 		bot.addArguments(CliArgs.WORLD, false, 453);
 
+		// System.out.println("2");
 		if (Config.LOW_CPU) {
 			// if (!account.getScript().equalsIgnoreCase(AccountStage.TUT_ISLAND.name())) {
 			bot.addArguments(CliArgs.ALLOW, false, "norandoms");
@@ -188,20 +191,46 @@ public class BotHandler {
 		} else if (account.hasUsernameAndPassword()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
-		bot.addArguments(CliArgs.MEM, false, 1500);
+		// System.out.println("3");
+		bot.addArguments(CliArgs.MEM, false, 1250);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
 		}
 		if (account.hasScript()) {
+			String osbotPartner = DatabaseUtilities.getTradeWithOther(bot.getId());
+			OsbotController partner = BotController.getBotByAccountName(osbotPartner);
+			System.out.println("The partner found is: " + partner);
+			String script = "MULE_TRADING";
+
+			boolean hasPartner = partner != null && partner.getAccount() != null
+					&& partner.getAccount().getStatus() != null;
+			boolean isRightAccountStatus = (hasPartner)
+					&& (partner.getAccount().getStatus() == AccountStatus.SUPER_MULE
+							&& bot.getAccount().getStatus() == AccountStatus.MULE)
+					|| ((bot.getAccount().getStatus() == AccountStatus.SUPER_MULE
+							&& partner.getAccount().getStatus() == AccountStatus.MULE));
+
+			if (hasPartner && isRightAccountStatus) {
+				script = "SUPERMULE_TRADING";
+			} else {
+				System.out.println("has partner: " + hasPartner);
+				System.out.println("is right acc status: " + isRightAccountStatus);
+			}
+
+			System.out.println("Excecuting script with: " + script);
+
+			// System.out.println("4");
 			String accountStatus = bot.getAccount().getStage().name().replaceAll("_", "-");
-			bot.addArguments(CliArgs.SCRIPT, true, "MULE_TRADING", account.getEmail() + "_" + account.getPassword()
-					+ "_" + bot.getPidId() + "_" + accountStatus + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%")
-					+ "_" + Config.DATABASE_NAME.replaceAll("_", "%") + "_"
-					+ Config.DATABASE_PASSWORD.replaceAll("_", "%") + "_" + toTradeWith + "_" + emailOfUserTradingWith);
+			bot.addArguments(CliArgs.SCRIPT, true, script, account.getEmail() + "_" + account.getPassword() + "_"
+					+ bot.getPidId() + "_" + accountStatus + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%") + "_"
+					+ Config.DATABASE_NAME.replaceAll("_", "%") + "_" + Config.DATABASE_PASSWORD.replaceAll("_", "%")
+					+ "_" + toTradeWith + "_" + emailOfUserTradingWith);
 		}
 
-		if (bot.getAccount().getStatus() == AccountStatus.MULE) {
+		// System.out.println("5");
+		if (bot.getAccount().getStatus() == AccountStatus.MULE
+				|| bot.getAccount().getStatus() == AccountStatus.SUPER_MULE) {
 			createBatFile(bot);
 		}
 		bot.runBot(true);
@@ -291,50 +320,58 @@ public class BotHandler {
 	 */
 	public static void handleMules() {
 		OsbotController availableMule = null;
+		OsbotController availableSuperMule = null;
 
 		// If accounts are not loaded yet
 		if (BotController.getBots().size() == 0) {
 			System.out.println("[MULE TRADING] Couldn't trade yet, accounts weren't loaded yet");
 		}
 		for (int i = 0; i < BotController.getBots().size(); i++) {
+
 			OsbotController osbot = BotController.getBots().get(i);
-			String tradeWithOther = DatabaseUtilities.getTradeWithOther(osbot.getId());
-			OsbotController partner = getOsbotByName(tradeWithOther);
 
-			if (tradeWithOther != null && (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
-					|| (osbot.getAccount().getStage() == AccountStage.UNKNOWN
-							&& osbot.getAccount().getStatus() == AccountStatus.MULE))) {
+			if ((osbot.getAccount().getStage() == AccountStage.MULE_TRADING
+					|| (osbot.getAccount().getStage() == AccountStage.UNKNOWN)
+							&& (osbot.getAccount().getStatus() == AccountStatus.MULE
+									|| osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE))) {
 
-				// Cant find the partner
-				if (partner == null) {
-					System.out.println("Couldn't find the partner to trade: E01");
-					DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-					DatabaseUtilities.setTradingWith(null, osbot.getId());
-				}
+				String tradeWithOther = DatabaseUtilities.getTradeWithOther(osbot.getId());
+				OsbotController partner = getOsbotByName(tradeWithOther);
 
-				if (partner != null) {
-					String tradeWithOther2 = DatabaseUtilities.getTradeWithOther(partner.getId());
-					if (!osbot.getAccount().getUsername().equalsIgnoreCase(tradeWithOther2)
-							|| !partner.getAccount().getUsername().equalsIgnoreCase(tradeWithOther)) {
-						System.out.println("Accounts didn't trade eachother! E04");
+				if (tradeWithOther != null) {
+
+					// Cant find the partner
+					if (partner == null) {
+						System.out.println("Couldn't find the partner to trade: E01");
+						DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+						DatabaseUtilities.setTradingWith(null, osbot.getId());
+					}
+
+					if (partner != null) {
+						String tradeWithOther2 = DatabaseUtilities.getTradeWithOther(partner.getId());
+						if (!osbot.getAccount().getUsername().equalsIgnoreCase(tradeWithOther2)
+								|| !partner.getAccount().getUsername().equalsIgnoreCase(tradeWithOther)) {
+							System.out.println("Accounts didn't trade eachother! E04");
+							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+							DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						}
+					}
+
+					if (osbot.getAccount().getStatus() != AccountStatus.MULE
+							&& osbot.getAccount().getStatus() != AccountStatus.AVAILABLE
+							&& osbot.getAccount().getStatus() != AccountStatus.SUPER_MULE) {
+						System.out.println("One of the accounts got banned! E03");
 						DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
 						DatabaseUtilities.setTradingWith(null, tradeWithOther);
 					}
-				}
 
-				if (osbot.getAccount().getStatus() != AccountStatus.MULE
-						&& osbot.getAccount().getStatus() != AccountStatus.AVAILABLE) {
-					System.out.println("One of the accounts got banned! E03");
-					DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-					DatabaseUtilities.setTradingWith(null, tradeWithOther);
-				}
+					// Don't match
+					if (osbot != null && tradeWithOther.equalsIgnoreCase(osbot.getAccount().getUsername())) {
+						DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						System.out.println("Don't correspond: E02");
+					}
 
-				// Don't match
-				if (osbot != null && tradeWithOther.equalsIgnoreCase(osbot.getAccount().getUsername())) {
-					DatabaseUtilities.setTradingWith(null, tradeWithOther);
-					System.out.println("Don't correspond: E02");
 				}
-
 			}
 
 		}
@@ -342,45 +379,93 @@ public class BotHandler {
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
 
-			// Looking for a mule account and that is currently available ('NULL')
-			if (osbot.getAccount().getStatus() == AccountStatus.MULE && osbot.getAccount().getTradeWithOther() == null
-					&& osbot.getAccount().getStage() == AccountStage.UNKNOWN
-					&& DatabaseUtilities.getTradeWithOther(osbot.getId()) == null
-					&& DatabaseUtilities.getAmountOfMuleTrades(osbot.getAccount().getUsername()) == 0) {
-				availableMule = osbot;
-				System.out.println("[MULE TRADING] Found an account! " + availableMule.getAccount().getUsername());
+			if ((osbot.getAccount().getStatus() == AccountStatus.MULE
+					|| osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE)
+					&& osbot.getAccount().getStage() == AccountStage.UNKNOWN) {
+
+				// Looking for a mule account and that is currently available ('NULL')
+				if (osbot.getAccount().getTradeWithOther() == null
+						&& DatabaseUtilities.getTradeWithOther(osbot.getId()) == null
+						&& DatabaseUtilities.getAmountOfMuleTrades(osbot.getAccount().getUsername()) == 0) {
+
+					if (osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE) {
+						availableSuperMule = osbot;
+						System.out.println(
+								"[MULE TRADING] Found an account! " + availableSuperMule.getAccount().getUsername());
+					} else if (osbot.getAccount().getStatus() == AccountStatus.MULE) {
+						availableMule = osbot;
+						System.out.println(
+								"[MULE TRADING] Found an account! " + availableMule.getAccount().getUsername());
+					}
+				}
+			}
+		}
+
+		// Must have a mule available to continue
+		if (BotController.getBots().size() > 0 && availableSuperMule == null) {
+			System.out.println("[MULE TRADING] Couldn't find super-mule to trade with, is not available");
+		} else {
+			for (int i = 0; i < BotController.getBots().size(); i++) {
+				OsbotController osbot = BotController.getBots().get(i);
+
+				if (osbot.getAccount().getStage() == AccountStage.UNKNOWN
+						&& osbot.getAccount().getStatus() == AccountStatus.MULE
+						&& Integer.parseInt(osbot.getAccount().getAccountValue().replaceAll(",", "")) > 1_000_000) {
+
+					// If an account wants to mule
+					// Not with himself and must be status MULE_TRADING
+					if (DatabaseUtilities.getTradeWithOther(osbot.getId()) == null && !osbot.getAccount().getUsername()
+							.equalsIgnoreCase(availableSuperMule.getAccount().getUsername())) {
+
+						// Setting in database that the mule is trading with the workers name
+						DatabaseUtilities.setTradingWith(osbot.getAccount().getUsername(), availableSuperMule.getId());
+
+						System.out.println(
+								"[MULE TRADING] Starting super-mule: " + availableSuperMule.getAccount().getUsername()
+										+ " to trade with: " + osbot.getAccount().getUsername());
+
+						// Setting in database that worker is trading with mule
+						DatabaseUtilities.setTradingWith(availableSuperMule.getAccount().getUsername(), osbot.getId());
+
+						System.out.println("[MULE TRADING] Starting normal-mule: " + osbot.getAccount().getUsername()
+								+ " to trade with mule: " + availableSuperMule.getAccount().getUsername());
+
+						break;
+					}
+				}
 			}
 		}
 
 		// Must have a mule available to continue
 		if (BotController.getBots().size() > 0 && availableMule == null) {
 			System.out.println("[MULE TRADING] Couldn't find mule to trade with, is not available");
-			return;
-		}
+		} else {
+			for (int i = 0; i < BotController.getBots().size(); i++) {
+				OsbotController osbot = BotController.getBots().get(i);
 
-		for (int i = 0; i < BotController.getBots().size(); i++) {
-			OsbotController osbot = BotController.getBots().get(i);
+				if (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
+						&& osbot.getAccount().getStatus() == AccountStatus.AVAILABLE) {
 
-			// If an account wants to mule
-			// Not with himself and must be status MULE_TRADING
-			if (DatabaseUtilities.getTradeWithOther(osbot.getId()) == null
-					&& (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
-							&& osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
-					&& !osbot.getAccount().getUsername().equalsIgnoreCase(availableMule.getAccount().getUsername())) {
+					// If an account wants to mule
+					// Not with himself and must be status MULE_TRADING
+					if (DatabaseUtilities.getTradeWithOther(osbot.getId()) == null && !osbot.getAccount().getUsername()
+							.equalsIgnoreCase(availableMule.getAccount().getUsername())) {
 
-				// Setting in database that the mule is trading with the workers name
-				DatabaseUtilities.setTradingWith(osbot.getAccount().getUsername(), availableMule.getId());
+						// Setting in database that the mule is trading with the workers name
+						DatabaseUtilities.setTradingWith(osbot.getAccount().getUsername(), availableMule.getId());
 
-				System.out.println("[MULE TRADING] Starting mule: " + availableMule.getAccount().getUsername()
-						+ " to trade with: " + osbot.getAccount().getUsername());
+						System.out.println("[MULE TRADING] Starting mule: " + availableMule.getAccount().getUsername()
+								+ " to trade with: " + osbot.getAccount().getUsername());
 
-				// Setting in database that worker is trading with mule
-				DatabaseUtilities.setTradingWith(availableMule.getAccount().getUsername(), osbot.getId());
+						// Setting in database that worker is trading with mule
+						DatabaseUtilities.setTradingWith(availableMule.getAccount().getUsername(), osbot.getId());
 
-				System.out.println("[MULE TRADING] Starting worker: " + osbot.getAccount().getUsername()
-						+ " to trade with mule: " + availableMule.getAccount().getUsername());
+						System.out.println("[MULE TRADING] Starting worker: " + osbot.getAccount().getUsername()
+								+ " to trade with mule: " + availableMule.getAccount().getUsername());
 
-				break;
+						break;
+					}
+				}
 			}
 		}
 
@@ -403,12 +488,47 @@ public class BotHandler {
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
 
-			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0
-					&& !BotController.containsInPidList(osbot.getPidId())) {
-				return true;
+			if (osbot.getAccount().getTradeWithOther() != null && osbot.getAccount().getTradeWithOther().length() > 0) {
+				if (!BotController.containsInPidList(osbot.getPidId())) {
+					return true;
+				}
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Determines whether a muling is currently on tutorial island and wants to
+	 * launch, thus giving it priority
+	 * 
+	 * @return
+	 */
+	private static OsbotController superMuleWantsToLaunchToFinishTutorialIsland() {
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController osbot = BotController.getBots().get(i);
+
+			boolean isRightAccount = osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
+					&& osbot.getAccount().getStage() == AccountStage.TUT_ISLAND;
+			boolean isProxyAddress = Config.isSuperMuleProxy(osbot.getAccount().getProxyIp(),
+					osbot.getAccount().getProxyPort())
+					|| Config.isStaticMuleProxy(osbot.getAccount().getProxyIp(), osbot.getAccount().getProxyPort());
+			boolean notStartedUpYet = !BotController.containsInPidList(osbot.getPidId());
+			boolean mayLoginBecauseOfStatus = osbot.getAccount().getLoginStatus() != LoginStatus.LOGGED_IN;
+
+			// System.out.println(Config.isMuleProxy(osbot.getAccount().getProxyIp(),
+			// osbot.getAccount().getProxyPort()));
+			// System.out.println(osbot.getAccount().getStatus() + " " +
+			// osbot.getAccount().getStage());
+			// System.out.println("rigth acc: " + isRightAccount);
+			// System.out.println("proxy add: " + isProxyAddress);
+			// System.out.println("not started up: " + notStartedUpYet);
+			if (isRightAccount && isProxyAddress && mayLoginBecauseOfStatus) {
+				if (notStartedUpYet) {
+					return osbot;
+				}
+			}
+		}
+		return null;
 	}
 
 	public static boolean containsMiningAndNotRunning() {
@@ -446,24 +566,38 @@ public class BotHandler {
 		for (int i2 = 0; i2 < botz.size(); i2++) {
 			OsbotController osbot2 = botz.get(i2);
 
+			// if (osbot2 != null) {
+			//
+			// // When the account value is too low, then stop trading it
+			// if (Integer.parseInt(osbot2.getAccount().getAccountValue()) <= 0
+			// && osbot2.getAccount().getStage() == AccountStage.MULE_TRADING) {
+			//
+			// DatabaseUtilities.setTradingWith(null, osbot2.getId());
+			// System.out.println("Account cash was too low to trade!");
+			// break;
+			// }
+			// }
+
 			if (osbot2 != null && osbot2.getAccount().getTradeWithOther() != null
-					&& osbot2.getAccount().getTradeWithOther().length() > 0
-					// && DatabaseUtilities.getLoginStatus(osbot2.getId()) == LoginStatus.DEFAULT
-					&& !BotController.containsInPidList(osbot2.getPidId())) {
+					&& osbot2.getAccount().getTradeWithOther().length() > 0) {
+				if (!BotController.containsInPidList(osbot2.getPidId())) {
 
-				if (!DatabaseUtilities.getAccountStageInDatabase(osbot2.getId())
-						.equalsIgnoreCase(AccountStage.UNKNOWN.name())
-						&& !DatabaseUtilities.getAccountStageInDatabase(osbot2.getId())
-								.equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
+					// Seperated because its checking in DB, taking long
+					if (DatabaseUtilities.getLoginStatus(osbot2.getId()) == LoginStatus.DEFAULT) {
 
-					System.out.println("Account stage wasn't to mule trade");
-					DatabaseUtilities.setTradingWith(null, osbot2.getId());
-					break;
+						if (osbot2.getAccount().getStage() != AccountStage.UNKNOWN
+								&& osbot2.getAccount().getStage() != AccountStage.MULE_TRADING) {
+
+							System.out.println("Account stage wasn't to mule trade");
+							DatabaseUtilities.setTradingWith(null, osbot2.getId());
+							break;
+						}
+
+						System.out.println("Running mule trading " + osbot2.getAccount().getUsername());
+						runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
+								DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
+					}
 				}
-
-				runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
-						DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
-				System.out.println("Running mule trading " + osbot2.getAccount().getUsername());
 			}
 		}
 
@@ -479,6 +613,8 @@ public class BotHandler {
 	 * Handlig all the bots, deciding how many should be open etc.
 	 */
 	public static void handleBots() {
+		// long startTime = System.currentTimeMillis();
+
 		// Will check the PID processes if they are still running or not, when not, they
 		// get deleted in the PID list
 
@@ -491,88 +627,12 @@ public class BotHandler {
 
 		sortByStage();
 
-		// System.out.println("HB: 2");
-
 		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
-
-		// For script GE_SELL_BUY_MINING
-		for (int i = 0; i < BotController.getBots().size(); i++) {
-			OsbotController osbot = BotController.getBots().get(i);
-
-			// System.out.println("HB: 3");
-
-			if (osbot != null && !BotController.containsInPidList(osbot.getPidId())
-					&& osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
-					&& osbot.getAccount().getStage() == AccountStage.GE_SELL_BUY_MINING
-					&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT) {
-
-				runBot(osbot);
-				System.out.println("Running GE TRADING trading " + osbot.getAccount().getUsername());
-
-				// try {
-				// Thread.sleep(5000);
-				// } catch (InterruptedException e) {
-				// // TODO Auto-generated catch block
-				// e.printStackTrace();
-				// }
-			}
-		}
-
-		// System.out.println("HB: 4");
-
-		// Copying the BotController bots
-		// List<OsbotController> bots = new ArrayList<OsbotController>();
-		// bots.addAll(BotController.getBots());
-		//
-		// // Reversering so the mule isn't the first one to launch (at most of the
-		// times),
-		// // but the worker
-		// Collections.reverse(bots);
-		//
-		// for (int i = 0; i < bots.size(); i++) {
-		// OsbotController osbot = bots.get(i);
-		//
-		// // System.out.println("HB: 5");
-		// // Running mules
-		// if (osbot != null && osbot.getAccount().getTradeWithOther() != null
-		// && osbot.getAccount().getTradeWithOther().length() > 0
-		// && DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT
-		// && !BotController.containsInPidList(osbot.getPidId())) {
-		//
-		// if (!DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
-		// .equalsIgnoreCase(AccountStage.UNKNOWN.name())
-		// && !DatabaseUtilities.getAccountStageInDatabase(osbot.getId())
-		// .equalsIgnoreCase(AccountStage.MULE_TRADING.name())) {
-		//
-		// System.out.println("Account stage wasn't to mule trade");
-		// DatabaseUtilities.setTradingWith(null, osbot.getId());
-		// break;
-		// }
-		//
-		// runMule(osbot, osbot.getAccount().getTradeWithOther(),
-		// DatabaseUtilities.getEmailFromUsername(osbot.getAccount().getTradeWithOther()));
-		// System.out.println("Running mule trading " +
-		// osbot.getAccount().getUsername());
-		//
-		// try {
-		// Thread.sleep(5000);
-		// } catch (InterruptedException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		// }
-		// }
-
-		// System.out.println("HB: 6");
 
 		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
 
-			// System.out.println("HB: 7");
-
 			for (int i = 0; i < BotController.getBots().size(); i++) {
 				OsbotController osbot = BotController.getBots().get(i);
-
-				// System.out.println("HB: 8");
 
 				if (wantsToMule()) {
 					System.out.println("A bot wants to mule, so giving them priority");
@@ -580,67 +640,49 @@ public class BotHandler {
 					continue;
 				}
 
-				if (wantsToGe() > 5) {
-					System.out.println("A bot wants to ge, so giving prio");
-					break;
-				}
-
-				if (BotController.containsInPidList(osbot.getPidId())) {
+				OsbotController superMule = superMuleWantsToLaunchToFinishTutorialIsland();
+				if (superMule != null) {
+					System.out.println(
+							"Skipping this one, because a tutorial island mule/super mule has to launch first");
+					runBot(superMule);
 					continue;
 				}
 
-				// long time = System.currentTimeMillis();
+				System.out.println("HB: 9 " + osbot.getAccount().getStatus() + " " + osbot.getAccount().getStage());
 
-				// System.out.println("HB: 9 " + osbot.getAccount().getStatus() + " " +
-				// osbot.getAccount().getStage());
+				System.out.println("login  status:" + DatabaseUtilities.getLoginStatus(osbot.getId()));
 
-				// System.out.println("login
-				// status:"+DatabaseUtilities.getLoginStatus(osbot.getId()));
-
-				if (osbot != null
-						&& (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE
-								|| osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK
-								|| (osbot.getAccount().getStatus() == AccountStatus.TASK_TIMEOUT && osbot.getAccount()
-										.getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
-								|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT && osbot.getAccount()
-										.getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE))
-						&& osbot.getAccount().getStage() != AccountStage.UNKNOWN
+				boolean correctStatusToLaunch = (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
+						|| (osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
+						|| (osbot.getAccount().getStatus() == AccountStatus.TASK_TIMEOUT
+								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
+						|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
+								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);
+				boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
 						&& osbot.getAccount().getStage() != AccountStage.OUT_OF_MONEY
 						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
-						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING
-						&& javaPidsSize < Config.MAX_BOTS_OPEN && osbot.getAccount().getEmail() != null
-						&& DatabaseUtilities.getLoginStatus(osbot.getId()) == LoginStatus.DEFAULT) {
+						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
+				boolean enoughSpaceToLaunch = javaPidsSize < Config.MAX_BOTS_OPEN;
+				boolean hasValidEmail = osbot.getAccount().getEmail() != null;
+				boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
 
-					// System.out.println("Took time: "+(System.currentTimeMillis() - time));
+				if (osbot != null && correctStatusToLaunch && correctStagetoLaunch && enoughSpaceToLaunch
+						&& hasValidEmail && hasValidLoginStatus) {
+					boolean containsInProgram = BotController.containsInPidList(osbot.getPidId());
 
-					// System.out.println("HB: 10");
-
+					if (containsInProgram) {
+						continue;
+					}
+					
 					if (!calendar2.after(osbot.getAccount().getDate())) {
 						System.out.println(
 								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
 						continue;
 					}
 
-					// if (containsMiningAndNotRunning() && !isMining(osbot) && i !=
-					// BotController.getBots().size()) {
-					// System.out.println("Giving priority to a miner instead of a non-miner");
-					// continue;
-					// } else if (i == BotController.getBots().size()) {
-					// System.out.println("Giving priority to a miner went wrong - starting
-					// anyways");
-					// }
-
-					// System.out.println("HB: 11");
-
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
-					// try {
-					// Thread.sleep(5000);
-					// } catch (InterruptedException e) {
-					// // TODO Auto-generated catch block
-					// e.printStackTrace();
-					// }
 
 					// System.out.println("HB: 12");
 				} else if (osbot == null) {

@@ -133,13 +133,20 @@ public class World {
 				String worldDetail = membershipType.nextElementSibling().ownText();
 
 				Elements playerAmountElement = server.select(".server-list__row-cell");
-				int playerAmount = Integer.parseInt(playerAmountElement.get(1).toString().replaceAll("[\\D]", ""));
+
+				int playerTotal = 20000;
+				String playerAmount = playerAmountElement.get(1).toString().replaceAll("[\\D]", "");
+				try {
+					playerTotal = Integer.parseInt(playerAmount);
+				} catch (NumberFormatException e) {
+					System.out.println("not a number");
+				}
 
 				if (worldDetail.equals("-")) {
 					worldDetail = "";
 				}
 
-				worlds.add(new World(worldType, worldNum, worldDetail, playerAmount));
+				worlds.add(new World(worldType, worldNum, worldDetail, playerTotal));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

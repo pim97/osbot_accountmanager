@@ -52,6 +52,15 @@ public class BotController {
 		return false;
 	}
 
+	public static OsbotController getBotByAccountName(String accountName) {
+		for (OsbotController bot : getBots()) {
+			if (bot.getAccount().getUsername().equalsIgnoreCase(accountName)) {
+				return bot;
+			}
+		}
+		return null;
+	}
+
 	public static OsbotController getBotByPid(int id) {
 		for (OsbotController bot : getBots()) {
 			if (bot.getPidId() == id) {

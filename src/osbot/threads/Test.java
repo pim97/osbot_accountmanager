@@ -200,8 +200,10 @@ public class Test {
 		// System.out.println(bot.getAccount().getStage());
 		// }
 
-		World.getWorldsWithoutTotalRequirements(WorldType.F2P).stream().forEach(
-				world -> System.out.println(world.getType() + " " + world.getNumber() + " " + world.getPlayerAmount()));
+		System.out.println(Config.getRandomMuleProxyWithoutSuperMule());
+		
+//		World.getWorldsWithoutTotalRequirements(WorldType.F2P).stream().forEach(
+//				world -> System.out.println(world.getType() + " " + world.getNumber() + " " + world.getPlayerAmount()));
 
 		// BotHandler.createBatFile(BotController.getBots().get(0));
 		// BotHandler.runMule(BotController.getBots().get(0), "", "");

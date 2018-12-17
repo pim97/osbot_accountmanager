@@ -60,7 +60,8 @@ public class HttpRequests {
 		}
 	}
 
-	private static void sendGet(String url) throws Exception {
+	public static String sendGet(String url) throws Exception {
+		System.out.println("Sending request: " + url);
 		String USER_AGENT = "Mozilla/5.0";
 
 		URL obj = new URL(url);
@@ -73,7 +74,7 @@ public class HttpRequests {
 		con.setRequestProperty("User-Agent", USER_AGENT);
 
 		int responseCode = con.getResponseCode();
-		System.out.println("\nSending 'GET' request to URL : " + url);
+//		System.out.println("\nSending 'GET' request to URL : " + url);
 		System.out.println("Response Code : " + responseCode);
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
@@ -86,7 +87,7 @@ public class HttpRequests {
 		in.close();
 
 		// print result
-		System.out.println(response.toString());
+		return response.toString();
 
 	}
 }

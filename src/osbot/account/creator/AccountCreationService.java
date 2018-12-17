@@ -121,19 +121,19 @@ public class AccountCreationService {
 		return false;
 	}
 
-	private static boolean launching = false;
+	// private static boolean launching = false;
 
-	public static synchronized boolean getLaunching() {
-		return launching;
-	}
+	// public static synchronized boolean getLaunching() {
+	// return launching;
+	// }
 
-	public static synchronized void setLaunching(boolean launch) {
-		launching = launch;
-	}
+	// public static synchronized void setLaunching(boolean launch) {
+	// launching = launch;
+	// }
 
 	private static ArrayList<AccountCreate> usedUsernames = new ArrayList<AccountCreate>();
 
-	public static boolean containsUsername(String user) {
+	public static synchronized boolean containsUsername(String user) {
 		for (AccountCreate acc : usedUsernames) {
 			if (acc.getUsername().equalsIgnoreCase(user)) {
 				return true;
@@ -142,30 +142,28 @@ public class AccountCreationService {
 		return false;
 	}
 
-	public static void addUsernameToUsernames(String username) {
+	public static synchronized void addUsernameToUsernames(String username) {
 		AccountCreate acc = new AccountCreate(System.currentTimeMillis(), username);
 		usedUsernames.add(acc);
 	}
 
-	public static void checkUsedUsernames() {
-		Thread t = new Thread(() -> {
+	public static synchronized void checkUsedUsernames() {
+		// Thread t = new Thread(() -> {
 
-			synchronized (usedUsernames) {
-				Iterator<AccountCreate> it = usedUsernames.iterator();
-				System.out.println("List checked usernames: " + usedUsernames.size());
+		Iterator<AccountCreate> it = usedUsernames.iterator();
+		System.out.println("List checked usernames: " + usedUsernames.size());
 
-				while (it.hasNext()) {
-					AccountCreate user = it.next();
-					System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
-					if (((System.currentTimeMillis() - user.getTime()) > 600_000)) {
-						it.remove();
-						System.out.println("Removed username, may continue with recovering");
-					}
-				}
+		while (it.hasNext()) {
+			AccountCreate user = it.next();
+			System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
+			if (((System.currentTimeMillis() - user.getTime()) > 600_000)) {
+				it.remove();
+				System.out.println("Removed username, may continue with recovering");
 			}
-
-		});
-		t.start();
+			// }
+			//
+		}
+		// t.start();
 	}
 
 	/**
@@ -183,11 +181,11 @@ public class AccountCreationService {
 		// return;
 		// }
 
-		setLaunching(true);
+		// setLaunching(true);
 		long begin = System.currentTimeMillis();
 
 		System.setProperty("webdriver.gecko.driver", "geckodriver.exe");
-//				System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
+		// System.getProperty("user.home") + "/toplistbot/driver/geckodriver.exe");
 		System.setProperty(FirefoxDriver.SystemProperty.DRIVER_USE_MARIONETTE, "true");
 		System.setProperty(FirefoxDriver.SystemProperty.BROWSER_LOGFILE, "/dev/null");
 

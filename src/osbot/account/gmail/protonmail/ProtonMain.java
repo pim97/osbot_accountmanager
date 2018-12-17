@@ -37,25 +37,24 @@ public class ProtonMain {
 
 			boolean found = false;
 			int cantFindEmail = 0;
-//			boolean friday = false;
-//			int fridayTries = 0;
-			
-			
+			// boolean friday = false;
+			// int fridayTries = 0;
+
 			while (!found) {
-				
-//				if (!friday && getActions().blackFridayDeals()) {
-//					System.out.println("Solving this black fridays thing");
-//					friday = true;
-//				}
-//				if (fridayTries > 10) {
-//					System.out.println("Couldn't find friday, requesting to not click it again");
-//					friday = true;
-//				}
-//				fridayTries++;
-				
+
+				// if (!friday && getActions().blackFridayDeals()) {
+				// System.out.println("Solving this black fridays thing");
+				// friday = true;
+				// }
+				// if (fridayTries > 10) {
+				// System.out.println("Couldn't find friday, requesting to not click it again");
+				// friday = true;
+				// }
+				// fridayTries++;
+
 				if (getActions().clickMail("Reset your Jagex password")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found, clicking on the next one");
 						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
@@ -76,7 +75,7 @@ public class ProtonMain {
 					driver.quit();
 					break;
 				}
-				
+
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
@@ -94,12 +93,12 @@ public class ProtonMain {
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 			System.out.println("Succesfully clicked on the verification link!");
 
@@ -118,7 +117,7 @@ public class ProtonMain {
 				}
 				System.out.println("Trying to fill in..");
 			}
-			
+
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -147,27 +146,32 @@ public class ProtonMain {
 	 */
 	public void verifyAccount() {
 		if (getActions().login(ProtonConfig.PROTON_MAIL_USERNAME, ProtonConfig.PROTON_MAIL_PASSWORD)) {
+			if (getAccount().getAccount().getEmail() == null) {
+				System.out.println("E-mail was not set correctly, quiting!");
+				driver.quit();
+				return;
+			}
 			System.out.println("Successfully logged in");
 			boolean found = false;
 			int cantFindEmail = 0;
-//			boolean friday = false;
-//			int fridayTries = 0;
+			// boolean friday = false;
+			// int fridayTries = 0;
 
 			while (!found) {
-				
-//				if (!friday && getActions().blackFridayDeals()) {
-//					System.out.println("Solving this black fridays thing");
-//					friday = true;
-//				}
-//				if (fridayTries > 10) {
-//					System.out.println("Couldn't find friday, requesting to not click it again");
-//					friday = true;
-//				}
-//				fridayTries++;
-				
+
+				// if (!friday && getActions().blackFridayDeals()) {
+				// System.out.println("Solving this black fridays thing");
+				// friday = true;
+				// }
+				// if (fridayTries > 10) {
+				// System.out.println("Couldn't find friday, requesting to not click it again");
+				// friday = true;
+				// }
+				// fridayTries++;
+
 				if (getActions().clickMail("Welcome to RuneScape!")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found");
 						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
@@ -189,13 +193,13 @@ public class ProtonMain {
 					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
 					break;
 				}
-				
+
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
-				
+
 			}
 			System.out.println("Got the e-mail");
 
@@ -209,12 +213,12 @@ public class ProtonMain {
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 
 			try {

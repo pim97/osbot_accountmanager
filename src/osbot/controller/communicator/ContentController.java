@@ -233,6 +233,7 @@ public class ContentController {
 						AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
 								acc.getWorld(), acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(),
 								acc.getStatus(), acc.getStage(), acc.getAccountStageProgress());
+						accTable.setLoginStatus(acc.getLoginStatus());
 						accTable.setQuestPoints(acc.getQuestPoints());
 						accTable.setPassword(acc.getPassword());
 						accTable.setBankPin(acc.getBankPin());
@@ -379,6 +380,7 @@ public class ContentController {
 						AccountTable accTable = new AccountTable(acc.getId(), acc.getScript(), acc.getUsername(),
 								acc.getWorld(), acc.getProxyIp(), acc.getProxyPort(), acc.isLowCpuMode(),
 								acc.getStatus(), acc.getStage(), acc.getAccountStageProgress());
+						accTable.setLoginStatus(acc.getLoginStatus());
 						accTable.setQuestPoints(acc.getQuestPoints());
 						accTable.setPassword(acc.getPassword());
 						accTable.setBankPin(acc.getBankPin());

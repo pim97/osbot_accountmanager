@@ -2,9 +2,9 @@ package osbot.tables;
 
 import java.util.Calendar;
 
-import javafx.beans.property.SimpleStringProperty;
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
+import osbot.account.LoginStatus;
 
 public class AccountTable {
 
@@ -62,6 +62,8 @@ public class AccountTable {
 	}
 
 	private AccountStage stage;
+	
+	private LoginStatus loginStatus;
 
 	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
 			proxyUsername, proxyPassword;
@@ -377,6 +379,20 @@ public class AccountTable {
 	 */
 	public void setAmountTimeout(int amountTimeout) {
 		this.amountTimeout = amountTimeout;
+	}
+
+	/**
+	 * @return the loginStatus
+	 */
+	public LoginStatus getLoginStatus() {
+		return loginStatus;
+	}
+
+	/**
+	 * @param loginStatus the loginStatus to set
+	 */
+	public void setLoginStatus(LoginStatus loginStatus) {
+		this.loginStatus = loginStatus;
 	}
 
 }

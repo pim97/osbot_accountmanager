@@ -68,6 +68,7 @@ public class MainController extends Application {
 
 		Config.DATABASE_IP = args[5];
 		Config.PREFIX_EMAIL = args[6];
+		Config.MACHINE_ID = Integer.parseInt(args[7]);
 
 		System.out.println("DATABASE SETTIGNS: ");
 		System.out.println("Database username: " + Config.DATABASE_USER_NAME);
@@ -75,6 +76,11 @@ public class MainController extends Application {
 		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
 		System.out.println("Database IP: " + Config.DATABASE_IP);
 		System.out.println("Email prefix: " + Config.PREFIX_EMAIL);
+		System.out.println("Machine ID: " + Config.MACHINE_ID);
+
+		if (Config.MACHINE_ID == -1) {
+			System.out.println("Detected as a TEST server setup!");
+		}
 
 		if (!Config.GUI) {
 			Config.MAX_BOTS_OPEN = Integer.parseInt(args[1]);

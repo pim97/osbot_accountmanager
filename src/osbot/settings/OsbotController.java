@@ -60,6 +60,7 @@ public class OsbotController {
 			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
 			System.out.println("Waiting for OSBot to launch..");
 
+//			System.out.println("6");
 			if (!p.waitFor(10, TimeUnit.SECONDS)) {
 				System.out.println("Destroyed, couldn't start up in time");
 				p.destroy();
@@ -70,6 +71,8 @@ public class OsbotController {
 			System.out.println(getCliArgs().toString());
 			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
 			pidsAfter.removeAll(pids);
+
+//			System.out.println("7");
 
 			// System.out.println("CURRENT PIDS: ");
 			// pidsAfter.forEach(pid -> System.out.println("GOT: " + pid));

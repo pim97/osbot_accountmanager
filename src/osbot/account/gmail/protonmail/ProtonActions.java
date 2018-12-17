@@ -1,15 +1,18 @@
 package osbot.account.gmail.protonmail;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import osbot.account.global.Config;
+import osbot.account.runescape.website.RunescapeWebsiteConfig;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.settings.OsbotController;
 
@@ -34,13 +37,31 @@ public class ProtonActions {
 	 */
 	private OsbotController account;
 
+	private int tries = 0;
+
 	/**
 	 * Opens the proton mail and checks if the url is correct
 	 * 
 	 * @return
 	 */
 	private boolean openMail() {
-		getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
+		driver.manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
+
+		try {
+			getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
+		} catch (TimeoutException e) {
+			System.out.println("Page did not load within 120 seconds!");
+			System.out.println("Restarting driver and trying again");
+			e.printStackTrace();
+			// treat the timeout as needed
+			if (tries > 2) {
+				driver.quit();
+			} else {
+				openMail();
+			}
+
+			tries++;
+		}
 
 		System.out.println("Current URL: " + getCurrentURL());
 		if (getCurrentURL().contains("protonmail")) {

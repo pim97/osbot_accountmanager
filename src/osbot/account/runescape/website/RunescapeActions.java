@@ -17,11 +17,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.twocaptcha.api.ProxyType;
-import com.twocaptcha.api.TwoCaptchaService;
 
 import osbot.account.AccountStatus;
-import osbot.account.creator.AccountCreationService;
-import osbot.account.creator.HttpRequests;
 import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
 import osbot.account.creator.SeleniumType;
@@ -30,7 +27,6 @@ import osbot.account.webdriver.WebdriverFunctions;
 import osbot.account.worlds.World;
 import osbot.account.worlds.WorldType;
 import osbot.database.DatabaseUtilities;
-import osbot.random.RandomUtil;
 import osbot.settings.OsbotController;
 
 public class RunescapeActions {
@@ -246,7 +242,6 @@ public class RunescapeActions {
 			// e.printStackTrace();
 			// }
 			// }
-
 			if (waitUnCaptchaFailed(getType())) {
 				driver.quit();
 				System.out.println("Captcha failed, retrying with new driver");
@@ -266,7 +261,9 @@ public class RunescapeActions {
 	private boolean accountUnkowninglyFailedRecover() {
 		System.out.println(driver.getPageSource());
 		if (driver.getPageSource().contains("Due to your account status, you must")) {
-			HttpRequests.updateAccountStatusInDatabase("LOCKED_INGAME", getAccount().getAccount().getEmail());
+			DatabaseUtilities.updateStatusOfAccountById(AccountStatus.LOCKED_INGAME, getAccount().getAccount().getId());
+			// HttpRequests.updateAccountStatusInDatabase("LOCKED_INGAME",
+			// getAccount().getAccount().getEmail());
 			System.out.println("Account couldn't be recovered this way");
 			driver.quit();
 			return true;
@@ -286,6 +283,29 @@ public class RunescapeActions {
 	 */
 	private boolean createAccount() {
 		try {
+			// Thread for watching over the current page
+			new Thread(() -> {
+				while (!WebdriverFunctions.hasQuit(driver)) {
+					// System.out.println("Current page url: " + getDriver().getCurrentUrl() + " at
+					// link: "
+					// + isAtLinkNoWait("error?error=1"));
+					if (isAtLinkNoWait("error?error=1")) {
+						System.out.println("LINK WAIT ONE 3");
+						DatabaseUtilities.updateProxyStatus(getAccount().getAccount().getProxyIp(),
+								getAccount().getAccount().getProxyPort(), true);
+						System.out.println("Proxy set to blocked");
+						driver.quit();
+					}
+
+					try {
+						Thread.sleep(1500);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}).start();
+
 			while (!goToRunescapeCreateAccount()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					System.out.println("Breaking out of loop");
@@ -503,27 +523,62 @@ public class RunescapeActions {
 					// Execute javascript to click the button
 					RemoteWebDriver r = (RemoteWebDriver) driver;
 					String toExecute = "";
-//					if (type == 0) {
-//						toExecute = "$('#create-email-form').submit();";
-//
-//						// "document.getElementById('create-email-form').submit();";
-//
-//					} else if (type == 1) {
-//						toExecute = "$('#password-recovery-form').submit();";
-//						// toExecute = "document.getElementById('password-recovery-form').submit();";
-//					}
+					// if (type == 0) {
+					// toExecute = "$('#create-email-form').submit();";
+					//
+					// // "document.getElementById('create-email-form').submit();";
+					//
+					// } else if (type == 1) {
+					// toExecute = "$('#password-recovery-form').submit();";
+					// // toExecute = "document.getElementById('password-recovery-form').submit();";
+					// }
 					String setResponseToken = "onSubmit()";
 					r.executeScript(setResponseToken);
 				}
 
+				// String text1 = "An error has occurred and it has not been possible to create
+				// your account.";
+				// WebElement el1 = driver.findElement(By.xpath("//*[contains(text(),'" + text1
+				// + "')]"));
+				// System.out.println("IS DISPLAYED ERROR: " + (el1 != null &&
+				// el1.isDisplayed()));
+				// if ((el1 != null && el1.isDisplayed()) ||
+
+				System.out.println("LINK WAIT ONE 1");
 				if (isAtLink(link)) {
 					return true;
 				}
+				System.out.println("LINK WAIT ONE 2");
+
+				if (isAtLinkNoWait("error?error=1")) {
+					System.out.println("LINK WAIT ONE 3");
+					DatabaseUtilities.updateProxyStatus(getAccount().getAccount().getProxyIp(),
+							getAccount().getAccount().getProxyPort(), true);
+					// HttpRequests.updateAccountStatusInDatabase(AccountStatus.LOCKED_TIMEOUT.name(),
+					// getAccount().getAccount().getEmail());
+					System.out.println("Proxy set to blocked");
+					driver.quit();
+					return false;
+				}
+				System.out.println("LINK WAIT ONE 4");
 
 				// Must recover ingame??
 				if (isAtLinkNoWait("game-recovery")) {
 					return accountUnkowninglyFailedRecover();
 				}
+
+				String text = "Please enter a valid email address or username.";
+				WebElement el = driver.findElement(By.xpath("//*[contains(text(),'" + text + "')]"));
+				System.out.println("IS DISPLAYED: " + (el != null && el.isDisplayed()));
+				if (el != null && el.isDisplayed()) {// message.ws/?message=5
+					DatabaseUtilities.updateStatusOfAccountById(AccountStatus.BANNED, getAccount().getId());
+					// HttpRequests.updateAccountStatusInDatabase(AccountStatus.LOCKED_TIMEOUT.name(),
+					// getAccount().getAccount().getEmail());
+					System.out.println("Account set to banned");
+					driver.quit();
+					return false;
+				}
+
 				// Quiting driving when failing to click button
 				if (isAtLinkNoWait("passwordrecovery")) {
 					driver.quit();
@@ -552,7 +607,7 @@ public class RunescapeActions {
 	 */
 	public boolean isAtLink(String link) {
 		try {
-			return (new WebDriverWait(driver, 60)).until(new ExpectedCondition<Boolean>() {
+			return (new WebDriverWait(driver, 45)).until(new ExpectedCondition<Boolean>() {
 				public Boolean apply(WebDriver d) {
 					return getCurrentURL().contains(link);
 				}

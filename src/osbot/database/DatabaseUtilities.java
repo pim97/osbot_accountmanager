@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.LoginStatus;
+import osbot.account.api.Proxy6Proxy;
 import osbot.account.creator.AccountCreate;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.RandomNameGenerator;
@@ -74,6 +75,36 @@ public class DatabaseUtilities {
 		}
 	}
 
+	public static void insertProxy(Proxy6Proxy proxy, boolean mule) {
+
+		// the mysql insert statement
+		String query = " insert into proxies (ip_addres,port,username,password,mule_proxy,is_alive)"
+				+ " values (?, ?, ?, ?, ?, ?)";
+
+		// create the mysql insert preparedstatement
+		PreparedStatement preparedStmt;
+		try {
+			preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+
+			preparedStmt.setString(1, proxy.getIp());
+			preparedStmt.setString(2, proxy.getPort());
+			preparedStmt.setString(3, proxy.getUser());
+
+			preparedStmt.setString(4, proxy.getPass());
+			preparedStmt.setInt(5, mule ? 1 : 0);
+			preparedStmt.setInt(6, 1);
+
+			// execute the preparedstatement
+			preparedStmt.execute();
+			preparedStmt.close();
+
+			System.out.println("Inserted new proxy into the database!");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	public static void deleteFromTable(int id) {
 
 		String query = "delete from account where id = ?";
@@ -93,12 +124,19 @@ public class DatabaseUtilities {
 
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
-	public static ArrayList<DatabaseProxy> getTotalProxies() {
-		String sql = "SELECT * FROM proxies as p WHERE p.mule_proxy=0";
+	public static boolean containsInProxyList(String address, String port, String username, String password) {
+		for (DatabaseProxy proxy : getTotalProxiesWithMuleProxies()) {
+			if (proxy.getProxyIp().equalsIgnoreCase(address) && proxy.getProxyPort().equalsIgnoreCase(port)
+					&& proxy.getProxyUsername().equalsIgnoreCase(username)
+					&& proxy.getProxyPassword().equalsIgnoreCase(password)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static ArrayList<DatabaseProxy> getTotalProxiesWithMuleProxies() {
+		String sql = "SELECT * FROM proxies as p WHERE is_alive = 1";
 		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
@@ -124,6 +162,107 @@ public class DatabaseUtilities {
 		}
 
 		return proxiesInDatabase;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public static ArrayList<DatabaseProxy> getTotalProxies() {
+		String sql = "SELECT * FROM proxies as p WHERE p.mule_proxy=0 AND is_alive = 1";
+		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+
+					proxiesInDatabase
+							.add(new DatabaseProxy(resultSet.getString("ip_addres"), resultSet.getString("port"),
+									resultSet.getString("username"), resultSet.getString("password")));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return proxiesInDatabase;
+	}
+
+	public static ArrayList<String> getMuleProxyAddresses() {
+		String sql = "SELECT * FROM proxies WHERE mule_proxy = 1 AND is_alive = 1";
+		ArrayList<String> proxies = new ArrayList<String>();
+
+		String address, port, user, password;
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+					StringBuilder sb = new StringBuilder();
+
+					address = resultSet.getString("ip_addres");
+					port = resultSet.getString("port");
+					user = resultSet.getString("username");
+					password = resultSet.getString("password");
+					sb.append(address);
+					sb.append(":");
+					sb.append(port);
+					sb.append(":");
+					sb.append(user);
+					sb.append(":");
+					sb.append(password);
+
+					proxies.add(sb.toString());
+				}
+				return proxies;
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return proxies;
+	}
+
+	public static boolean isErrorProxy(String proxyIp, String proxyPort) {
+		String sql = "SELECT error_ip FROM proxies WHERE ip_addres = '" + proxyIp + "' AND port = '" + proxyPort + "'";
+		boolean error = false;
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+					error = Boolean.parseBoolean(resultSet.getString("error_ip"));
+				}
+				return error;
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return error;
 	}
 
 	/**
@@ -216,7 +355,7 @@ public class DatabaseUtilities {
 	 * @return
 	 */
 	public static ArrayList<DatabaseProxy> getUsedProxies() {
-		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\"";
+		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\"";
 		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
@@ -269,7 +408,7 @@ public class DatabaseUtilities {
 	}
 
 	public static ArrayList<DatabaseProxy> getUsedProxies2() {
-		String sql = "SELECT * FROM ( SELECT SUM(CASE WHEN ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\"  AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\" THEN 1 ELSE 0 END) AS count, p.ip_addres AS proxy, p.port, p.username, p.password, p.mule_proxy FROM proxies AS p LEFT JOIN account AS ac ON ac.proxy_ip=p.ip_addres AND ac.proxy_port=p.port GROUP BY p.ip_addres, p.port, p.username, p.password) AS proxy WHERE mule_proxy <> 1";
+		String sql = "SELECT * FROM ( SELECT SUM(CASE WHEN ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\"  AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"BANNED\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\" THEN 1 ELSE 0 END) AS count, p.ip_addres AS proxy, p.port, p.username, p.password, p.mule_proxy FROM proxies AS p LEFT JOIN account AS ac ON ac.proxy_ip=p.ip_addres AND ac.proxy_port=p.port GROUP BY p.ip_addres, p.port, p.username, p.password) AS proxy WHERE mule_proxy <> 1";
 		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
@@ -365,6 +504,27 @@ public class DatabaseUtilities {
 		}
 	}
 
+	public static boolean updateProxyAliveInDatabase(String ipAddress, boolean alive) {
+		try {
+			String query = "UPDATE proxies SET is_alive = ? WHERE ip_addres=?";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setInt(1, alive ? 1 : 0);
+			preparedStmt.setString(2, ipAddress);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+			preparedStmt.close();
+
+			// System.out.println("Updated account in database with new alive status!");
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	/**
 	 * 
 	 */
@@ -391,7 +551,7 @@ public class DatabaseUtilities {
 
 			// When account has started, but not logged in between 80 seconds
 			if (getLoginStatus(bot.getId()) != null && getLoginStatus(bot.getId()) == LoginStatus.INITIALIZING
-					&& (System.currentTimeMillis() - bot.getStartTime() > 58_000)) {
+					&& (System.currentTimeMillis() - bot.getStartTime() > 110_000)) {
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
 				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
@@ -521,6 +681,33 @@ public class DatabaseUtilities {
 
 			System.out.println(preparedStmt.toString());
 			System.out.println("Updated account status in database with ip! " + status.name() + " ip: " + ip);
+			preparedStmt.close();
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean updateProxyStatus(String proxyIp, String proxyPort, boolean error) {
+		try {
+			String query = "UPDATE proxies SET error_ip = ? WHERE ip_addres = ? AND port = ?";
+			System.out.println("update query: " + query);
+			// String query = "UPDATE account SET status = ? WHERE proxy_ip=? BETWEEN
+			// SUBDATE(NOW(),1) AND NOW() AND status=\"LOCKED\"";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setInt(1, error ? 1 : 0);
+			preparedStmt.setString(2, proxyIp);
+			preparedStmt.setString(3, proxyPort);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+
+			System.out.println(preparedStmt.toString());
+			// System.out.println("Updated account status in database with ip! " +
+			// status.name() + " ip: " + ip);
 			preparedStmt.close();
 
 			return true;
@@ -780,7 +967,9 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"INVALID_PASSWORD\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < 10) OR (ac.status=\"TIMEOUT\" AND amount_timeout < 10)";
+		String sql = "SELECT * FROM (SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id";
 
 		try {
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
@@ -806,6 +995,7 @@ public class DatabaseUtilities {
 					AccountStatus status = AccountStatus.valueOf(resultSet.getString("status"));
 					String date = resultSet.getString("break_till");
 					int amountTimeout = resultSet.getInt("amount_timeout");
+					LoginStatus loginStatus = LoginStatus.valueOf(resultSet.getString("login_status"));
 
 					Calendar calendar = Calendar.getInstance();
 					// calendar.add(Calendar.MINUTE, 30);
@@ -828,6 +1018,7 @@ public class DatabaseUtilities {
 
 					AccountTable account = new AccountTable(id, null, name, world, proxyIp, proxyPort, lowCpuMode,
 							status, stage, account_stage_progress);
+					account.setLoginStatus(loginStatus);
 					account.setProxyUsername(proxyUsername);
 					account.setAmountTimeout(amountTimeout);
 					account.setProxyPassword(proxyPassword);
@@ -895,10 +1086,10 @@ public class DatabaseUtilities {
 		return hash;
 	}
 
-	public static ArrayList<OsbotController> getAccountsToBeRecovered() {
+	public static synchronized ArrayList<OsbotController> getAccountsToBeRecovered() {
 		ArrayList<OsbotController> bots = new ArrayList<OsbotController>();
 		try {
-			String sql = "SELECT * FROM account WHERE status = \"LOCKED\"";
+			String sql = "SELECT * FROM account WHERE (status=\"LOCKED\" OR status=\"INVALID_PASSWORD\") AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
@@ -943,7 +1134,7 @@ public class DatabaseUtilities {
 
 	private static List<PidCheck> FIREFOX_PIDS = new ArrayList<PidCheck>();
 
-	private static boolean containsInPid(int pid) {
+	private static boolean aPid(int pid) {
 		for (PidCheck localPid : FIREFOX_PIDS) {
 			if (localPid.getPid() == pid) {
 				return true;
@@ -1060,6 +1251,15 @@ public class DatabaseUtilities {
 
 	}
 
+	private static boolean containsInPid(int pid) {
+		for (PidCheck localPid : FIREFOX_PIDS) {
+			if (localPid.getPid() == pid) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// public static void checkPidsProcessesEveryMinutes() {
 	// new Thread(() -> {
 	//
@@ -1151,57 +1351,171 @@ public class DatabaseUtilities {
 		return 0;
 	}
 
+	public static int getMuleAccountsInTheMaking() {
+		StringBuilder totalProxies = new StringBuilder();
+		for (String randomProxy : Config.getAllMuleProxiesWithoutSuperMule()) {
+			String[] randomProxySplit = randomProxy.split(":");
+			String proxy = randomProxySplit[0];
+			String port = randomProxySplit[1];
+
+			if (totalProxies.length() == 0) {
+				totalProxies.append("(proxy_ip= '" + proxy + "' AND proxy_port = '" + port + "')");
+			} else {
+				totalProxies.append(" OR (proxy_ip= '" + proxy + "' AND proxy_port = '" + port + "')");
+			}
+		}
+
+		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE (" + totalProxies.toString()
+				+ ") AND status = \"AVAILABLE\"";
+		// System.out.println(sql);
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				int muleCount = 0;
+
+				while (resultSet.next()) {
+					muleCount = resultSet.getInt("mule_count");
+				}
+				return muleCount;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return 0;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	public static int getSuperAccountsInTheMaking() {
+		StringBuilder totalProxies = new StringBuilder();
+		for (String randomProxy : Config.SUPER_MULE_PROXY_IP) {
+			String[] randomProxySplit = randomProxy.split(":");
+			String proxy = randomProxySplit[0];
+			String port = randomProxySplit[1];
+
+			if (totalProxies.length() == 0) {
+				totalProxies.append("(proxy_ip= '" + proxy + "' AND proxy_port = '" + port + "')");
+			} else {
+				totalProxies.append(" OR (proxy_ip= '" + proxy + "' AND proxy_port = '" + port + "')");
+			}
+		}
+
+		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE (" + totalProxies.toString()
+				+ ") AND status = \"AVAILABLE\"";
+		// System.out.println(sql);
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				int muleCount = 0;
+
+				while (resultSet.next()) {
+					muleCount = resultSet.getInt("mule_count");
+				}
+				return muleCount;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return 0;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	public static int getSuperMuleAmount() {
+		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE account_stage = \"UNKNOWN\" AND status = \"SUPER_MULE\"";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				int muleCount = 0;
+
+				while (resultSet.next()) {
+					muleCount = resultSet.getInt("mule_count");
+				}
+				return muleCount;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return 0;
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
 	/**
 	 * Recovers an account
 	 */
 	public static void seleniumRecoverAccount() {
 
+		// synchronized (getAccountsToBeRecovered()) {
+		// AccountCreationService.checkPreviousProcessesAndDie(SeleniumType.RECOVER_ACCOUNT);
+
+		// if (!AccountCreationService.getLaunching()) {
+		// AccountCreationService.checkProcesses();
+		// }
+
+		// if (AccountCreationService.getLaunching()) {
+		// return;
+		// }
+
+		if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
+			System.out.println("Breaking because too many geckodrivers active!");
+			return;
+		}
+
+		System.out.println(
+				"[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size() + " accounts left to recover currently");
+
+		System.out.println(
+				"[ACCOUNT RECOVERING] " + AccountCreationService.getUsedUsernames().size() + " accounts timed out");
+		ArrayList<OsbotController> accs = new ArrayList<OsbotController>();
+
 		synchronized (getAccountsToBeRecovered()) {
-			// AccountCreationService.checkPreviousProcessesAndDie(SeleniumType.RECOVER_ACCOUNT);
-
-			// if (!AccountCreationService.getLaunching()) {
-			// AccountCreationService.checkProcesses();
-			// }
-
-			// if (AccountCreationService.getLaunching()) {
-			// return;
-			// }
-
-			System.out.println("[ACCOUNT RECOVERING] " + getAccountsToBeRecovered().size()
-					+ " accounts left to recover currently");
-
-			System.out.println(
-					"[ACCOUNT RECOVERING] " + AccountCreationService.getUsedUsernames().size() + " accounts timed out");
-
-			ArrayList<OsbotController> accs = getAccountsToBeRecovered();
+			accs = getAccountsToBeRecovered();
 			Collections.shuffle(accs);
+		}
 
-			for (OsbotController account : accs) {
-				if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
-					System.out.println("Breaking because too many geckodrivers active!");
-					break;
+		for (OsbotController account : accs) {
+			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
+				if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
+						account.getAccount().getEmail())) {
+					System.out.println("Didn't recover, because IP is flagged for some time");
+					continue;
 				}
-				if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
-					if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
-							account.getAccount().getEmail())) {
-						System.out.println("Didn't recover, because IP is flagged for some time");
-						continue;
-					}
-					System.out.println("Recovering account: " + account.getAccount().getUsername());
-					AccountCreationService.addUsernameToUsernames(account.getAccount().getUsername());
+				System.out.println("Recovering account: " + account.getAccount().getUsername());
+				AccountCreationService.addUsernameToUsernames(account.getAccount().getUsername());
 
-					DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
-							account.getAccount().getProxyPort(), account.getAccount().getProxyUsername(),
-							account.getAccount().getProxyPassword());
+				DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
+						account.getAccount().getProxyPort(), account.getAccount().getProxyUsername(),
+						account.getAccount().getProxyPassword());
 
-					AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
-					break;
-					// System.out.println("Recovering account: " +
-					// account.getAccount().getUsername());
-				}
-
+				AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT);
+				break;
+				// System.out.println("Recovering account: " +
+				// account.getAccount().getUsername());
 			}
 		}
+		// }
 
 	}
 
@@ -1222,47 +1536,20 @@ public class DatabaseUtilities {
 	// }
 
 	private static long lastAttempt = 0;
+	private static long lastAttemptSuperMule = 0;
 
-	public static void transformIntoMuleHandler() {
-		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
-				+ (System.currentTimeMillis() - lastAttempt));
-
-		// if (DatabaseUtilities.getMuleAmount() < 2) {
-		// System.out.println("Not enough mules -- creating/setting a new mule");
-		//
-		// OsbotController mule = null;
-		// for (OsbotController newMule : BotController.getBots()) {
-		// if (newMule.getAccount().getStatus() == AccountStatus.AVAILABLE
-		// && Integer.parseInt(newMule.getAccount().getAccountValue()) <= 1000
-		// && newMule.getAccount().getStage() != AccountStage.TUT_ISLAND
-		// && (newMule.getAccount().getStage() == AccountStage.QUEST_COOK_ASSISTANT
-		// || getMuleAmount() <= 0)) {
-		// mule = newMule;
-		// System.out.println("Found a new mule!");
-		// break;
-		// }
-		// }
-		// if (mule != null) {
-		// mule.getAccount().setStage(AccountStage.UNKNOWN);
-		// mule.getAccount().setStatus(AccountStatus.MULE);
-		// System.out.println("Set account: " + mule.getAccount().getUsername() + " to a
-		// mule!");
-		// DatabaseUtilities.updateStatusOfAccountById(AccountStatus.MULE,
-		// mule.getId());
-		// DatabaseUtilities.updateAccountStage(AccountStage.UNKNOWN, mule.getId());
-		// }
-		// }
+	public static void transformIntoMuleAccount() {
 
 		/**
 		 * Making mules with that specific IP-adress
 		 */
 
-		if (DatabaseUtilities.getMuleAmount() < 1) {
+		if (DatabaseUtilities.getMuleAmount() == 0 && DatabaseUtilities.getMuleAccountsInTheMaking() >= 0) {
 			// Make an account once every 20 minutes
 			for (OsbotController mule : BotController.getBots()) {
 				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
 						&& mule.getAccount().getStatus() == AccountStatus.AVAILABLE
-						&& Config.isMuleProxy(mule.getAccount().getProxyIp(), mule.getAccount().getProxyPort())) {
+						&& Config.isStaticMuleProxy(mule.getAccount().getProxyIp(), mule.getAccount().getProxyPort())) {
 
 					System.out.println("Mule completed tutorial island, setting to official mule now!");
 					mule.getAccount().setStage(AccountStage.UNKNOWN);
@@ -1270,30 +1557,88 @@ public class DatabaseUtilities {
 
 					updateAccountStage(mule.getAccount().getStage(), mule.getId());
 					updateStatusOfAccountById(mule.getAccount().getStatus(), mule.getId());
+
+					if (mule.getPidId() > 0) {
+						BotController.killProcess(mule.getPidId());
+					}
 				}
 			}
 		}
 
-		if (DatabaseUtilities.getMuleAmount() < 1 && (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
+		if (DatabaseUtilities.getSuperMuleAmount() == 0 && DatabaseUtilities.getSuperAccountsInTheMaking() >= 0) {
+			// Make an account once every 20 minutes
+			for (OsbotController mule : BotController.getBots()) {
+				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
+						&& mule.getAccount().getStatus() == AccountStatus.AVAILABLE
+						&& Config.isSuperMuleProxy(mule.getAccount().getProxyIp(), mule.getAccount().getProxyPort())) {
+
+					System.out.println("Mule completed tutorial island, setting to official super mule now!");
+					mule.getAccount().setStage(AccountStage.UNKNOWN);
+					mule.getAccount().setStatus(AccountStatus.SUPER_MULE);
+
+					updateAccountStage(mule.getAccount().getStage(), mule.getId());
+					updateStatusOfAccountById(mule.getAccount().getStatus(), mule.getId());
+
+					if (mule.getPidId() > 0) {
+						BotController.killProcess(mule.getPidId());
+					}
+				}
+			}
+		}
+	}
+
+	public static synchronized void transformIntoMuleHandler() {
+		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
+				+ (System.currentTimeMillis() - lastAttempt));
+
+		if (DatabaseUtilities.getMuleAmount() == 0 && DatabaseUtilities.getMuleAccountsInTheMaking() == 0
+				&& (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
 			lastAttempt = System.currentTimeMillis();
 
 			RandomNameGenerator name = new RandomNameGenerator();
 
-			String[] proxyString = Config.getRandomMuleProxy().split(":");
+			String[] proxyString = Config.getRandomMuleProxyWithoutSuperMule().split(":");
 
 			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
 					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
 
 			table.setPassword(name.generateRandomNameString());
-			table.setProxyUsername("hjeg53");
-			table.setProxyPassword("L9MbdJ");
+			table.setProxyUsername(proxyString[2]);// hjeg53
+			table.setProxyPassword(proxyString[3]);// L9MbdJ
 			table.setBankPin("0000");
 
 			DatabaseProxy proxy = new DatabaseProxy(table.getProxyUsername(), table.getProxyPort(),
 					table.getProxyUsername(), table.getProxyPassword());
 
 			OsbotController bot = new OsbotController(-1, table);
-			System.out.println("Creating account: " + table.getUsername() + " stage: " + bot.getAccount().getStage());
+			System.out.println("Creating account: " + table.getUsername() + " status: " + AccountStatus.MULE);
+
+			AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
+
+		}
+
+		if (DatabaseUtilities.getSuperMuleAmount() == 0 && DatabaseUtilities.getSuperAccountsInTheMaking() == 0
+				&& (System.currentTimeMillis() - lastAttemptSuperMule) > 1_200_000) {
+			lastAttemptSuperMule = System.currentTimeMillis();
+
+			RandomNameGenerator name = new RandomNameGenerator();
+
+			String[] proxyString = Config.getRandomSuperMuleProxy().split(":");
+
+			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
+					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
+
+			table.setPassword(name.generateRandomNameString());
+			table.setProxyUsername(proxyString[2]);// hjeg53
+			table.setProxyPassword(proxyString[3]);// L9MbdJ
+			table.setBankPin("0000");
+
+			DatabaseProxy proxy = new DatabaseProxy(table.getProxyUsername(), table.getProxyPort(),
+					table.getProxyUsername(), table.getProxyPassword());
+
+			OsbotController bot = new OsbotController(-1, table);
+			System.out.println(
+					"Creating account: " + table.getUsername() + " stage: " + " status: " + AccountStatus.SUPER_MULE);
 
 			AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT);
 
@@ -1376,16 +1721,24 @@ public class DatabaseUtilities {
 
 		checkUsedIPs();
 
+		if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
+			System.out.println("Breaking because too many geckodrivers active!");
+			return;
+		}
+
 		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] " + accountsToCreate2()
 				+ " accounts left to create accounts with! Total accounts available: " + totalAccountsAvailable());
 
-		ArrayList<DatabaseProxy> proxies = getUsedProxies2();
-		Collections.shuffle(proxies);
+		ArrayList<DatabaseProxy> proxies = new ArrayList<DatabaseProxy>();
+		synchronized (getUsedProxies2()) {
+			proxies = getUsedProxies2();
+			Collections.shuffle(proxies);
+		}
 
 		for (DatabaseProxy proxy : proxies) {
-			if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
-				System.out.println("Breaking because too many geckodrivers active!");
-				break;
+			if (DatabaseUtilities.isErrorProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
+				System.out.println("Skipping this IP, because it's currently giving an error");
+				continue;
 			}
 			if (ipExists(proxy.getProxyIp() + ":" + proxy.getProxyPort())) {
 				System.out.println("Skipping IP: " + proxy.getProxyIp() + ":" + proxy.getProxyPort()
@@ -1410,7 +1763,9 @@ public class DatabaseUtilities {
 				table.setProxyPassword(proxy.getProxyPassword());
 				table.setBankPin("0000");
 
-				if (Config.isMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
+				if (Config.isMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())
+						|| Config.isSuperMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())
+						|| Config.isStaticMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
 					System.out.println("IS MULE PROXY, SKIPPING!");
 					break;
 				}

@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import osbot.account.api.Proxy6;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
@@ -37,6 +38,52 @@ public class ThreadHandler {
 		threadList.add(queueThread);
 	}
 
+	private static void checkProxiesAndInsertIntoDatabaseAndOnTheWebsite() {
+		Thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite = new Thread(() -> {
+
+			while (programIsRunning) {
+
+				Proxy6.getSingleton().loop();
+				// BotHandler.checkJavaPidsTimeout();
+
+				try {
+					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+
+		});
+		checkProxiesAndInsertIntoDatabaseAndOnTheWebsite.setName("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
+		checkProxiesAndInsertIntoDatabaseAndOnTheWebsite.start();
+
+		threadList.add(checkProxiesAndInsertIntoDatabaseAndOnTheWebsite);
+	}
+
+	private static void transformIntoMuleAccount() {
+		Thread transformIntoMuleAccount = new Thread(() -> {
+
+			while (programIsRunning) {
+
+				DatabaseUtilities.transformIntoMuleAccount();
+				// BotHandler.checkJavaPidsTimeout();
+
+				try {
+					Thread.sleep(RandomUtil.getRandomNumberInRange(1000, 10000));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+
+		});
+		transformIntoMuleAccount.setName("transformIntoMuleAccount");
+		transformIntoMuleAccount.start();
+
+		threadList.add(transformIntoMuleAccount);
+	}
+
 	private static void transformIntoMuleHandler() {
 		Thread transformIntoMuleHandler = new Thread(() -> {
 
@@ -46,7 +93,7 @@ public class ThreadHandler {
 				// BotHandler.checkJavaPidsTimeout();
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
+					Thread.sleep(RandomUtil.getRandomNumberInRange(10000, 20000));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -126,7 +173,7 @@ public class ThreadHandler {
 
 				// Checking every 15 seconds for a mule
 				try {
-					Thread.sleep(2500);
+					Thread.sleep(500);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -170,7 +217,6 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.checkPidsProcessesEveryMinutes2();
-				DatabaseUtilities.closeBotsWhenNotActive();
 
 				// Checking every 5 seconds if bot is still running
 				try {
@@ -227,6 +273,26 @@ public class ThreadHandler {
 		checkUsedUsernames.start();
 
 		threadList.add(checkUsedUsernames);
+	}
+
+	private static void checkBotsWhenNotActive() {
+		Thread checkBotsWhenNotActive = new Thread(() -> {
+			while (programIsRunning) {
+
+				DatabaseUtilities.closeBotsWhenNotActive();
+
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		checkBotsWhenNotActive.setName("checkBotsWhenNotActive");
+		checkBotsWhenNotActive.start();
+
+		threadList.add(checkBotsWhenNotActive);
 	}
 
 	private static void checkRunningErrors() {
@@ -304,6 +370,13 @@ public class ThreadHandler {
 						+ getThread("checkUsedUsernames"));
 				System.out.println("Thread management: " + isThreadAlive("checkRunningErrors") + " "
 						+ getThread("checkRunningErrors"));
+				System.out.println("Thread management: " + isThreadAlive("checkBotsWhenNotActive") + " "
+						+ getThread("checkBotsWhenNotActive"));
+				System.out.println(
+						"Thread management: " + isThreadAlive("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") + " "
+								+ getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite"));
+				System.out.println("Thread management: " + isThreadAlive("transformIntoMuleAccount") + " "
+						+ getThread("transformIntoMuleAccount"));
 
 				checkForAlive();
 
@@ -322,6 +395,24 @@ public class ThreadHandler {
 						&& getThread("checkTimeoutLockedBackToNormal") == null)) {
 					checkTimeoutLockedBackToNormal();
 					System.out.println("Started new thread checkTimeoutLockedBackToNormal");
+
+				}
+				if ((!isThreadAlive("checkBotsWhenNotActive") && getThread("checkBotsWhenNotActive") == null)) {
+					checkBotsWhenNotActive();
+					System.out.println("Started new thread checkBotsWhenNotActive");
+
+				}
+
+				if ((!isThreadAlive("transformIntoMuleAccount") && getThread("transformIntoMuleAccount") == null)) {
+					transformIntoMuleAccount();
+					System.out.println("Started new thread transformIntoMuleAccount");
+
+				}
+
+				if ((!isThreadAlive("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite")
+						&& getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null)) {
+					checkProxiesAndInsertIntoDatabaseAndOnTheWebsite();
+					System.out.println("Started new thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
 
 				}
 
