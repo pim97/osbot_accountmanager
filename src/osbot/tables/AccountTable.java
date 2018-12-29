@@ -60,6 +60,8 @@ public class AccountTable {
 		this.stage = stage;
 		this.accountStageProgress = accountStageProgress;
 	}
+	
+	private boolean updated;
 
 	private AccountStage stage;
 	
@@ -393,6 +395,20 @@ public class AccountTable {
 	 */
 	public void setLoginStatus(LoginStatus loginStatus) {
 		this.loginStatus = loginStatus;
+	}
+
+	/**
+	 * @return the updated
+	 */
+	public boolean isUpdated() {
+		return updated;
+	}
+
+	/**
+	 * @param updated the updated to set
+	 */
+	public void setUpdated(boolean updated) {
+		this.updated = updated;
 	}
 
 }

@@ -58,8 +58,7 @@ public class Proxy6Api {
 	public boolean setDescription(String id, int machineId) {
 		try {
 			String urlParameters = "setdescr?new="
-					+ URLEncoder.encode(appendString("", new String[] { Integer.toString(machineId) }, false),
-							"UTF-8")
+					+ URLEncoder.encode(appendString("", new String[] { Integer.toString(machineId) }, false), "UTF-8")
 					+ "&ids=" + URLEncoder.encode(appendString(",", new String[] { id }, true), "UTF-8");
 
 			String response = HttpRequests
@@ -138,7 +137,9 @@ public class Proxy6Api {
 				Object keyvalue = mainJson.get(keyStr);
 
 				if (keyStr.equalsIgnoreCase("proxy_status")) {
-					return Boolean.valueOf((boolean) keyvalue);
+					boolean proxyStatus = (Boolean) keyvalue;
+					System.out.println("Found proxy status: " + proxyStatus);
+					return proxyStatus;
 				}
 			}
 
@@ -167,14 +168,10 @@ public class Proxy6Api {
 			JSONObject proxyJson = (JSONObject) mainJson.get("list");
 
 			for (Object key : proxyJson.keySet()) {
-				// based on you key types
 				String keyStr = (String) key;
 				Object keyvalue = proxyJson.get(keyStr);
 
 				Proxy6Proxy prox = new Proxy6Proxy(Integer.parseInt(keyStr));
-
-				// Print key and value
-				// System.out.println("key: " + keyStr + " value: " + keyvalue);
 
 				JSONObject arrKeyValue = (JSONObject) proxyJson.get(keyStr);
 
@@ -194,7 +191,6 @@ public class Proxy6Api {
 							field.set(prox, keyvalue2);
 						}
 
-						// System.out.println("key: " + keyStr2 + " value: " + keyvalue2);
 					} catch (Exception e) {
 						e.printStackTrace();
 						System.out.println("Cannot find linked field!");
@@ -205,9 +201,7 @@ public class Proxy6Api {
 			}
 
 			return proxies;
-		} catch (
-
-		Exception e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

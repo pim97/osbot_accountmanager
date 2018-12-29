@@ -176,22 +176,26 @@ public class Config {
 	public static final boolean GUI = false;
 
 	public static final boolean CAPTCHA = false;
+	
+	public static final boolean BREAKING = false;
 
 	/**
 	 * End
 	 */
 
 	public static final boolean LOW_CPU = true;
+	
+	public static final boolean ERROR_IP = false;
 
-	public static final boolean CREATE_BATCH_FILES_FOR_MULES = false;
+	public static final boolean CREATE_BATCH_FILES_FOR_MULES = true;
 
-	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
 
-	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
 
 	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
 
-	public static final boolean CLOSE_ON_INACTIVITY = false;
+	public static final boolean CLOSE_ON_INACTIVITY = true;
 
-	public static final boolean MULES_TRADING = false;
+	public static final boolean MULES_TRADING = true;
 }

@@ -264,6 +264,7 @@ public class ContentController {
 								BotController.addBot(new OsbotController(acc.getId(), acc));
 							}
 						}
+
 					}
 
 					ArrayList<AccountTable> toBeDeleted = containsInBoth(BotController.getBots(), account);
@@ -300,6 +301,14 @@ public class ContentController {
 				// table.getSelectionModel().clearSelection();
 				// e.printStackTrace();
 				// }
+				
+				
+				/**
+				 * Setting updated to false for all the bots
+				 */
+				for (OsbotController bot : BotController.getBots()) {
+					bot.getAccount().setUpdated(false);
+				}
 
 				try {
 					Thread.sleep(10000);
@@ -307,6 +316,7 @@ public class ContentController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
 				System.out.println("[REFRESHING TABLE] still active [10 sec] per loop");
 			}
 		}).start();

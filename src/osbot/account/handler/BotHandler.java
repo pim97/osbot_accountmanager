@@ -136,7 +136,7 @@ public class BotHandler {
 		} else if (account.hasUsernameAndPassword()) {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
-		bot.addArguments(CliArgs.MEM, false, 1250);
+		bot.addArguments(CliArgs.MEM, false, 1125);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
@@ -157,10 +157,11 @@ public class BotHandler {
 			System.out.println("Invalid bot");
 			return;
 		}
-		if (bot.isStartingUp()) {
-			System.out.println("[ERROR] Bot is already running!");
-			return;
-		}
+		// if (bot.isStartingUp()) {
+		// bot.setStartingUp(false);
+		// System.out.println("[ERROR] Bot is already running!");
+		// return;
+		// }
 
 		AccountTable account = bot.getAccount();
 
@@ -192,7 +193,7 @@ public class BotHandler {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
 		// System.out.println("3");
-		bot.addArguments(CliArgs.MEM, false, 1250);
+		bot.addArguments(CliArgs.MEM, false, 1125);
 		if (account.hasValidProxy()) {
 			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
 					account.getProxyUsername(), account.getProxyPassword());
@@ -258,7 +259,8 @@ public class BotHandler {
 				e.printStackTrace();
 			}
 			if (writer != null) {
-				writer.println(bot.getCliArgs().toString());
+				writer.println(bot.getCliArgs().toString().replaceAll("MULE_TRADING", "LOGIN_TEST")
+						.replaceAll("SUPERMULE_TRADING", "LOGIN_TEST"));
 				writer.close();
 			}
 		}
@@ -355,6 +357,15 @@ public class BotHandler {
 							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
 							DatabaseUtilities.setTradingWith(null, tradeWithOther);
 						}
+
+						// if (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
+						// && Integer.parseInt(osbot.getAccount().getAccountValue().replaceAll(",", ""))
+						// <= 0) {
+						// System.out.println("Account didn't have enough money to trade, resetting");
+						// DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+						// DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						// }
+
 					}
 
 					if (osbot.getAccount().getStatus() != AccountStatus.MULE
@@ -512,7 +523,6 @@ public class BotHandler {
 			boolean isProxyAddress = Config.isSuperMuleProxy(osbot.getAccount().getProxyIp(),
 					osbot.getAccount().getProxyPort())
 					|| Config.isStaticMuleProxy(osbot.getAccount().getProxyIp(), osbot.getAccount().getProxyPort());
-			boolean notStartedUpYet = !BotController.containsInPidList(osbot.getPidId());
 			boolean mayLoginBecauseOfStatus = osbot.getAccount().getLoginStatus() != LoginStatus.LOGGED_IN;
 
 			// System.out.println(Config.isMuleProxy(osbot.getAccount().getProxyIp(),
@@ -523,6 +533,7 @@ public class BotHandler {
 			// System.out.println("proxy add: " + isProxyAddress);
 			// System.out.println("not started up: " + notStartedUpYet);
 			if (isRightAccount && isProxyAddress && mayLoginBecauseOfStatus) {
+				boolean notStartedUpYet = !BotController.containsInPidList(osbot.getPidId());
 				if (notStartedUpYet) {
 					return osbot;
 				}
@@ -583,20 +594,21 @@ public class BotHandler {
 				if (!BotController.containsInPidList(osbot2.getPidId())) {
 
 					// Seperated because its checking in DB, taking long
-					if (DatabaseUtilities.getLoginStatus(osbot2.getId()) == LoginStatus.DEFAULT) {
+					// if (DatabaseUtilities.getLoginStatus(osbot2.getId()) == LoginStatus.DEFAULT)
+					// {
 
-						if (osbot2.getAccount().getStage() != AccountStage.UNKNOWN
-								&& osbot2.getAccount().getStage() != AccountStage.MULE_TRADING) {
+					if (osbot2.getAccount().getStage() != AccountStage.UNKNOWN
+							&& osbot2.getAccount().getStage() != AccountStage.MULE_TRADING) {
 
-							System.out.println("Account stage wasn't to mule trade");
-							DatabaseUtilities.setTradingWith(null, osbot2.getId());
-							break;
-						}
-
-						System.out.println("Running mule trading " + osbot2.getAccount().getUsername());
-						runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
-								DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
+						System.out.println("Account stage wasn't to mule trade");
+						DatabaseUtilities.setTradingWith(null, osbot2.getId());
+						break;
 					}
+
+					System.out.println("Running mule trading " + osbot2.getAccount().getUsername());
+					runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
+							DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
+					// }
 				}
 			}
 		}
@@ -629,10 +641,17 @@ public class BotHandler {
 
 		System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
 
+		if (wantsToMule()) {
+			System.out.println("A bot wants to mule, so giving them priority");
+			runMule();
+		}
+
 		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
 
 			for (int i = 0; i < BotController.getBots().size(); i++) {
 				OsbotController osbot = BotController.getBots().get(i);
+
+				long startTime = System.currentTimeMillis();
 
 				if (wantsToMule()) {
 					System.out.println("A bot wants to mule, so giving them priority");
@@ -648,9 +667,23 @@ public class BotHandler {
 					continue;
 				}
 
-				System.out.println("HB: 9 " + osbot.getAccount().getStatus() + " " + osbot.getAccount().getStage());
+				// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
+				// one");
 
-				System.out.println("login  status:" + DatabaseUtilities.getLoginStatus(osbot.getId()));
+				boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
+
+				if (!hasValidLoginStatus) {
+					continue;
+				}
+
+				boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
+						&& osbot.getAccount().getStatus() != AccountStatus.OUT_OF_MONEY
+						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
+						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
+
+				if (!correctStagetoLaunch) {
+					continue;
+				}
 
 				boolean correctStatusToLaunch = (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
 						|| (osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
@@ -658,44 +691,49 @@ public class BotHandler {
 								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
 						|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
 								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);
-				boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
-						&& osbot.getAccount().getStage() != AccountStage.OUT_OF_MONEY
-						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
-						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
-				boolean enoughSpaceToLaunch = javaPidsSize < Config.MAX_BOTS_OPEN;
-				boolean hasValidEmail = osbot.getAccount().getEmail() != null;
-				boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
 
-				if (osbot != null && correctStatusToLaunch && correctStagetoLaunch && enoughSpaceToLaunch
-						&& hasValidEmail && hasValidLoginStatus) {
+				if (!correctStatusToLaunch) {
+					continue;
+				}
+
+				boolean enoughSpaceToLaunch = javaPidsSize < Config.MAX_BOTS_OPEN;
+
+				if (!enoughSpaceToLaunch) {
+					continue;
+				}
+
+				boolean hasValidEmail = osbot.getAccount().getEmail() != null;
+
+				if (!hasValidEmail) {
+					continue;
+				}
+
+				// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
+				// two");
+
+				if (osbot != null) {
+
 					boolean containsInProgram = BotController.containsInPidList(osbot.getPidId());
 
 					if (containsInProgram) {
 						continue;
 					}
-					
-					if (!calendar2.after(osbot.getAccount().getDate())) {
-						System.out.println(
-								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
-						continue;
+
+					if (Config.BREAKING) {
+						if (!calendar2.after(osbot.getAccount().getDate())) {
+							System.out.println(
+									"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
+							continue;
+						}
 					}
 
 					runBot(osbot);
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
 
-					// System.out.println("HB: 12");
-				} else if (osbot == null) {
-					System.out.println(osbot + " got null");
-				} else if (getAmountOfBotsActive() >= Config.MAX_BOTS_OPEN) {
-					System.out.println(
-							"[BOT HANDLER MANAGEMENT] Maximum amount of bots currently online for this machine reached");
+					System.out.println(System.currentTimeMillis() - startTime + " ms to start up");
 				}
-
-				// System.out.println("HB: 13");
 			}
-			// System.out.println("HB: 14");
 		}
-		// System.out.println("HB: 15");
 	}
 }

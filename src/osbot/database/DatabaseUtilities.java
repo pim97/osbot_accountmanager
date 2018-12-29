@@ -35,6 +35,7 @@ import osbot.tables.AccountTable;
 public class DatabaseUtilities {
 
 	/**
+	 * Insert an account into the database when it's being created with Selenium
 	 * 
 	 * @param account
 	 */
@@ -75,7 +76,17 @@ public class DatabaseUtilities {
 		}
 	}
 
+	/**
+	 * Inserts a proxy into the database
+	 * 
+	 * @param proxy
+	 * @param mule
+	 */
 	public static void insertProxy(Proxy6Proxy proxy, boolean mule) {
+		if (DatabaseUtilities.containsInProxyList(proxy.getIp(), proxy.getPort(), proxy.getUser(), proxy.getPass())) {
+			System.out.println("You're already using this proxy, may not use it again");
+			return;
+		}
 
 		// the mysql insert statement
 		String query = " insert into proxies (ip_addres,port,username,password,mule_proxy,is_alive)"
@@ -105,6 +116,11 @@ public class DatabaseUtilities {
 		}
 	}
 
+	/**
+	 * Deletes an account in the database
+	 * 
+	 * @param id
+	 */
 	public static void deleteFromTable(int id) {
 
 		String query = "delete from account where id = ?";
@@ -124,8 +140,17 @@ public class DatabaseUtilities {
 
 	}
 
+	/**
+	 * Cointains in the proxy list where proxies are alive
+	 * 
+	 * @param address
+	 * @param port
+	 * @param username
+	 * @param password
+	 * @return
+	 */
 	public static boolean containsInProxyList(String address, String port, String username, String password) {
-		for (DatabaseProxy proxy : getTotalProxiesWithMuleProxies()) {
+		for (DatabaseProxy proxy : getTotalProxiesWithMuleProxiesAndExceptAlive()) {
 			if (proxy.getProxyIp().equalsIgnoreCase(address) && proxy.getProxyPort().equalsIgnoreCase(port)
 					&& proxy.getProxyUsername().equalsIgnoreCase(username)
 					&& proxy.getProxyPassword().equalsIgnoreCase(password)) {
@@ -133,6 +158,35 @@ public class DatabaseUtilities {
 			}
 		}
 		return false;
+	}
+
+	public static ArrayList<DatabaseProxy> getTotalProxiesWithMuleProxiesAndExceptAlive() {
+		String sql = "SELECT * FROM proxies as p";
+		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+
+					proxiesInDatabase
+							.add(new DatabaseProxy(resultSet.getString("ip_addres"), resultSet.getString("port"),
+									resultSet.getString("username"), resultSet.getString("password")));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return proxiesInDatabase;
 	}
 
 	public static ArrayList<DatabaseProxy> getTotalProxiesWithMuleProxies() {
@@ -355,7 +409,7 @@ public class DatabaseUtilities {
 	 * @return
 	 */
 	public static ArrayList<DatabaseProxy> getUsedProxies() {
-		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\"";
+		String sql = "SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"INVALID_PASSWORD\"";
 		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
@@ -407,8 +461,24 @@ public class DatabaseUtilities {
 		return count;
 	}
 
+	public static void deleteFromProxyList(String ip, String port) {
+		try {
+			String query = "DELETE FROM proxies WHERE ip_addres = ? AND port = ?";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, ip);
+			preparedStmt.setString(2, port);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+			preparedStmt.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static ArrayList<DatabaseProxy> getUsedProxies2() {
-		String sql = "SELECT * FROM ( SELECT SUM(CASE WHEN ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\"  AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"BANNED\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <> \"LOCKED_TIMEOUT\" THEN 1 ELSE 0 END) AS count, p.ip_addres AS proxy, p.port, p.username, p.password, p.mule_proxy FROM proxies AS p LEFT JOIN account AS ac ON ac.proxy_ip=p.ip_addres AND ac.proxy_port=p.port GROUP BY p.ip_addres, p.port, p.username, p.password) AS proxy WHERE mule_proxy <> 1";
+		String sql = "SELECT * FROM ( SELECT SUM(CASE WHEN ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"LOCKED_INGAME\"  AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"BANNED\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\" THEN 1 ELSE 0 END) AS count, p.ip_addres AS proxy, p.port, p.username, p.password, p.mule_proxy FROM proxies AS p LEFT JOIN account AS ac ON ac.proxy_ip=p.ip_addres AND ac.proxy_port=p.port GROUP BY p.ip_addres, p.port, p.username, p.password) AS proxy WHERE mule_proxy <> 1";
 		ArrayList<DatabaseProxy> proxiesOutDatabase = new ArrayList<DatabaseProxy>();
 
 		try {
@@ -506,9 +576,16 @@ public class DatabaseUtilities {
 
 	public static boolean updateProxyAliveInDatabase(String ipAddress, boolean alive) {
 		try {
+			int bool = 0;
+			if (alive) {
+				bool = 1;
+			} else {
+				bool = 0;
+			}
+
 			String query = "UPDATE proxies SET is_alive = ? WHERE ip_addres=?";
 			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
-			preparedStmt.setInt(1, alive ? 1 : 0);
+			preparedStmt.setInt(1, bool);
 			preparedStmt.setString(2, ipAddress);
 
 			// execute the java preparedstatement
@@ -529,6 +606,8 @@ public class DatabaseUtilities {
 	 * 
 	 */
 	public static void closeBotsWhenNotActive() {
+		long startTime = System.currentTimeMillis();
+
 		for (OsbotController bot : BotController.getBots()) {
 
 			// If starting it, then it may not harm that process to prevent any weird things
@@ -537,9 +616,16 @@ public class DatabaseUtilities {
 				continue;
 			}
 
+			if (bot.getAccount().isUpdated()) {
+				// System.out.println("Waiting for the next account refresh to update the
+				// account again");
+				continue;
+			}
+
 			// Is not logged in but in database still logged in
-			if ((getLoginStatus(bot.getId()) == LoginStatus.INITIALIZING
-					|| getLoginStatus(bot.getId()) == LoginStatus.LOGGED_IN) && bot.getPidId() <= 0) {
+			if ((bot.getAccount().getLoginStatus() == LoginStatus.INITIALIZING
+					|| bot.getAccount().getLoginStatus() == LoginStatus.LOGGED_IN) && bot.getPidId() <= 0) {
+				bot.getAccount().setUpdated(true);
 				System.out.println("KILLING: 5");
 				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
 			}
@@ -549,9 +635,13 @@ public class DatabaseUtilities {
 				continue;
 			}
 
+			boolean isProcessRunningOnWindows = BotHandler.isProcessIdRunningOnWindows(bot.getPidId());
+
 			// When account has started, but not logged in between 80 seconds
-			if (getLoginStatus(bot.getId()) != null && getLoginStatus(bot.getId()) == LoginStatus.INITIALIZING
+			if (bot.getAccount().getLoginStatus() != null
+					&& bot.getAccount().getLoginStatus() == LoginStatus.INITIALIZING
 					&& (System.currentTimeMillis() - bot.getStartTime() > 110_000)) {
+				bot.getAccount().setUpdated(true);
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
 				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
@@ -559,7 +649,8 @@ public class DatabaseUtilities {
 			}
 
 			// When the pid is not on the machine active anymore
-			if (!BotHandler.isProcessIdRunningOnWindows(bot.getPidId())) {
+			if (!isProcessRunningOnWindows) {
+				bot.getAccount().setUpdated(true);
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
 				DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
@@ -568,8 +659,8 @@ public class DatabaseUtilities {
 
 			// When the process is running, but not logged in, then set status back to
 			// default
-			if (BotHandler.isProcessIdRunningOnWindows(bot.getPidId())
-					&& DatabaseUtilities.getLoginStatus(bot.getId()) == LoginStatus.DEFAULT) {
+			if (isProcessRunningOnWindows && bot.getAccount().getLoginStatus() == LoginStatus.DEFAULT) {
+				bot.getAccount().setUpdated(true);
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
 				System.out.println("Killing 4");
@@ -590,6 +681,8 @@ public class DatabaseUtilities {
 				System.out.println("KILLING: 3");
 			}
 		});
+
+		System.out.println("Close bots when active took: " + (System.currentTimeMillis() - startTime) + " ms");
 	}
 
 	public static LoginStatus getLoginStatus(int accountId) {
@@ -786,7 +879,7 @@ public class DatabaseUtilities {
 					java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 					Date date2 = sdf.parse(updatedAt);
 					calendar.setTime(date2);
-					calendar.add(Calendar.MINUTE, 45);
+					calendar.add(Calendar.MINUTE, 60);
 
 					// try {
 
@@ -967,7 +1060,7 @@ public class DatabaseUtilities {
 	public static ArrayList<AccountTable> getAccountsFromMysqlConnection() {
 		ArrayList<AccountTable> accounts = new ArrayList<AccountTable>();
 
-		String sql = "SELECT * FROM (SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.account_stage <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+		String sql = "SELECT * FROM (SELECT ac.*, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\" AND p.is_alive) OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id";
 
@@ -1089,7 +1182,7 @@ public class DatabaseUtilities {
 	public static synchronized ArrayList<OsbotController> getAccountsToBeRecovered() {
 		ArrayList<OsbotController> bots = new ArrayList<OsbotController>();
 		try {
-			String sql = "SELECT * FROM account WHERE (status=\"LOCKED\" OR status=\"INVALID_PASSWORD\") AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
+			String sql = "SELECT * FROM account WHERE status=\"LOCKED\" AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
@@ -1197,7 +1290,7 @@ public class DatabaseUtilities {
 				continue;
 			}
 
-			if (pid.getMatches() > 300) {
+			if (pid.getMatches() > 2400) {
 				BotController.killProcess(pid.getPid());
 				i.remove();
 				System.out.println("Pid /2 " + pid + " was removed, was already open for 5 minutes");
@@ -1229,7 +1322,7 @@ public class DatabaseUtilities {
 				continue;
 			}
 
-			if (pid.getMatches() > 300) {
+			if (pid.getMatches() > 2400) {
 				BotController.killProcess(pid.getPid());
 				b.remove();
 				// System.out.println("Pid " + pid + " was removed, was already open for 5
@@ -1298,7 +1391,7 @@ public class DatabaseUtilities {
 	// }
 
 	public static int getAvailableAccounts() {
-		String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL  AND ac.account_stage <> \"OUT_OF_MONEY\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"LOCKED_TIMEOUT\"";
+		String sql = "SELECT COUNT(*) as available_accounts FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND email IS NOT NULL  AND ac.status <> \"OUT_OF_MONEY\" AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <> \"LOCKED_TIMEOUT\" AND ac.status <> \"INVALID_PASSWORD\"";
 
 		try {
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
@@ -1478,8 +1571,7 @@ public class DatabaseUtilities {
 		// return;
 		// }
 
-		if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
-			System.out.println("Breaking because too many geckodrivers active!");
+		if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
 			return;
 		}
 
@@ -1496,6 +1588,9 @@ public class DatabaseUtilities {
 		}
 
 		for (OsbotController account : accs) {
+			if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
+				return;
+			}
 			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
 				if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
 						account.getAccount().getEmail())) {
@@ -1544,7 +1639,7 @@ public class DatabaseUtilities {
 		 * Making mules with that specific IP-adress
 		 */
 
-		if (DatabaseUtilities.getMuleAmount() == 0 && DatabaseUtilities.getMuleAccountsInTheMaking() >= 0) {
+		if (DatabaseUtilities.getMuleAmount() <= 2 && DatabaseUtilities.getMuleAccountsInTheMaking() >= 0) {
 			// Make an account once every 20 minutes
 			for (OsbotController mule : BotController.getBots()) {
 				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
@@ -1591,7 +1686,7 @@ public class DatabaseUtilities {
 		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
 				+ (System.currentTimeMillis() - lastAttempt));
 
-		if (DatabaseUtilities.getMuleAmount() == 0 && DatabaseUtilities.getMuleAccountsInTheMaking() == 0
+		if (DatabaseUtilities.getMuleAmount() <= 2 && DatabaseUtilities.getMuleAccountsInTheMaking() <= 2
 				&& (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
 			lastAttempt = System.currentTimeMillis();
 
@@ -1721,8 +1816,7 @@ public class DatabaseUtilities {
 
 		checkUsedIPs();
 
-		if (GeckoHandler.getGeckodriverExeWindows().size() > 5) {
-			System.out.println("Breaking because too many geckodrivers active!");
+		if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
 			return;
 		}
 
@@ -1736,7 +1830,10 @@ public class DatabaseUtilities {
 		}
 
 		for (DatabaseProxy proxy : proxies) {
-			if (DatabaseUtilities.isErrorProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
+			if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
+				return;
+			}
+			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxy.getProxyIp(), proxy.getProxyPort())) {
 				System.out.println("Skipping this IP, because it's currently giving an error");
 				continue;
 			}

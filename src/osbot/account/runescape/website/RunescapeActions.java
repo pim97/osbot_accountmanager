@@ -775,23 +775,36 @@ public class RunescapeActions {
 		// System.out.println("Waiting for all inputs exist on the page");
 		// }
 
-		WebdriverFunctions.waitForLoad(driver);
+		String text = "fraudulent";
+		WebElement el = driver.findElement(By.xpath("//*[contains(text(),'" + text + "')]"));
+		System.out.println("IS DISPLAYED: " + (el != null && el.isDisplayed()));
+		if (el != null && el.isDisplayed()) {// message.ws/?message=5
+			DatabaseUtilities.updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus.LOCKED_TIMEOUT,
+					getAccount().getAccount().getProxyIp());
+			System.out.println("Account locked timeout fraudulent 2");
+			driver.quit();
+			return false;
+		}
 
-		WebDriverWait wait = new WebDriverWait(driver, 120);
-		WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
-		WebElement myDynamicElement = (new WebDriverWait(driver, 120))
-				.until(ExpectedConditions.presenceOfElementLocated(By.name("password")));
+		if (!WebdriverFunctions.hasQuit(driver)) {
+			WebdriverFunctions.waitForLoad(driver);
 
-		System.out.println("old password: " + getAccount().getAccount().getPassword());
+			WebDriverWait wait = new WebDriverWait(driver, 120);
+			WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
+			WebElement myDynamicElement = (new WebDriverWait(driver, 120))
+					.until(ExpectedConditions.presenceOfElementLocated(By.name("password")));
 
-		String password = new RandomNameGenerator().generateRandomNameString();
-		driver.findElement(By.name("password")).sendKeys(password);
-		driver.findElement(By.name("confirm")).sendKeys(password);
-		DatabaseUtilities.updatePasswordInDatabase(password, getAccount().getId());
+			System.out.println("old password: " + getAccount().getAccount().getPassword());
 
-		System.out.println("new password: " + password);
+			String password = new RandomNameGenerator().generateRandomNameString();
+			driver.findElement(By.name("password")).sendKeys(password);
+			driver.findElement(By.name("confirm")).sendKeys(password);
+			DatabaseUtilities.updatePasswordInDatabase(password, getAccount().getId());
 
-		System.out.println("Filled in values!");
+			System.out.println("new password: " + password);
+
+			System.out.println("Filled in values!");
+		}
 		return true;
 
 	}
@@ -945,12 +958,12 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeCreateAccount() {
-		driver.manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
 		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 120 seconds!");
+			System.out.println("Page did not load within 40 seconds!");
 			System.out.println("Restarting driver and trying again");
 			e.printStackTrace();
 			// treat the timeout as needed

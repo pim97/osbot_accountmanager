@@ -72,11 +72,6 @@ public class OsbotController {
 			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
 			pidsAfter.removeAll(pids);
 
-//			System.out.println("7");
-
-			// System.out.println("CURRENT PIDS: ");
-			// pidsAfter.forEach(pid -> System.out.println("GOT: " + pid));
-
 			if (pidsAfter.size() == 1) {
 				setPidId(pidsAfter.get(0));
 				System.out.println("Pid set to: " + pidsAfter.get(0));

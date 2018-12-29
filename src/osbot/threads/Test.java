@@ -1,5 +1,8 @@
 package osbot.threads;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +20,7 @@ import org.openqa.selenium.support.ui.Select;
 import osbot.account.creator.PidDriver;
 import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
-import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
-import osbot.account.worlds.World;
-import osbot.account.worlds.WorldType;
 import osbot.bot.BotController;
 import osbot.database.DatabaseUtilities;
 import osbot.settings.OsbotController;
@@ -90,13 +90,13 @@ public class Test {
 		int pidId = -1;
 
 		// PidDriver driver = new PidDriver();
-		List<Integer> pids = GeckoHandler.getGeckodriverExeWindows();
-		List<Integer> pidsAfter = null;
+//		List<Integer> pids = GeckoHandler.getGeckodriverExeWindows();
+//		List<Integer> pidsAfter = null;
 
 		WebDriver driver = new FirefoxDriver(option);
 
-		int tries = 0;
-		boolean searching = true;
+//		int tries = 0;
+//		boolean searching = true;
 		// while (searching) {
 		// if (tries > 5) {
 		// driver.quit();
@@ -192,18 +192,20 @@ public class Test {
 		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
 		System.out.println("Database IP: " + Config.DATABASE_IP);
 
-		load();
-
-		BotHandler.sortByStage();
+		
+		// load();
+		//
+		// BotHandler.sortByStage();
 
 		// for (OsbotController bot : BotController.getBots()) {
 		// System.out.println(bot.getAccount().getStage());
 		// }
 
-		System.out.println(Config.getRandomMuleProxyWithoutSuperMule());
-		
-//		World.getWorldsWithoutTotalRequirements(WorldType.F2P).stream().forEach(
-//				world -> System.out.println(world.getType() + " " + world.getNumber() + " " + world.getPlayerAmount()));
+		// System.out.println(Config.getRandomMuleProxyWithoutSuperMule());
+
+		// World.getWorldsWithoutTotalRequirements(WorldType.F2P).stream().forEach(
+		// world -> System.out.println(world.getType() + " " + world.getNumber() + " " +
+		// world.getPlayerAmount()));
 
 		// BotHandler.createBatFile(BotController.getBots().get(0));
 		// BotHandler.runMule(BotController.getBots().get(0), "", "");

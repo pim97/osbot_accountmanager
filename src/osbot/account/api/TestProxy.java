@@ -21,7 +21,7 @@ public class TestProxy {
 			System.out.println("Must have set a machine id!");
 			System.exit(1);
 		}
-		
+
 		System.out.println("DATABASE SETTIGNS: ");
 		System.out.println("Database username: " + Config.DATABASE_USER_NAME);
 		System.out.println("Database name: " + Config.DATABASE_NAME);
@@ -30,9 +30,9 @@ public class TestProxy {
 		System.out.println("Machine id: " + Config.MACHINE_ID);
 
 		// TODO Auto-generated method stub
-		Proxy6 p = new Proxy6();
-
-		p.loop();
+		Proxy6 p = Proxy6.getSingleton();
+		p.resetDescription();
+		// p.loop();
 	}
 
 }

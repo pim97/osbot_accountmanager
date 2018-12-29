@@ -174,14 +174,7 @@ public class AccountCreationService {
 	 * @param test
 	 */
 	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
-		// if (getLaunching()) {
-		// return;
-		// }
-		// if (checkPreviousProcessesAndDie(type)) {
-		// return;
-		// }
 
-		// setLaunching(true);
 		long begin = System.currentTimeMillis();
 
 		System.setProperty("webdriver.gecko.driver", "geckodriver.exe");

@@ -37,7 +37,6 @@ public class ProtonActions {
 	 */
 	private OsbotController account;
 
-	private int tries = 0;
 
 	/**
 	 * Opens the proton mail and checks if the url is correct
@@ -45,22 +44,16 @@ public class ProtonActions {
 	 * @return
 	 */
 	private boolean openMail() {
-		driver.manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
 		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 120 seconds!");
+			System.out.println("Page did not load within 40 seconds!");
 			System.out.println("Restarting driver and trying again");
 			e.printStackTrace();
 			// treat the timeout as needed
-			if (tries > 2) {
-				driver.quit();
-			} else {
-				openMail();
-			}
-
-			tries++;
+			driver.quit();
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());

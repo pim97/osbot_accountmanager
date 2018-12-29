@@ -3,13 +3,12 @@ package osbot.threads;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
 
 import osbot.account.api.Proxy6;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
-import osbot.bot.BotController;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
 
@@ -47,7 +46,7 @@ public class ThreadHandler {
 				// BotHandler.checkJavaPidsTimeout();
 
 				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(20000, 50000));
+					Thread.sleep(120_000);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -116,19 +115,15 @@ public class ThreadHandler {
 	private static void createAccountsThread(int index) {
 		Thread createAccounts = new Thread(() -> {
 
-			while (programIsRunning) {
-
-				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-				DatabaseUtilities.seleniumCreateAccountThread();
+			try {
+				Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
+			DatabaseUtilities.seleniumCreateAccountThread();
 
 		});
-		createAccounts.setName("createAccounts_" + index);
+		createAccounts.setName("createAccounts" + index);
 		createAccounts.start();
 
 		threadList.add(createAccounts);
@@ -143,23 +138,20 @@ public class ThreadHandler {
 	private static void recoverAccountsThread(int index) {
 		Thread recoverAccounts = new Thread(() -> {
 
-			while (programIsRunning) {
-
-				try {
-					Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-				DatabaseUtilities.seleniumRecoverAccount();
-
+			try {
+				Thread.sleep(RandomUtil.getRandomNumberInRange(0, 100_000));
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 
+			DatabaseUtilities.seleniumRecoverAccount();
+
 		});
-		recoverAccounts.setName("recoverAccounts_" + index);
+		recoverAccounts.setName("recoverAccounts" + index);
 		recoverAccounts.start();
 
 		threadList.add(recoverAccounts);
+
 	}
 
 	/**
@@ -173,7 +165,7 @@ public class ThreadHandler {
 
 				// Checking every 15 seconds for a mule
 				try {
-					Thread.sleep(500);
+					Thread.sleep(5_000);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -317,6 +309,57 @@ public class ThreadHandler {
 	}
 
 	public static void mainThread() {
+
+		Thread recoverAndCreateThread = new Thread(() -> {
+			while (programIsRunning) {
+
+				int recoverAmount = DatabaseUtilities.getAccountsToBeRecovered().size() != 1
+						? DatabaseUtilities.getAccountsToBeRecovered().size() / 2
+						: DatabaseUtilities.getAccountsToBeRecovered().size();
+
+				int createAmount = DatabaseUtilities.accountsToCreate2() != 1
+						? DatabaseUtilities.accountsToCreate2() / 2
+						: DatabaseUtilities.accountsToCreate2();
+				if (createAmount > 5) {
+					createAmount = 5;
+				}
+				if (recoverAmount > 5) {
+					recoverAmount = 5;
+				}
+
+				System.out.println("Recover accounts thread to be: " + recoverAmount);
+
+				for (int i = 0; i < recoverAmount; i++) {
+					if (getThread("recoverAccounts" + i) == null && Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+
+						recoverAccountsThread(i);
+						System.out.println("Started new thread: recoverAccounts" + i);
+
+					}
+				}
+
+				System.out.println("Create accounts thread to be: " + createAmount);
+				for (int i = 0; i < createAmount; i++) {
+					if (getThread("createAccounts" + i) == null && Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+
+						createAccountsThread(i);
+						System.out.println("Started new thread: createAccounts" + i);
+					}
+				}
+
+				try {
+					Thread.sleep(135_000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		recoverAndCreateThread.setName("recoverAndCreateThread");
+		recoverAndCreateThread.start();
+
+		threadList.add(recoverAndCreateThread);
+
 		System.out.println("Waiting 10 seconds for everything to load...");
 
 		Thread mainThread = new Thread(() -> {
@@ -338,139 +381,72 @@ public class ThreadHandler {
 					System.out.println("Set program pid to: " + BotHandler.MAIN_PID);
 				}
 
-				int recoverAmount = DatabaseUtilities.getAccountsToBeRecovered().size() != 1
-						? DatabaseUtilities.getAccountsToBeRecovered().size() / 2
-						: DatabaseUtilities.getAccountsToBeRecovered().size();
-
-				int createAmount = DatabaseUtilities.accountsToCreate2() != 1
-						? DatabaseUtilities.accountsToCreate2() / 2
-						: DatabaseUtilities.accountsToCreate2();
-				if (createAmount > 5) {
-					createAmount = 5;
-				}
-				if (recoverAmount > 5) {
-					recoverAmount = 5;
-				}
-
-				for (int i = 0; i < recoverAmount; i++) {
-					System.out.println("Thread management: " + isThreadAlive("recoverAccounts_" + recoverAmount) + " "
-							+ getThread("recoverAccounts_" + recoverAmount));
-				}
-				for (int i = 0; i < createAmount; i++) {
-					System.out.println("Thread management: " + isThreadAlive("createAccounts_" + createAmount) + " "
-							+ getThread("createAccounts_" + createAmount));
-				}
-				System.out.println("Thread management: " + isThreadAlive("handleBotsRunning") + " "
-						+ getThread("handleBotsRunning"));
-				System.out.println("Thread management: " + isThreadAlive("handleMulesTrading") + " "
-						+ getThread("handleMulesTrading"));
-				System.out
-						.println("Thread management: " + isThreadAlive("queueThread") + " " + getThread("queueThread"));
-				System.out.println("Thread management: " + isThreadAlive("checkUsedUsernames") + " "
-						+ getThread("checkUsedUsernames"));
-				System.out.println("Thread management: " + isThreadAlive("checkRunningErrors") + " "
-						+ getThread("checkRunningErrors"));
-				System.out.println("Thread management: " + isThreadAlive("checkBotsWhenNotActive") + " "
-						+ getThread("checkBotsWhenNotActive"));
-				System.out.println(
-						"Thread management: " + isThreadAlive("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") + " "
-								+ getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite"));
-				System.out.println("Thread management: " + isThreadAlive("transformIntoMuleAccount") + " "
-						+ getThread("transformIntoMuleAccount"));
-
 				checkForAlive();
 
-				System.out.println("Recover accounts thread to be: " + recoverAmount);
-				for (int i = 0; i < recoverAmount; i++) {
-					if ((!isThreadAlive("recoverAccounts_" + i) && getThread("recoverAccounts_" + i) == null)
-							&& Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
-
-						recoverAccountsThread(i);
-						System.out.println("Started new thread: recoverAccounts_" + i);
-
-					}
-				}
-
-				if ((!isThreadAlive("checkTimeoutLockedBackToNormal")
-						&& getThread("checkTimeoutLockedBackToNormal") == null)) {
+				if (getThread("checkTimeoutLockedBackToNormal") == null) {
 					checkTimeoutLockedBackToNormal();
 					System.out.println("Started new thread checkTimeoutLockedBackToNormal");
 
 				}
-				if ((!isThreadAlive("checkBotsWhenNotActive") && getThread("checkBotsWhenNotActive") == null)) {
+				if (getThread("checkBotsWhenNotActive") == null) {
 					checkBotsWhenNotActive();
 					System.out.println("Started new thread checkBotsWhenNotActive");
 
 				}
 
-				if ((!isThreadAlive("transformIntoMuleAccount") && getThread("transformIntoMuleAccount") == null)) {
+				if (getThread("transformIntoMuleAccount") == null) {
 					transformIntoMuleAccount();
 					System.out.println("Started new thread transformIntoMuleAccount");
 
 				}
 
-				if ((!isThreadAlive("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite")
-						&& getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null)) {
+				if (getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null) {
 					checkProxiesAndInsertIntoDatabaseAndOnTheWebsite();
 					System.out.println("Started new thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
 
 				}
 
-				if ((!isThreadAlive("checkRunningErrors") && getThread("checkRunningErrors") == null)) {
+				if (getThread("checkRunningErrors") == null) {
 					checkRunningErrors();
 					System.out.println("Started new thread checkRunningErrors");
 
 				}
 
-				if ((!isThreadAlive("checkPidsProcessesEveryMinutes2")
-						&& getThread("checkPidsProcessesEveryMinutes2") == null)) {
+				if (getThread("checkPidsProcessesEveryMinutes2") == null) {
 					checkPids();
 					System.out.println("Started new thread checkPidsProcessesEveryMinutes2");
 
 				}
 
-				if ((!isThreadAlive("checkUsedUsernames") && getThread("checkUsedUsernames") == null)) {
+				if (getThread("checkUsedUsernames") == null) {
 					checkUsedUsernames();
 					System.out.println("Started new thread checkUsedUsernames");
 
 				}
 
-				System.out.println("Create accounts thread to be: " + createAmount);
-				for (int i = 0; i < createAmount; i++) {
-					if ((!isThreadAlive("createAccounts_" + i) && getThread("createAccounts_" + i) == null)
-							&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
-
-						createAccountsThread(i);
-						System.out.println("Started new thread: createAccounts_" + i);
-					}
-				}
-
-				if ((!isThreadAlive("handleBotsRunning") && getThread("handleBotsRunning") == null)
-						&& Config.BOT_HANDLER_THREAD_ACTIVE) {
+				if (getThread("handleBotsRunning") == null && Config.BOT_HANDLER_THREAD_ACTIVE) {
 					handleBotsRunning();
 					System.out.println("Started new thread: handleBotsRunning");
 				}
 
-				if ((!isThreadAlive("transformIntoMuleHandler") && getThread("transformIntoMuleHandler") == null
-						&& Config.CREATING_ACCOUNTS_THREAD_ACTIVE)) {
+				if (getThread("transformIntoMuleHandler") == null && Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 					transformIntoMuleHandler();
 					System.out.println("Started new thread: transformIntoMuleHandler");
 				}
 
-				if ((!isThreadAlive("handleMulesTrading") && getThread("handleMulesTrading") == null)
-						&& Config.MULES_TRADING) {
+				if (getThread("handleMulesTrading") == null && Config.MULES_TRADING) {
 					handleMulesTrading();
 					System.out.println("Started new thread: handleMulesTrading");
 				}
 
-				if ((!isThreadAlive("queueThread") && getThread("queueThread") == null) && Config.CAPTCHA) {
+				if (getThread("queueThread") == null && Config.CAPTCHA) {
 					runQueueThread();
 					System.out.println("Started new thread: queueThread");
 				}
 
 				// Thread sleeping & checking every 30 seconds
 				try {
-					Thread.sleep(2_000);
+					Thread.sleep(10_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -501,7 +477,7 @@ public class ThreadHandler {
 				System.out.println("[BACKUP] Thread management: " + isThreadAlive("backupThread") + " "
 						+ getThread("backupThread"));
 
-				if ((!isThreadAlive("backupThread") && getThread("backupThread") == null)) {
+				if (getThread("backupThread") == null) {
 					mainThread();
 					System.out.println("Started new thread: backupThread");
 				}
@@ -528,9 +504,11 @@ public class ThreadHandler {
 	 * @return
 	 */
 	private static Thread getThread(String threadName) {
-		for (Thread thread : threadList) {
-			if (thread.getName().equalsIgnoreCase(threadName)) {
-				return thread;
+		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+		for (Thread t : threadSet) {
+			if (t != null && t.getName().equalsIgnoreCase(threadName) && t.isAlive()) {
+				// System.out.println("Thread :" + t + ":" + "state:" + t.getState());
+				return t;
 			}
 		}
 		return null;
@@ -543,8 +521,15 @@ public class ThreadHandler {
 	 * @return
 	 */
 	public static boolean isThreadAlive(String threadName) {
-		for (Thread thread : threadList) {
-			if (thread.getName().equalsIgnoreCase(threadName) && thread.isAlive()) {
+		// for (Thread thread : threadList) {
+		// if (thread.getName().equalsIgnoreCase(threadName) && thread.isAlive()) {
+		// return true;
+		// }
+		// }
+		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+		for (Thread t : threadSet) {
+			if (t != null && t.getName().equalsIgnoreCase(threadName) && t.isAlive()) {
+				// System.out.println("Thread :" + t + ":" + "state:" + t.getState());
 				return true;
 			}
 		}
