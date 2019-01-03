@@ -9,6 +9,9 @@ import osbot.random.RandomUtil;
 
 public class Config {
 
+	public static final ArrayList<String> DATABASE_NAMES = new ArrayList<String>(
+			Arrays.asList("107.150.38.50_002_elf", "173.208.203.146_001_dragon", "bear_test"));
+
 	/**
 	 * Osbot configs
 	 */
@@ -41,6 +44,25 @@ public class Config {
 	public static final CaptchaQueue QUEUE = new CaptchaQueue();
 
 	public static final int AMOUNT_OF_TIMEOUTS_BEFORE_GONE = 3;
+
+	public static final ArrayList<String> SERVER_MULES = new ArrayList<String>(
+			Arrays.asList("185.194.15.2:8000:hGk5CB:s0jRMm"));
+
+	public static boolean isServerMuleProxy(String ip, String port) {
+		StringBuilder proxyString = new StringBuilder();
+		proxyString.append(ip);
+		proxyString.append(":");
+		proxyString.append(port);
+		for (String proxy : SERVER_MULES) {
+			String[] split = proxy.split(":");
+			StringBuilder p = new StringBuilder();
+			p.append(split[0] + ":" + split[1]);
+			if (proxyString.toString().equalsIgnoreCase(p.toString())) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	public static final ArrayList<String> STATIC_MULE_PROXIES = new ArrayList<String>(
 			Arrays.asList("185.99.99.69:8000:mule", "185.194.13.35:8000:main", "45.4.196.149:8000:mule"));
@@ -83,7 +105,7 @@ public class Config {
 		if (Config.MULE_PROXY_IP.size() == 0) {
 			Config.MULE_PROXY_IP = DatabaseUtilities.getMuleProxyAddresses();
 		}
-		
+
 		ArrayList<String> proxies = new ArrayList<String>();
 
 		for (String proxy : MULE_PROXY_IP) {
@@ -176,26 +198,26 @@ public class Config {
 	public static final boolean GUI = false;
 
 	public static final boolean CAPTCHA = false;
-	
+
 	public static final boolean BREAKING = false;
 
 	/**
 	 * End
 	 */
 
-	public static final boolean LOW_CPU = true;
-	
+	public static final boolean LOW_CPU = false;
+
 	public static final boolean ERROR_IP = false;
 
-	public static final boolean CREATE_BATCH_FILES_FOR_MULES = true;
+	public static final boolean CREATE_BATCH_FILES_FOR_MULES = false;
 
-	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
+	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = false;
 
-	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
+	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = false;
 
-	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
+	public static final boolean BOT_HANDLER_THREAD_ACTIVE = false;
 
-	public static final boolean CLOSE_ON_INACTIVITY = true;
+	public static final boolean CLOSE_ON_INACTIVITY = false;
 
 	public static final boolean MULES_TRADING = true;
 }

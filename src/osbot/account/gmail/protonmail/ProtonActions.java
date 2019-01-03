@@ -44,7 +44,8 @@ public class ProtonActions {
 	 * @return
 	 */
 	private boolean openMail() {
-		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
+//		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);

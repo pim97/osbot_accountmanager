@@ -171,9 +171,12 @@ public class AccountCreationService {
 	 * 
 	 * @param proxy
 	 * @param account
+	 * @param database
+	 *            TODO
 	 * @param test
 	 */
-	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type) {
+	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type,
+			boolean database) {
 
 		long begin = System.currentTimeMillis();
 
@@ -288,7 +291,14 @@ public class AccountCreationService {
 
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			runescapeWebsite.create();
-			ProtonMain proton = new ProtonMain(driver, account, pidDriver);
+
+			ProtonMain proton = null;
+
+			if (database) {
+				proton = new ProtonMain(driver, account, pidDriver, true);
+			} else {
+				proton = new ProtonMain(driver, account, pidDriver);
+			}
 			proton.verifyAccount();
 
 			try {

@@ -13,7 +13,10 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
@@ -110,7 +113,14 @@ public class BotHandler {
 
 		World randomWorld = World.getRandomWorldWithLessPopulation(WorldType.F2P, 20);
 
-		new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
+		if (Config.isServerMuleProxy(bot.getAccount().getProxyIp(), bot.getAccount().getProxyPort())) {
+			new Thread(
+					() -> DatabaseUtilities.updateLoginStatus("server_muling", LoginStatus.INITIALIZING, bot.getId()))
+							.start();
+		} else {
+			new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
+		}
+
 		bot.setStartingUp(true);
 		bot.setStartTime(System.currentTimeMillis());
 
@@ -171,8 +181,13 @@ public class BotHandler {
 		bot.setStartTime(System.currentTimeMillis());
 
 		// System.out.println("1");
-		new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
-
+		if (Config.isServerMuleProxy(bot.getAccount().getProxyIp(), bot.getAccount().getProxyPort())) {
+			new Thread(
+					() -> DatabaseUtilities.updateLoginStatus("server_muling", LoginStatus.INITIALIZING, bot.getId()))
+							.start();
+		} else {
+			new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.INITIALIZING, bot.getId())).start();
+		}
 		// bot.addArguments(CliArgs.DEBUG, false, 5005);
 		bot.addArguments(CliArgs.LOGIN, true, Config.OSBOT_USERNAME, Config.OSBOT_PASSWORD);
 		bot.addArguments(CliArgs.DATA, false, 0);
@@ -199,7 +214,13 @@ public class BotHandler {
 					account.getProxyUsername(), account.getProxyPassword());
 		}
 		if (account.hasScript()) {
-			String osbotPartner = DatabaseUtilities.getTradeWithOther(bot.getId());
+			String osbotPartner = null;
+
+			osbotPartner = DatabaseUtilities.getTradeWithOther(bot.getId());
+			if (osbotPartner == null) {
+				osbotPartner = DatabaseUtilities.getTradeWithOther("server_muling", bot.getId());
+			}
+
 			OsbotController partner = BotController.getBotByAccountName(osbotPartner);
 			System.out.println("The partner found is: " + partner);
 			String script = "MULE_TRADING";
@@ -211,9 +232,16 @@ public class BotHandler {
 							&& bot.getAccount().getStatus() == AccountStatus.MULE)
 					|| ((bot.getAccount().getStatus() == AccountStatus.SUPER_MULE
 							&& partner.getAccount().getStatus() == AccountStatus.MULE));
+			boolean serverMuleTrading = (hasPartner)
+					&& (partner != null && partner.getAccount().getStatus() == AccountStatus.SERVER_MULE
+							&& bot.getAccount().getStatus() == AccountStatus.SUPER_MULE)
+					|| ((bot.getAccount().getStatus() == AccountStatus.SERVER_MULE && partner != null
+							&& partner.getAccount().getStatus() == AccountStatus.SUPER_MULE));
 
 			if (hasPartner && isRightAccountStatus) {
 				script = "SUPERMULE_TRADING";
+			} else if (hasPartner && serverMuleTrading) {
+				script = "SERVERMULE_TRADING";
 			} else {
 				System.out.println("has partner: " + hasPartner);
 				System.out.println("is right acc status: " + isRightAccountStatus);
@@ -323,6 +351,9 @@ public class BotHandler {
 	public static void handleMules() {
 		OsbotController availableMule = null;
 		OsbotController availableSuperMule = null;
+		OsbotController availableServerMule = null;
+
+		DatabaseUtilities.setBannedAndTradingWithToNull();
 
 		// If accounts are not loaded yet
 		if (BotController.getBots().size() == 0) {
@@ -357,15 +388,6 @@ public class BotHandler {
 							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
 							DatabaseUtilities.setTradingWith(null, tradeWithOther);
 						}
-
-						// if (osbot.getAccount().getStage() == AccountStage.MULE_TRADING
-						// && Integer.parseInt(osbot.getAccount().getAccountValue().replaceAll(",", ""))
-						// <= 0) {
-						// System.out.println("Account didn't have enough money to trade, resetting");
-						// DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-						// DatabaseUtilities.setTradingWith(null, tradeWithOther);
-						// }
-
 					}
 
 					if (osbot.getAccount().getStatus() != AccountStatus.MULE
@@ -384,15 +406,26 @@ public class BotHandler {
 
 				}
 			}
-
 		}
 
+		HashMap<OsbotController, Integer> availableMuleList = new HashMap<OsbotController, Integer>();
+		HashMap<OsbotController, Integer> availableSuperMuleList = new HashMap<OsbotController, Integer>();
+		HashMap<OsbotController, Integer> availableServerMuleList = new HashMap<OsbotController, Integer>();
+
+		/**
+		 * Finding all the accounts and put them in a list to compare the values
+		 */
 		for (int i = 0; i < BotController.getBots().size(); i++) {
 			OsbotController osbot = BotController.getBots().get(i);
 
 			if ((osbot.getAccount().getStatus() == AccountStatus.MULE
-					|| osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE)
+					|| osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE
+					|| osbot.getAccount().getStatus() == AccountStatus.SERVER_MULE)
 					&& osbot.getAccount().getStage() == AccountStage.UNKNOWN) {
+
+				boolean isServerMule = osbot.getAccount().getStatus() == AccountStatus.SERVER_MULE;
+				boolean isSuperMule = osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE;
+				boolean isNormalMule = osbot.getAccount().getStatus() == AccountStatus.MULE;
 
 				// Looking for a mule account and that is currently available ('NULL')
 				if (osbot.getAccount().getTradeWithOther() == null
@@ -400,16 +433,43 @@ public class BotHandler {
 						&& DatabaseUtilities.getAmountOfMuleTrades(osbot.getAccount().getUsername()) == 0) {
 
 					if (osbot.getAccount().getStatus() == AccountStatus.SUPER_MULE) {
-						availableSuperMule = osbot;
-						System.out.println(
-								"[MULE TRADING] Found an account! " + availableSuperMule.getAccount().getUsername());
+						availableSuperMuleList.put(osbot,
+								Integer.parseInt(osbot.getAccount().getAccountValue().replaceAll(",", "")));
 					} else if (osbot.getAccount().getStatus() == AccountStatus.MULE) {
-						availableMule = osbot;
-						System.out.println(
-								"[MULE TRADING] Found an account! " + availableMule.getAccount().getUsername());
+						availableMuleList.put(osbot,
+								Integer.parseInt(osbot.getAccount().getAccountValue().replaceAll(",", "")));
 					}
 				}
 			}
+		}
+
+		/**
+		 * Sorting the accounts by value they have
+		 */
+		Entry<OsbotController, Integer> availableMuleFirst = availableMuleList.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).findFirst().orElse(null);
+
+		Entry<OsbotController, Integer> availableSuperMuleFirst = availableSuperMuleList.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).findFirst().orElse(null);
+
+		Entry<OsbotController, Integer> availableServerMuleFirst = availableServerMuleList.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).findFirst().orElse(null);
+
+		if (availableServerMuleFirst != null) {
+			availableServerMule = availableServerMuleFirst.getKey();
+			System.out
+					.println("[SERVER MULE TRADING] Found an account! " + availableServerMule.getAccount().getUsername()
+							+ " with value: " + availableServerMule.getAccount().getAccountValue());
+		}
+		if (availableSuperMuleFirst != null) {
+			availableSuperMule = availableSuperMuleFirst.getKey();
+			System.out.println("[SUPER MULE TRADING] Found an account! " + availableSuperMule.getAccount().getUsername()
+					+ " with value: " + availableSuperMule.getAccount().getAccountValue());
+		}
+		if (availableMuleFirst != null) {
+			availableMule = availableMuleFirst.getKey();
+			System.out.println("[NORMAL MULE TRADING] Found an account! " + availableMule.getAccount().getUsername()
+					+ " with value: " + availableMule.getAccount().getAccountValue());
 		}
 
 		// Must have a mule available to continue
@@ -522,7 +582,8 @@ public class BotHandler {
 					&& osbot.getAccount().getStage() == AccountStage.TUT_ISLAND;
 			boolean isProxyAddress = Config.isSuperMuleProxy(osbot.getAccount().getProxyIp(),
 					osbot.getAccount().getProxyPort())
-					|| Config.isStaticMuleProxy(osbot.getAccount().getProxyIp(), osbot.getAccount().getProxyPort());
+					|| Config.isStaticMuleProxy(osbot.getAccount().getProxyIp(), osbot.getAccount().getProxyPort())
+					|| Config.isServerMuleProxy(osbot.getAccount().getProxyIp(), osbot.getAccount().getProxyPort());
 			boolean mayLoginBecauseOfStatus = osbot.getAccount().getLoginStatus() != LoginStatus.LOGGED_IN;
 
 			// System.out.println(Config.isMuleProxy(osbot.getAccount().getProxyIp(),
@@ -662,7 +723,9 @@ public class BotHandler {
 				OsbotController superMule = superMuleWantsToLaunchToFinishTutorialIsland();
 				if (superMule != null) {
 					System.out.println(
-							"Skipping this one, because a tutorial island mule/super mule has to launch first");
+							"Skipping this one, because a tutorial island mule/super mule/server mule has to launch first, acc: "
+									+ superMule.getAccount().getUsername() + " status: "
+									+ superMule.getAccount().getStatus());
 					runBot(superMule);
 					continue;
 				}
@@ -691,6 +754,13 @@ public class BotHandler {
 								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
 						|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
 								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);
+
+				boolean isProxyOnline = osbot.getAccount().isProxyOnline();
+
+				if (!isProxyOnline) {
+					System.out.println("Skipping launching this account, because the proxy is offline");
+					continue;
+				}
 
 				if (!correctStatusToLaunch) {
 					continue;

@@ -20,6 +20,8 @@ public class ProtonMain {
 
 	private PidDriver pidDriver;
 
+	private boolean database;
+
 	/**
 	 * 
 	 * @param driver
@@ -29,6 +31,14 @@ public class ProtonMain {
 		this.setAccount(account);
 		this.setActions(new ProtonActions(driver, account));
 		this.setPidDriver(pidDriver);
+	}
+
+	public ProtonMain(WebDriver driver, OsbotController account, PidDriver pidDriver, boolean database) {
+		this.setDriver(driver);
+		this.setAccount(account);
+		this.setActions(new ProtonActions(driver, account));
+		this.setPidDriver(pidDriver);
+		this.database = database;
 	}
 
 	public void unlockAccount() {
@@ -229,7 +239,11 @@ public class ProtonMain {
 			}
 
 			// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-			DatabaseUtilities.insertIntoTable(account.getAccount());
+			if (database) {
+				DatabaseUtilities.insertIntoTable("server_muling", account.getAccount());
+			} else {
+				DatabaseUtilities.insertIntoTable(account.getAccount());
+			}
 			driver.quit();
 			System.out.println("Succesfully clicked on the verification link!");
 		}

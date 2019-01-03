@@ -90,13 +90,13 @@ public class Test {
 		int pidId = -1;
 
 		// PidDriver driver = new PidDriver();
-//		List<Integer> pids = GeckoHandler.getGeckodriverExeWindows();
-//		List<Integer> pidsAfter = null;
+		// List<Integer> pids = GeckoHandler.getGeckodriverExeWindows();
+		// List<Integer> pidsAfter = null;
 
 		WebDriver driver = new FirefoxDriver(option);
 
-//		int tries = 0;
-//		boolean searching = true;
+		// int tries = 0;
+		// boolean searching = true;
 		// while (searching) {
 		// if (tries > 5) {
 		// driver.quit();
@@ -192,7 +192,21 @@ public class Test {
 		System.out.println("Database password: " + Config.DATABASE_PASSWORD);
 		System.out.println("Database IP: " + Config.DATABASE_IP);
 
-		
+		load();
+
+		System.out.println(BotController.getBots().size());
+
+		String sql = "SELECT * FROM (\r\n"
+				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as z\r\n" + "\r\n"
+				+ "UNION\r\n" + "\r\n" + "SELECT * FROM (\r\n"
+				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM server_muling.account AS ac INNER JOIN server_muling.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
+				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as p";
+
+		System.out.println(sql);
+
 		// load();
 		//
 		// BotHandler.sortByStage();

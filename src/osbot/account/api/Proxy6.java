@@ -88,6 +88,11 @@ public class Proxy6 {
 						proxy.getUser(), proxy.getPass());
 				boolean isStaticMuleProxy = Config.isStaticMuleProxy(proxy.getIp(), proxy.getPort());
 				boolean isSuperMuleProxy = Config.isSuperMuleProxy(proxy.getIp(), proxy.getPort());
+				boolean isServerMule = Config.isServerMuleProxy(proxy.getIp(), proxy.getPort());
+
+				if (isServerMule) {
+					continue;
+				}
 
 				// If the proxy is a static one, then set it to MULE (-2) description
 				if (((isStaticMuleProxy) || (isSuperMuleProxy)) && (description != -2)) {
@@ -130,13 +135,18 @@ public class Proxy6 {
 
 		for (Proxy6Proxy proxy : proxyList) {
 			try {
-
+				boolean isServerMule = Config.isServerMuleProxy(proxy.getIp(), proxy.getPort());
 				int description = proxy.getDescr().length() > 0 ? Integer.parseInt(proxy.getDescr()) : -1;
 
+				if (isServerMule) {
+					continue;
+				}
+
 				// A server may have a max. amount proxies used up in total
-				if (DatabaseUtilities.getTotalProxies().size() >= (Config.MAX_BOTS_OPEN / 2)) {
-					System.out.println("Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2))
-							+ " proxies served");
+				if (DatabaseUtilities.getTotalProxies().size() >= (Config.MAX_BOTS_OPEN / 2)
+						+ (Config.MAX_BOTS_OPEN * 0.1)) {
+					System.out.println("Returning because database already has "
+							+ ((Config.MAX_BOTS_OPEN / 2) + (Config.MAX_BOTS_OPEN * 0.1)) + " proxies served");
 					break;
 				}
 

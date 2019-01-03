@@ -37,6 +37,8 @@ public class AccountTable {
 		return getProxyIp() != null && getProxyPort() != null && getProxyIp().length() > 0
 				&& getProxyPort().length() > 0;
 	}
+	
+	private boolean proxyOnline;
 
 	/**
 	 * Does the account have a current script?
@@ -409,6 +411,20 @@ public class AccountTable {
 	 */
 	public void setUpdated(boolean updated) {
 		this.updated = updated;
+	}
+
+	/**
+	 * @return the proxyOnline
+	 */
+	public boolean isProxyOnline() {
+		return proxyOnline;
+	}
+
+	/**
+	 * @param proxyOnline the proxyOnline to set
+	 */
+	public void setProxyOnline(boolean proxyOnline) {
+		this.proxyOnline = proxyOnline;
 	}
 
 }

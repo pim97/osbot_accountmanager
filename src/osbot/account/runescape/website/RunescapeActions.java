@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -759,6 +760,16 @@ public class RunescapeActions {
 		return true;
 	}
 
+	public boolean isElementPresent(By by) {
+		boolean isPresent = true;
+		try {
+			driver.findElement(by);
+		} catch (NoSuchElementException e) {
+			isPresent = false;
+		}
+		return isPresent;
+	}
+
 	/**
 	 * 
 	 * @return
@@ -775,13 +786,16 @@ public class RunescapeActions {
 		// System.out.println("Waiting for all inputs exist on the page");
 		// }
 
-		String text = "fraudulent";
-		WebElement el = driver.findElement(By.xpath("//*[contains(text(),'" + text + "')]"));
-		System.out.println("IS DISPLAYED: " + (el != null && el.isDisplayed()));
-		if (el != null && el.isDisplayed()) {// message.ws/?message=5
+		if (getDriver().getCurrentUrl().contains("message.ws?message=5")) {
 			DatabaseUtilities.updateStatusOfAccountByIpWithoutLockedTimeout(AccountStatus.LOCKED_TIMEOUT,
 					getAccount().getAccount().getProxyIp());
 			System.out.println("Account locked timeout fraudulent 2");
+			try {
+				Thread.sleep(120_000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			driver.quit();
 			return false;
 		}
@@ -794,7 +808,9 @@ public class RunescapeActions {
 			WebElement myDynamicElement = (new WebDriverWait(driver, 120))
 					.until(ExpectedConditions.presenceOfElementLocated(By.name("password")));
 
-			System.out.println("old password: " + getAccount().getAccount().getPassword());
+			System.out.println("old password: " +
+
+					getAccount().getAccount().getPassword());
 
 			String password = new RandomNameGenerator().generateRandomNameString();
 			driver.findElement(By.name("password")).sendKeys(password);
@@ -934,7 +950,7 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeRecoverAccount() {
-		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
@@ -958,7 +974,7 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeCreateAccount() {
-		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
 
 		try {
 			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);

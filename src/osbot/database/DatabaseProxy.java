@@ -8,6 +8,8 @@ public class DatabaseProxy {
 		this.setProxyUsername(proxyUsername);
 		this.setProxyPassword(proxyPassword);
 	}
+	
+	private boolean isOnline;
 
 	private int usedCount;
 	
@@ -83,5 +85,19 @@ public class DatabaseProxy {
 	 */
 	public void setUsedCount(int usedCount) {
 		this.usedCount = usedCount;
+	}
+
+	/**
+	 * @return the isOnline
+	 */
+	public boolean isOnline() {
+		return isOnline;
+	}
+
+	/**
+	 * @param isOnline the isOnline to set
+	 */
+	public void setOnline(boolean isOnline) {
+		this.isOnline = isOnline;
 	}
 }

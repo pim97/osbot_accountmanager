@@ -164,11 +164,11 @@ public class ThreadHandler {
 				BotHandler.handleMules();
 
 				// Checking every 15 seconds for a mule
-				try {
-					Thread.sleep(5_000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+//				try {
+//					Thread.sleep(20_000);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
 
 			}
 		});
@@ -230,6 +230,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.changeTimeoutLockedToNormal();
+				DatabaseUtilities.changeErrorIpBackToNormal();
 
 				// Checking every 5 seconds if bot is still running
 				try {
