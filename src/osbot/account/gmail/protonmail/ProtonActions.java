@@ -4,15 +4,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.SessionNotCreatedException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import osbot.account.global.Config;
-import osbot.account.runescape.website.RunescapeWebsiteConfig;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.settings.OsbotController;
 
@@ -37,24 +35,30 @@ public class ProtonActions {
 	 */
 	private OsbotController account;
 
-
 	/**
 	 * Opens the proton mail and checks if the url is correct
 	 * 
 	 * @return
 	 */
 	private boolean openMail() {
-		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
-//		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
-		try {
-			getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
-		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 40 seconds!");
-			System.out.println("Restarting driver and trying again");
-			e.printStackTrace();
-			// treat the timeout as needed
-			driver.quit();
+		boolean onWebsite = false;
+
+		while (!onWebsite) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				onWebsite = true;
+			}
+			try {
+				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
+			} catch (Exception e) {
+				System.out.println("Page did not load within 40 seconds!");
+				System.out.println("Restarting driver and trying again");
+				e.printStackTrace();
+				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
+			}
+			onWebsite = true;
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());
@@ -129,7 +133,18 @@ public class ProtonActions {
 					return true;
 				}
 			}
+		} catch (SessionNotCreatedException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 		} catch (Exception e) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 			e.printStackTrace();
 			// Ignoring excetion, might be dangerous
 			return false;
@@ -247,10 +262,10 @@ public class ProtonActions {
 				clickedIndex = 0;
 			}
 
-			if (loop > 1) {
+			if (loop > 10) {
 				driver.close();
 				driver.quit();
-				System.out.println("Couldn't find e-mail twice, restarting & retrying");
+				System.out.println("Couldn't find e-mail 11 times, restarting & retrying");
 				return false;
 			}
 
@@ -267,6 +282,13 @@ public class ProtonActions {
 			}
 			// }
 
+		} catch (SessionNotCreatedException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			clickedIndex++;

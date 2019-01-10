@@ -389,7 +389,7 @@ public class ThreadHandler {
 					System.out.println("Started new thread checkTimeoutLockedBackToNormal");
 
 				}
-				if (getThread("checkBotsWhenNotActive") == null) {
+				if (getThread("checkBotsWhenNotActive") == null && Config.CLOSE_BOTS_WHEN_ACTIVE) {
 					checkBotsWhenNotActive();
 					System.out.println("Started new thread checkBotsWhenNotActive");
 
@@ -478,9 +478,9 @@ public class ThreadHandler {
 				System.out.println("[BACKUP] Thread management: " + isThreadAlive("backupThread") + " "
 						+ getThread("backupThread"));
 
-				if (getThread("backupThread") == null) {
+				if (getThread("mainThread") == null) {
 					mainThread();
-					System.out.println("Started new thread: backupThread");
+					System.out.println("Started new thread: mainThread");
 				}
 
 				try {

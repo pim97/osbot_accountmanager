@@ -1006,7 +1006,7 @@ public class DatabaseUtilities {
 					java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 					Date date2 = sdf.parse(updatedAt);
 					calendar.setTime(date2);
-					calendar.add(Calendar.MINUTE, 60);
+					calendar.add(Calendar.MINUTE, 80);
 
 					Calendar calendar2 = Calendar.getInstance();
 					calendar2.setTime(new Date());
@@ -1153,6 +1153,31 @@ public class DatabaseUtilities {
 		return null;
 	}
 
+	public static String getAccountStageInDatabase(String accountName) {
+		String sql = "SELECT account_stage FROM account WHERE name = " + accountName + "";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				while (resultSet.next()) {
+					String stage = resultSet.getString("account_stage");
+
+					return stage;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	public static String getAccountStageInDatabase(int accountId) {
 		String sql = "SELECT account_stage FROM account WHERE id = " + accountId + "";
 
@@ -1209,6 +1234,33 @@ public class DatabaseUtilities {
 		}
 		System.out.println("found amount: " + count);
 		return count;
+	}
+
+	public static int getAmountOfMuleTrades(String database, String name) {
+		String sql = "SELECT COUNT(*) as cnt FROM " + database + ".account WHERE trade_with_other = '" + name + "'";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+			try {
+				// System.out.println(sql);
+				while (resultSet.next()) {
+					int cnt = resultSet.getInt("cnt");
+
+					return cnt;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1;
 	}
 
 	public static int getAmountOfMuleTrades(String name) {
@@ -1294,6 +1346,32 @@ public class DatabaseUtilities {
 		return null;
 	}
 
+	public static String getServerMuleUsedByDatabase() {
+		String sql = "SELECT used_by_database FROM server_muling.config WHERE id=0";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+					String stage = resultSet.getString("used_by_database");
+
+					return stage;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	public static boolean setBannedAndTradingWithToNull() {
 		try {
 			String query = "UPDATE account SET trade_with_other = null WHERE status = \"BANNED\" AND trade_with_other IS NOT NULL";
@@ -1322,7 +1400,7 @@ public class DatabaseUtilities {
 			preparedStmt.executeUpdate();
 			preparedStmt.close();
 
-			System.out.println("Updated account in database trading with: " + tradeWith);
+			System.out.println("Updated account in database trading with: " + tradeWith + " Z02");
 
 			return true;
 
@@ -1343,7 +1421,7 @@ public class DatabaseUtilities {
 			preparedStmt.executeUpdate();
 			preparedStmt.close();
 
-			System.out.println("Updated account in database trading with: " + tradeWith);
+			System.out.println("Updated account in database trading with: " + tradeWith + " Z03");
 
 			return true;
 
@@ -1364,7 +1442,7 @@ public class DatabaseUtilities {
 			preparedStmt.executeUpdate();
 			preparedStmt.close();
 
-			System.out.println("Updated account in database trading with: " + tradeWith);
+			System.out.println("Updated account in database trading with: " + tradeWith + " Z04");
 
 			return true;
 
@@ -1385,8 +1463,25 @@ public class DatabaseUtilities {
 			preparedStmt.executeUpdate();
 			preparedStmt.close();
 
-			System.out.println("Updated account in database trading with: " + tradeWith);
+			System.out.println("Updated account in database trading with: " + tradeWith + " Z05");
 
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean setServerMuleConnectedDatabase(String database) {
+		try {
+			String query = "UPDATE server_muling.config SET used_by_database = ? WHERE id=0";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, database);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+			preparedStmt.close();
 			return true;
 
 		} catch (Exception e) {
@@ -1406,7 +1501,7 @@ public class DatabaseUtilities {
 			preparedStmt.executeUpdate();
 			preparedStmt.close();
 
-			System.out.println("Updated account in database trading with: " + tradeWith);
+			System.out.println("Updated account in database trading with: " + tradeWith + " Z01");
 
 			return true;
 
@@ -1494,7 +1589,7 @@ public class DatabaseUtilities {
 					account.setScript(scriptName);
 					account.setEmail(email);
 					account.setQuestPoints(qp);
-					account.setAccountValue(formatNumbers(accountValue));
+					account.setAccountValue(accountValue);
 					account.setDate(calendar);
 					account.setDateString(date);
 					account.setTradeWithOther(tradingWith);
@@ -2042,6 +2137,12 @@ public class DatabaseUtilities {
 			if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
 				break;
 			}
+//			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(account.getAccount().getProxyIp(),
+//					account.getAccount().getProxyPort())) {
+//				System.out.println("Skipping this IP, because it's currently giving an error");
+//				continue;
+//			}
+
 			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
 				if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
 						account.getAccount().getEmail())) {
@@ -2090,8 +2191,7 @@ public class DatabaseUtilities {
 		 * Making mules with that specific IP-adress
 		 */
 
-		if (DatabaseUtilities.getServerMuleAmount() <= 0
-				&& DatabaseUtilities.getServerMulesAccountsInTheMaking() >= 0) {
+		if (DatabaseUtilities.getServerMulesAccountsInTheMaking() >= 0) {
 
 			for (OsbotController mule : BotController.getBots()) {
 				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
@@ -2113,7 +2213,7 @@ public class DatabaseUtilities {
 
 		}
 
-		if (DatabaseUtilities.getMuleAmount() <= 2 && DatabaseUtilities.getMuleAccountsInTheMaking() >= 0) {
+		if (DatabaseUtilities.getMuleAccountsInTheMaking() >= 0) {
 			// Make an account once every 20 minutes
 			for (OsbotController mule : BotController.getBots()) {
 				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
@@ -2134,7 +2234,7 @@ public class DatabaseUtilities {
 			}
 		}
 
-		if (DatabaseUtilities.getSuperMuleAmount() == 0 && DatabaseUtilities.getSuperAccountsInTheMaking() >= 0) {
+		if (DatabaseUtilities.getSuperAccountsInTheMaking() >= 0) {
 			// Make an account once every 20 minutes
 			for (OsbotController mule : BotController.getBots()) {
 				if (mule.getAccount().getStage() != AccountStage.TUT_ISLAND
@@ -2156,7 +2256,7 @@ public class DatabaseUtilities {
 		}
 	}
 
-	public static synchronized void transformIntoMuleHandler() {
+	public static void transformIntoMuleHandler() {
 		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
 				+ (System.currentTimeMillis() - lastAttempt));
 
@@ -2167,6 +2267,11 @@ public class DatabaseUtilities {
 			RandomNameGenerator name = new RandomNameGenerator();
 
 			String[] proxyString = Config.SERVER_MULES.get(0).split(":");
+
+			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxyString[0], proxyString[1])) {
+				System.out.println("Skipping this IP, because it's currently giving an error");
+				return;
+			}
 
 			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
 					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
@@ -2194,6 +2299,11 @@ public class DatabaseUtilities {
 
 			String[] proxyString = Config.getRandomMuleProxyWithoutSuperMule().split(":");
 
+			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxyString[0], proxyString[1])) {
+				System.out.println("Skipping this IP, because it's currently giving an error");
+				return;
+			}
+
 			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
 					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
 
@@ -2219,6 +2329,11 @@ public class DatabaseUtilities {
 			RandomNameGenerator name = new RandomNameGenerator();
 
 			String[] proxyString = Config.getRandomSuperMuleProxy().split(":");
+
+			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxyString[0], proxyString[1])) {
+				System.out.println("Skipping this IP, because it's currently giving an error");
+				return;
+			}
 
 			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
 					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
@@ -2349,7 +2464,7 @@ public class DatabaseUtilities {
 			// DatabaseProxy key = entry.getKey();
 			// Integer value = entry.getValue();
 			if (proxy.getUsedCount() < 2
-					&& totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 5))) {
+					&& totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 10))) {
 				/**
 				 * public AccountTable(int id, String script, String username, int world, String
 				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {

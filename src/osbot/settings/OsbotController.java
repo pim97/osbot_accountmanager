@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 
+import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.bot.BotController;
 import osbot.tables.AccountTable;
@@ -55,49 +56,55 @@ public class OsbotController {
 	 */
 	public void runBot(boolean isMule) {
 
-		try {
-			List<Integer> pids = BotController.getJavaPIDsWindows();
-			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
-			System.out.println("Waiting for OSBot to launch..");
+//		new Thread(() -> {
 
-//			System.out.println("6");
-			if (!p.waitFor(10, TimeUnit.SECONDS)) {
-				System.out.println("Destroyed, couldn't start up in time");
-				p.destroy();
-				setStartingUp(false);
-				return;
-			}
+			try {
+				List<Integer> pids = BotController.getJavaPIDsWindows();
+				Process p = Runtime.getRuntime().exec(getCliArgs().toString());
+				System.out.println("Waiting for OSBot to launch..");
 
-			System.out.println(getCliArgs().toString());
-			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
-			pidsAfter.removeAll(pids);
-
-			if (pidsAfter.size() == 1) {
-				setPidId(pidsAfter.get(0));
-				System.out.println("Pid set to: " + pidsAfter.get(0));
-			} else {
-				p.destroy();
-				System.out.println("Destroyed, couldn't set pid, too many");
-				setStartingUp(false);
-				return;
-			}
-			setCliArgs(new StringBuilder());
-
-			if (isMule) {
-				OsbotController partner = BotHandler.getMulePartner(this);
-				if (partner != null && partner.getPidId() > 0
-						&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
-					System.out.println("Both mules are running, others may start again!");
+				// System.out.println("6");
+				if (!p.waitFor(10, TimeUnit.SECONDS)) {
+					System.out.println("Destroyed, couldn't start up in time");
+					p.destroy();
+					setStartingUp(false);
+					return;
 				}
+
+				System.out.println(getCliArgs().toString());
+				List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
+				pidsAfter.removeAll(pids);
+
+				if (!Config.TESTING) {
+					if (pidsAfter.size() == 1) {
+						setPidId(pidsAfter.get(0));
+						System.out.println("Pid set to: " + pidsAfter.get(0));
+					} else {
+						p.destroy();
+						System.out.println("Destroyed, couldn't set pid, too many");
+						setStartingUp(false);
+						return;
+					}
+				}
+				setCliArgs(new StringBuilder());
+
+				if (isMule) {
+					OsbotController partner = BotHandler.getMulePartner(this);
+					if (partner != null && partner.getPidId() > 0
+							&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
+						System.out.println("Both mules are running, others may start again!");
+					}
+				}
+				setStartingUp(false);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			setStartingUp(false);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
+//		}).start();
 
 		// try {
 		// List<Integer> pids = BotController.getJavaPIDsWindows();

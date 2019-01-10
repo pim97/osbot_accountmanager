@@ -169,12 +169,13 @@ public class RunescapeActions {
 
 			getResponseToken("https://secure.runescape.com/m=accountappeal/passwordrecovery");
 
-			if (fillInRecoverInformation()) {
-				System.out.println("Filled in all recover details");
-			} else {
-				unlock();
-				// restarting
-			}
+			// if (
+			fillInRecoverInformation();
+			// System.out.println("Filled in all recover details");
+			// } else {
+			// unlock();
+			// // restarting
+			// }
 
 			while (!hasCaptchaCompleted()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
@@ -251,7 +252,9 @@ public class RunescapeActions {
 
 			System.out.println("Successully verified account");
 			return true;
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 			e.printStackTrace();
 			System.out.println("Got error - restarting now");
 			// driver.quit();
@@ -324,13 +327,14 @@ public class RunescapeActions {
 
 			getResponseToken("https://secure.runescape.com/m=account-creation/create_account");
 
+			fillInInformation();
 			// Filling in all the information
-			if (fillInInformation()) {
-				System.out.println("Successfully filled in all information!");
-			} else {
-				createAccount();
-				// Going to the website again -- restarting
-			}
+			// if (fillInInformation()) {
+			// System.out.println("Successfully filled in all information!");
+			// } else {
+			// createAccount();
+			// // Going to the website again -- restarting
+			// }
 
 			while (!hasCaptchaCompleted()) {
 				if (WebdriverFunctions.hasQuit(driver)) {
@@ -467,11 +471,17 @@ public class RunescapeActions {
 
 		new Thread(() -> {
 			String responseToken = null;
+
+			// String apiKey, String googleKey, String pageUrl, boolean invisible
 			osbot.account.TwoCaptchaService service = new osbot.account.TwoCaptchaService(
 					"8ff2e630e82351bdc3f0b00af2e026b9", "6Lcsv3oUAAAAAGFhlKrkRb029OHio098bbeyi_Hv", link,
-					"" + getAccount().getAccount().getProxyIp(), "" + getAccount().getAccount().getProxyPort(),
-					getAccount().getAccount().getProxyUsername(), getAccount().getAccount().getProxyPassword(),
-					ProxyType.SOCKS5, true);
+					// "" + getAccount().getAccount().getProxyIp(), "" +
+					// getAccount().getAccount().getProxyPort(),
+					// getAccount().getAccount().getProxyUsername(),
+					// getAccount().getAccount().getProxyPassword(),
+					// ProxyType.SOCKS5,
+
+					true);
 
 			try {
 				responseToken = service.solveCaptcha();
@@ -887,11 +897,11 @@ public class RunescapeActions {
 		// driver.findElement(By.id("character-name")).sendKeys(account.getAccount().getUsername());
 		// driver.findElement(By.className("c-cookie-consent__dismiss")).click();
 
-		if (!allInputElementsHaveValue()) {
-			goToRunescapeCreateAccount();
-			System.out.println("Not all inputs had value, restarting the website");
-			return false;
-		}
+		// if (!allInputElementsHaveValue()) {
+		// goToRunescapeCreateAccount();
+		// System.out.println("Not all inputs had value, restarting the website");
+		// return false;
+		// }
 
 		System.out.println("All inputs have values!");
 		return true;
@@ -950,16 +960,24 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeRecoverAccount() {
-		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
-		try {
-			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
-		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 40 seconds!");
-			System.out.println("Restarting driver and trying again");
-			e.printStackTrace();
-			// treat the timeout as needed
-			driver.quit();
+		boolean onWebsite = false;
+
+		while (!onWebsite) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				onWebsite = true;
+			}
+			try {
+				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
+			} catch (Exception e) {
+				System.out.println("Page did not load within 40 seconds!");
+				System.out.println("Restarting driver and trying again");
+				e.printStackTrace();
+				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
+			}
+			onWebsite = true;
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());
@@ -974,16 +992,24 @@ public class RunescapeActions {
 	 * @return
 	 */
 	private boolean goToRunescapeCreateAccount() {
-		driver.manage().timeouts().implicitlyWait(40, TimeUnit.SECONDS);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
 
-		try {
-			getDriver().navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
-		} catch (TimeoutException e) {
-			System.out.println("Page did not load within 40 seconds!");
-			System.out.println("Restarting driver and trying again");
-			e.printStackTrace();
-			// treat the timeout as needed
-			driver.quit();
+		boolean onWebsite = false;
+
+		while (!onWebsite) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				onWebsite = true;
+			}
+			try {
+				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
+			} catch (Exception e) {
+				System.out.println("Page did not load within 40 seconds!");
+				System.out.println("Restarting driver and trying again");
+				e.printStackTrace();
+				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
+			}
+			onWebsite = true;
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());

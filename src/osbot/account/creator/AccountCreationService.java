@@ -148,22 +148,17 @@ public class AccountCreationService {
 	}
 
 	public static synchronized void checkUsedUsernames() {
-		// Thread t = new Thread(() -> {
-
 		Iterator<AccountCreate> it = usedUsernames.iterator();
 		System.out.println("List checked usernames: " + usedUsernames.size());
 
 		while (it.hasNext()) {
 			AccountCreate user = it.next();
 			System.out.println("Time to remove: " + (System.currentTimeMillis() - user.getTime()));
-			if (((System.currentTimeMillis() - user.getTime()) > 600_000)) {
+			if (((System.currentTimeMillis() - user.getTime()) > 1_500_000)) {
 				it.remove();
 				System.out.println("Removed username, may continue with recovering");
 			}
-			// }
-			//
 		}
-		// t.start();
 	}
 
 	/**

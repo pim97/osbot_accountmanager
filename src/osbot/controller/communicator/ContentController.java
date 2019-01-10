@@ -249,6 +249,7 @@ public class ContentController {
 						accTable.setProxyPassword(acc.getProxyPassword());
 						accTable.setAmountTimeout(acc.getAmountTimeout());
 						accTable.setProxyOnline(acc.isProxyOnline());
+						accTable.setUpdated(false);
 
 						// Adds the account to the table
 						if (table != null && table.getItems() != null && accTable != null) {
@@ -302,14 +303,6 @@ public class ContentController {
 				// table.getSelectionModel().clearSelection();
 				// e.printStackTrace();
 				// }
-
-				/**
-				 * Setting updated to false for all the bots
-				 */
-				for (OsbotController bot : BotController.getBots()) {
-					bot.getAccount().setUpdated(false);
-				}
-
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {

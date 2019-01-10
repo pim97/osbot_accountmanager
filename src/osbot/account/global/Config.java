@@ -65,7 +65,8 @@ public class Config {
 	}
 
 	public static final ArrayList<String> STATIC_MULE_PROXIES = new ArrayList<String>(
-			Arrays.asList("185.99.99.69:8000:mule", "185.194.13.35:8000:main", "45.4.196.149:8000:mule"));
+			Arrays.asList("185.99.99.69:8000:mule", "185.194.13.35:8000:main", "45.4.196.149:8000:mule",
+					"196.18.14.239:8000:mule", "196.18.12.242:8000:mule"));
 
 	public static ArrayList<String> MULE_PROXY_IP = new ArrayList<String>();
 
@@ -201,23 +202,27 @@ public class Config {
 
 	public static final boolean BREAKING = false;
 
+	// Normal to false
+	public static final boolean TESTING = false;
 	/**
 	 * End
 	 */
 
-	public static final boolean LOW_CPU = false;
+	public static final boolean LOW_CPU = true;
+	
+	public static final boolean CLOSE_BOTS_WHEN_ACTIVE = true;
 
-	public static final boolean ERROR_IP = false;
+	public static final boolean ERROR_IP = true;
 
-	public static final boolean CREATE_BATCH_FILES_FOR_MULES = false;
+	public static final boolean CREATE_BATCH_FILES_FOR_MULES = true;
 
-	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
 
-	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = false;
+	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
 
-	public static final boolean BOT_HANDLER_THREAD_ACTIVE = false;
+	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
 
-	public static final boolean CLOSE_ON_INACTIVITY = false;
+	public static final boolean CLOSE_ON_INACTIVITY = true;
 
 	public static final boolean MULES_TRADING = true;
 }

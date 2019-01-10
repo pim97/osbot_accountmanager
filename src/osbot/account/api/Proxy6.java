@@ -143,10 +143,9 @@ public class Proxy6 {
 				}
 
 				// A server may have a max. amount proxies used up in total
-				if (DatabaseUtilities.getTotalProxies().size() >= (Config.MAX_BOTS_OPEN / 2)
-						+ (Config.MAX_BOTS_OPEN * 0.1)) {
-					System.out.println("Returning because database already has "
-							+ ((Config.MAX_BOTS_OPEN / 2) + (Config.MAX_BOTS_OPEN * 0.1)) + " proxies served");
+				if (DatabaseUtilities.getTotalProxies().size() >= ((Config.MAX_BOTS_OPEN / 2)) + 5) {
+					System.out.println(
+							"Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2) + 5) + " proxies served");
 					break;
 				}
 
