@@ -204,6 +204,8 @@ public class Config {
 
 	// Normal to false
 	public static final boolean TESTING = false;
+
+	public static final boolean NEW_PROXYRACK_CONFIGURATION = false;
 	/**
 	 * End
 	 */

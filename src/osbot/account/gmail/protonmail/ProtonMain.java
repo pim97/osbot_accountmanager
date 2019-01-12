@@ -80,8 +80,8 @@ public class ProtonMain {
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 20) {
-					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+				if (cantFindEmail > 100) {
+					System.out.println("Had 100 tries of finding the e-mail, but couldn't find, restarting the driver");
 					driver.quit();
 					break;
 				}

@@ -56,55 +56,65 @@ public class OsbotController {
 	 */
 	public void runBot(boolean isMule) {
 
-//		new Thread(() -> {
+		// new Thread(() -> {
 
-			try {
-				List<Integer> pids = BotController.getJavaPIDsWindows();
-				Process p = Runtime.getRuntime().exec(getCliArgs().toString());
-				System.out.println("Waiting for OSBot to launch..");
+		try {
+			long startTime = System.currentTimeMillis();
 
-				// System.out.println("6");
-				if (!p.waitFor(10, TimeUnit.SECONDS)) {
-					System.out.println("Destroyed, couldn't start up in time");
+			List<Integer> pids = BotController.getJavaPIDsWindows();
+			System.out.println("Took 1: " + (System.currentTimeMillis() - startTime));
+			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
+			System.out.println("Took 2: " + (System.currentTimeMillis() - startTime));
+			System.out.println("Waiting for OSBot to launch..");
+
+			p.waitFor();
+			
+			// System.out.println("6");
+//			if (!p.waitFor(10, TimeUnit.SECONDS)) {
+//				System.out.println("Destroyed, couldn't start up in time");
+//				p.destroy();
+//				setStartingUp(false);
+//				return;
+//			}
+			System.out.println("Took 3: " + (System.currentTimeMillis() - startTime));
+
+			System.out.println(getCliArgs().toString());
+			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
+			System.out.println("Took 4: " + (System.currentTimeMillis() - startTime));
+			pidsAfter.removeAll(pids);
+
+			if (!Config.TESTING) {
+				if (pidsAfter.size() == 1) {
+					setPidId(pidsAfter.get(0));
+					System.out.println("Pid set to: " + pidsAfter.get(0));
+				} else {
 					p.destroy();
+					System.out.println("Destroyed, couldn't set pid, too many");
 					setStartingUp(false);
 					return;
 				}
-
-				System.out.println(getCliArgs().toString());
-				List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
-				pidsAfter.removeAll(pids);
-
-				if (!Config.TESTING) {
-					if (pidsAfter.size() == 1) {
-						setPidId(pidsAfter.get(0));
-						System.out.println("Pid set to: " + pidsAfter.get(0));
-					} else {
-						p.destroy();
-						System.out.println("Destroyed, couldn't set pid, too many");
-						setStartingUp(false);
-						return;
-					}
-				}
-				setCliArgs(new StringBuilder());
-
-				if (isMule) {
-					OsbotController partner = BotHandler.getMulePartner(this);
-					if (partner != null && partner.getPidId() > 0
-							&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
-						System.out.println("Both mules are running, others may start again!");
-					}
-				}
-				setStartingUp(false);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
+			setCliArgs(new StringBuilder());
 
-//		}).start();
+			if (isMule) {
+				System.out.println("Took 5: " + (System.currentTimeMillis() - startTime));
+				OsbotController partner = BotHandler.getMulePartner(this);
+				if (partner != null && partner.getPidId() > 0
+						&& BotHandler.isProcessIdRunningOnWindows(partner.getPidId())) {
+					System.out.println("Both mules are running, others may start again!");
+				}
+				System.out.println("Took 6: " + (System.currentTimeMillis() - startTime));
+			}
+			setStartingUp(false);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// }).start();
 
 		// try {
 		// List<Integer> pids = BotController.getJavaPIDsWindows();

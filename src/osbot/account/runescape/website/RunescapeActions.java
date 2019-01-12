@@ -396,7 +396,7 @@ public class RunescapeActions {
 			System.out.println("Successfully clicked & account created!");
 			return true;
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 			System.out.println("Error - restarting");
 			// driver.quit();
 			return false;
@@ -978,6 +978,12 @@ public class RunescapeActions {
 				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_RECOVER_ACCOUNT_URL);
 			}
 			onWebsite = true;
+			try {
+				Thread.sleep(1500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());
@@ -1010,6 +1016,12 @@ public class RunescapeActions {
 				driver.navigate().to(RunescapeWebsiteConfig.RUNESCAPE_CREATE_ACCOUNT_URL);
 			}
 			onWebsite = true;
+			try {
+				Thread.sleep(1500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());

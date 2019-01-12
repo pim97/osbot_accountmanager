@@ -51,5 +51,8 @@
 	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/javax.mail-1.6.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/pim/Desktop/OS-War development/Server/deps/json-lib-2.4-jdk15.jar"/>
 	<classpathentry kind="lib" path="C:/Users/pim/Desktop/OS-War development/Server/deps/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/jPowerShell-3.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/jProcesses-1.6.5.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/WMI4Java-1.6.3.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

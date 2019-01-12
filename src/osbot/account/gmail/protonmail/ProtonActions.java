@@ -59,6 +59,13 @@ public class ProtonActions {
 				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
 			}
 			onWebsite = true;
+			
+			try {
+				Thread.sleep(1500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		System.out.println("Current URL: " + getCurrentURL());

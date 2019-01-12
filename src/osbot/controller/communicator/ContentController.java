@@ -249,6 +249,7 @@ public class ContentController {
 						accTable.setProxyPassword(acc.getProxyPassword());
 						accTable.setAmountTimeout(acc.getAmountTimeout());
 						accTable.setProxyOnline(acc.isProxyOnline());
+						accTable.setCountryProxyCode(acc.getCountryProxyCode());
 						accTable.setUpdated(false);
 
 						// Adds the account to the table
@@ -398,6 +399,7 @@ public class ContentController {
 						accTable.setProxyUsername(acc.getProxyUsername());
 						accTable.setProxyPassword(acc.getProxyPassword());
 						accTable.setAmountTimeout(acc.getAmountTimeout());
+						accTable.setCountryProxyCode(acc.getCountryProxyCode());
 						accTable.setProxyOnline(acc.isProxyOnline());
 
 						accTable.setUpdated(false);

@@ -1,4 +1,4 @@
-package osbot.account.api;
+package osbot.account.api.proxy6;
 
 import java.lang.reflect.Field;
 import java.net.URLEncoder;

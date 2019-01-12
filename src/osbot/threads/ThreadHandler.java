@@ -5,7 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import osbot.account.api.Proxy6;
+import osbot.account.api.ipwhois.IPWhoisApi;
+import osbot.account.api.proxy6.Proxy6;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
@@ -58,6 +59,27 @@ public class ThreadHandler {
 		checkProxiesAndInsertIntoDatabaseAndOnTheWebsite.start();
 
 		threadList.add(checkProxiesAndInsertIntoDatabaseAndOnTheWebsite);
+	}
+
+	private static void checkProxiesProxyRackToUse() {
+		Thread checkProxiesProxyRackToUse = new Thread(() -> {
+
+			while (programIsRunning) {
+				IPWhoisApi.getSingleton().loop();
+
+				try {
+					Thread.sleep(120_000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		});
+		checkProxiesProxyRackToUse.setName("checkProxiesProxyRackToUse");
+		checkProxiesProxyRackToUse.start();
+
+		threadList.add(checkProxiesProxyRackToUse);
 	}
 
 	private static void transformIntoMuleAccount() {
@@ -164,11 +186,11 @@ public class ThreadHandler {
 				BotHandler.handleMules();
 
 				// Checking every 15 seconds for a mule
-//				try {
-//					Thread.sleep(20_000);
-//				} catch (Exception e) {
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(20_000);
+				// } catch (Exception e) {
+				// e.printStackTrace();
+				// }
 
 			}
 		});
@@ -310,7 +332,6 @@ public class ThreadHandler {
 	}
 
 	public static void mainThread() {
-
 		Thread recoverAndCreateThread = new Thread(() -> {
 			while (programIsRunning) {
 
@@ -349,7 +370,7 @@ public class ThreadHandler {
 				}
 
 				try {
-					Thread.sleep(135_000);
+					Thread.sleep(89_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -438,6 +459,11 @@ public class ThreadHandler {
 				if (getThread("handleMulesTrading") == null && Config.MULES_TRADING) {
 					handleMulesTrading();
 					System.out.println("Started new thread: handleMulesTrading");
+				}
+
+				if (getThread("checkProxiesProxyRackToUse") == null && Config.NEW_PROXYRACK_CONFIGURATION) {
+					checkProxiesProxyRackToUse();
+					System.out.println("Started new thread: checkProxiesProxyRackToUse");
 				}
 
 				if (getThread("queueThread") == null && Config.CAPTCHA) {

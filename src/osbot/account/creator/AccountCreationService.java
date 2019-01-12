@@ -19,12 +19,16 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import osbot.account.api.ipwhois.IPWhoisApi;
+import osbot.account.api.ipwhois.WhoIsIp;
+import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.BotHandler;
 import osbot.account.handler.GeckoHandler;
 import osbot.account.runescape.website.RunescapeActions;
 import osbot.bot.BotController;
 import osbot.database.DatabaseProxy;
+import osbot.settings.CliArgs;
 import osbot.settings.OsbotController;
 
 public class AccountCreationService {
@@ -173,6 +177,16 @@ public class AccountCreationService {
 	public static void launchRunescapeWebsite(DatabaseProxy proxy, OsbotController account, SeleniumType type,
 			boolean database) {
 
+		if (Config.NEW_PROXYRACK_CONFIGURATION) {
+			WhoIsIp whoIsProxy = IPWhoisApi.getSingleton()
+					.getRandomCountryObjectFromCountryCode(account.getAccount().getCountryProxyCode());
+
+			if (whoIsProxy == null) {
+				System.out.println("Couldn't find a proxy to connect with, waiting until there is [ACC]!");
+				return;
+			}
+		}
+
 		long begin = System.currentTimeMillis();
 
 		System.setProperty("webdriver.gecko.driver", "geckodriver.exe");
@@ -260,16 +274,44 @@ public class AccountCreationService {
 		Select select = new Select(driver.findElement(By.id("newProxyType")));
 		select.selectByIndex(1);
 
-		driver.findElement(By.id("newProxyAddress")).sendKeys(account.getAccount().getProxyIp());
-		driver.findElement(By.id("newProxyPort")).sendKeys(account.getAccount().getProxyPort());
-		driver.findElement(By.id("newProxyUsername")).sendKeys(account.getAccount().getProxyUsername());
-		driver.findElement(By.id("newProxyPassword")).sendKeys(account.getAccount().getProxyPassword());
-		driver.findElement(By.id("newProxySave")).click();
+		if (!Config.NEW_PROXYRACK_CONFIGURATION) {
+			driver.findElement(By.id("newProxyAddress")).sendKeys(account.getAccount().getProxyIp());
+			driver.findElement(By.id("newProxyPort")).sendKeys(account.getAccount().getProxyPort());
+			driver.findElement(By.id("newProxyUsername")).sendKeys(account.getAccount().getProxyUsername());
+			driver.findElement(By.id("newProxyPassword")).sendKeys(account.getAccount().getProxyPassword());
+			driver.findElement(By.id("newProxySave")).click();
 
-		System.out.println("Used proxy ip: " + account.getAccount().getProxyIp());
-		System.out.println("Used proxy port: " + account.getAccount().getProxyPort());
-		System.out.println("Used proxy username: " + account.getAccount().getProxyUsername());
-		System.out.println("Used proxy password: " + account.getAccount().getProxyPassword());
+			System.out.println("Used proxy ip: " + account.getAccount().getProxyIp());
+			System.out.println("Used proxy port: " + account.getAccount().getProxyPort());
+			System.out.println("Used proxy username: " + account.getAccount().getProxyUsername());
+			System.out.println("Used proxy password: " + account.getAccount().getProxyPassword());
+		} else {
+			WhoIsIp whoIsProxy = IPWhoisApi.getSingleton()
+					.getRandomCountryObjectFromCountryCode(account.getAccount().getCountryProxyCode());
+
+			if (whoIsProxy == null) {
+				System.out.println("Couldn't find a proxy to connect with, waiting until there is [ACC 2]! Code: "
+						+ account.getAccount().getCountryProxyCode());
+				driver.quit();
+				return;
+			}
+
+			String addres = "" + whoIsProxy.getOriginalProxy() + ".megaproxy.rotating.proxyrack.net";
+			String port = "" + whoIsProxy.getOriginalProxy();
+			String username = "klaasvaakjes";
+			String password = "ef4c02-aab4d8-4c59a0-555771-c9188b";
+
+			driver.findElement(By.id("newProxyAddress")).sendKeys(addres);
+			driver.findElement(By.id("newProxyPort")).sendKeys(port);
+			driver.findElement(By.id("newProxyUsername")).sendKeys(username);
+			driver.findElement(By.id("newProxyPassword")).sendKeys(password);
+			driver.findElement(By.id("newProxySave")).click();
+
+			System.out.println("Used proxy ip: " + addres);
+			System.out.println("Used proxy port: " + port);
+			System.out.println("Used proxy username: " + username);
+			System.out.println("Used proxy password: " + password);
+		}
 
 		if (type == SeleniumType.CREATE_VERIFY_ACCOUNT) {
 			pidDriver.setType(type);

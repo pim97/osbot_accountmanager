@@ -13,16 +13,13 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.jsoup.safety.Cleaner;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.LoginStatus;
+import osbot.account.api.ipwhois.IPWhoisApi;
+import osbot.account.api.ipwhois.WhoIsIp;
 import osbot.account.global.Config;
 import osbot.account.worlds.World;
 import osbot.account.worlds.WorldType;
@@ -149,9 +146,27 @@ public class BotHandler {
 			bot.addArguments(CliArgs.BOT, true, account.getEmail(), account.getPassword(), "0000");
 		}
 		bot.addArguments(CliArgs.MEM, false, 1200);
-		if (account.hasValidProxy()) {
-			bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
-					account.getProxyUsername(), account.getProxyPassword());
+
+		if (Config.NEW_PROXYRACK_CONFIGURATION) {
+			WhoIsIp proxy = IPWhoisApi.getSingleton()
+					.getRandomCountryObjectFromCountryCode(bot.getAccount().getCountryProxyCode());
+
+			if (proxy == null) {
+				System.out.println("Couldn't find a proxy to connect with, waiting until there is!");
+				bot.getCliArgs().setLength(0);
+				bot.setStartingUp(false);
+				return;
+			}
+
+			bot.addArguments(CliArgs.PROXY, true, "" + proxy.getOriginalProxy() + ".megaproxy.rotating.proxyrack.net",
+					proxy.getOriginalProxy(), "klaasvaakjes", "ef4c02-aab4d8-4c59a0-555771-c9188b");
+
+		} else {
+
+			if (account.hasValidProxy()) {
+				bot.addArguments(CliArgs.PROXY, true, account.getProxyIp(), account.getProxyPort(),
+						account.getProxyUsername(), account.getProxyPassword());
+			}
 		}
 		if (account.hasScript()) {
 			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
@@ -1015,12 +1030,12 @@ public class BotHandler {
 					if (!Config.TESTING) {
 						runMule(osbot2, osbot2.getAccount().getTradeWithOther(),
 								DatabaseUtilities.getEmailFromUsername(osbot2.getAccount().getTradeWithOther()));
-//						try {
-//							Thread.sleep(5500);
-//						} catch (InterruptedException e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						}
+						// try {
+						// Thread.sleep(5500);
+						// } catch (InterruptedException e) {
+						// // TODO Auto-generated catch block
+						// e.printStackTrace();
+						// }
 					}
 					// }
 				}
@@ -1142,6 +1157,15 @@ public class BotHandler {
 						continue;
 					}
 
+					if (Config.NEW_PROXYRACK_CONFIGURATION) {
+						WhoIsIp proxy = IPWhoisApi.getSingleton()
+								.getRandomCountryObjectFromCountryCode(osbot.getAccount().getCountryProxyCode());
+
+						if (proxy == null) {
+							continue;
+						}
+					}
+
 					if (Config.BREAKING) {
 						if (!calendar2.after(osbot.getAccount().getDate())) {
 							System.out.println(
@@ -1151,14 +1175,14 @@ public class BotHandler {
 					}
 
 					runBot(osbot);
-					
-//					try {
-//						Thread.sleep(5500);
-//					} catch (InterruptedException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
-					
+
+					// try {
+					// Thread.sleep(5500);
+					// } catch (InterruptedException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
+
 					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
 							+ " " + osbot.getAccount().getUsername());
 

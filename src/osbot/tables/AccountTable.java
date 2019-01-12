@@ -70,7 +70,7 @@ public class AccountTable {
 	private LoginStatus loginStatus;
 
 	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
-			proxyUsername, proxyPassword;
+			proxyUsername, proxyPassword, countryProxyCode;
 
 	private int world, day, month, year, accountStageProgress, questPoints, amountTimeout;
 
@@ -425,6 +425,20 @@ public class AccountTable {
 	 */
 	public void setProxyOnline(boolean proxyOnline) {
 		this.proxyOnline = proxyOnline;
+	}
+
+	/**
+	 * @return the countryProxyCode
+	 */
+	public String getCountryProxyCode() {
+		return countryProxyCode;
+	}
+
+	/**
+	 * @param countryProxyCode the countryProxyCode to set
+	 */
+	public void setCountryProxyCode(String countryProxyCode) {
+		this.countryProxyCode = countryProxyCode;
 	}
 
 }

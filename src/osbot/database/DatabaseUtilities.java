@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
 import osbot.account.LoginStatus;
-import osbot.account.api.Proxy6Proxy;
+import osbot.account.api.ipwhois.IPWhoisApi;
+import osbot.account.api.proxy6.Proxy6Proxy;
 import osbot.account.creator.AccountCreate;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.creator.RandomNameGenerator;
@@ -80,8 +81,8 @@ public class DatabaseUtilities {
 	public static void insertIntoTable(AccountTable account) {
 
 		// the mysql insert statement
-		String query = " insert into account (name, password, bank_pin, day, month, year, proxy_ip, proxy_port, world_number, low_cpu_mode, status, email, account_stage)"
-				+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String query = " insert into account (name, password, bank_pin, day, month, year, proxy_ip, proxy_port, world_number, low_cpu_mode, status, email, account_stage, country_code_proxy_usage)"
+				+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 		// create the mysql insert preparedstatement
 		PreparedStatement preparedStmt;
@@ -104,6 +105,7 @@ public class DatabaseUtilities {
 			preparedStmt.setString(11, account.getStatus().name());
 			preparedStmt.setString(12, account.getEmail());
 			preparedStmt.setString(13, account.getStage().name());
+			preparedStmt.setString(14, account.getCountryProxyCode());
 
 			// execute the preparedstatement
 			preparedStmt.execute();
@@ -614,6 +616,32 @@ public class DatabaseUtilities {
 		}
 	}
 
+	/**
+	 * Update proxyaddress where null
+	 * 
+	 * @param newPassword
+	 * @param accountId
+	 * @return
+	 */
+	public static boolean updateProxyAddresCountryOfUserWhereNull(String countryCode, int accountId) {
+		try {
+			String query = "UPDATE account SET country_code_proxy_usage = ? WHERE id=?";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, countryCode);
+			preparedStmt.setInt(2, accountId);
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+			preparedStmt.close();
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	public static boolean updateProxyAliveInDatabase(String ipAddress, boolean alive) {
 		try {
 			int bool = 0;
@@ -688,8 +716,8 @@ public class DatabaseUtilities {
 
 			// When account has started, but not logged in between 80 seconds
 			if (bot.getAccount().getLoginStatus() != null
-					&& bot.getAccount().getLoginStatus() == LoginStatus.INITIALIZING
-					&& (System.currentTimeMillis() - bot.getStartTime() > 110_000)) {
+					&& bot.getAccount().getLoginStatus() == LoginStatus.INITIALIZING && (System.currentTimeMillis()
+							- bot.getStartTime() > (Config.NEW_PROXYRACK_CONFIGURATION ? 300_000 : 110_000))) {
 				bot.getAccount().setUpdated(true);
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
@@ -1559,6 +1587,7 @@ public class DatabaseUtilities {
 					String date = resultSet.getString("break_till");
 					int amountTimeout = resultSet.getInt("amount_timeout");
 					LoginStatus loginStatus = LoginStatus.valueOf(resultSet.getString("login_status"));
+					String countryCode = resultSet.getString("country_code_proxy_usage");
 
 					Calendar calendar = Calendar.getInstance();
 					// calendar.add(Calendar.MINUTE, 30);
@@ -1593,6 +1622,7 @@ public class DatabaseUtilities {
 					account.setDate(calendar);
 					account.setDateString(date);
 					account.setTradeWithOther(tradingWith);
+					account.setCountryProxyCode(countryCode);
 
 					boolean alive = isAlive == 1 ? true : false;
 					account.setProxyOnline(alive);
@@ -2137,11 +2167,13 @@ public class DatabaseUtilities {
 			if (!GeckoHandler.mayStartFirefoxBrowser(5)) {
 				break;
 			}
-//			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(account.getAccount().getProxyIp(),
-//					account.getAccount().getProxyPort())) {
-//				System.out.println("Skipping this IP, because it's currently giving an error");
-//				continue;
-//			}
+			// if (Config.ERROR_IP &&
+			// DatabaseUtilities.isErrorProxy(account.getAccount().getProxyIp(),
+			// account.getAccount().getProxyPort())) {
+			// System.out.println("Skipping this IP, because it's currently giving an
+			// error");
+			// continue;
+			// }
 
 			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
 				if (DatabaseUtilities.checkAlreadyLockedProxies(account.getAccount().getProxyIp(),
@@ -2461,10 +2493,12 @@ public class DatabaseUtilities {
 						+ " because already exists in creating for this IP-addres");
 				continue;
 			}
+
+			boolean usedProxyAmount = proxy.getUsedCount() < 2 || Config.NEW_PROXYRACK_CONFIGURATION;
+
 			// DatabaseProxy key = entry.getKey();
 			// Integer value = entry.getValue();
-			if (proxy.getUsedCount() < 2
-					&& totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 10))) {
+			if (usedProxyAmount && totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 10))) {
 				/**
 				 * public AccountTable(int id, String script, String username, int world, String
 				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {
@@ -2478,6 +2512,7 @@ public class DatabaseUtilities {
 				table.setProxyUsername(proxy.getProxyUsername());
 				table.setProxyPassword(proxy.getProxyPassword());
 				table.setBankPin("0000");
+				table.setCountryProxyCode(IPWhoisApi.getSingleton().getRandomCountryCodeFromList());
 
 				if (Config.isMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())
 						|| Config.isSuperMuleProxy(proxy.getProxyIp(), proxy.getProxyPort())
