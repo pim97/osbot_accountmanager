@@ -10,6 +10,8 @@ import osbot.account.api.proxy6.Proxy6;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
+import osbot.account.mules.TradeBeforeBanWaves;
+import osbot.controller.communicator.ContentController;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
 
@@ -46,11 +48,11 @@ public class ThreadHandler {
 				Proxy6.getSingleton().loop();
 				// BotHandler.checkJavaPidsTimeout();
 
-				try {
-					Thread.sleep(120_000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				// try {
+				// Thread.sleep(120_000);
+				// } catch (Exception e) {
+				// e.printStackTrace();
+				// }
 
 			}
 
@@ -80,6 +82,34 @@ public class ThreadHandler {
 		checkProxiesProxyRackToUse.start();
 
 		threadList.add(checkProxiesProxyRackToUse);
+	}
+
+	private static void muleTradingBeforeBanWaveTrade2() {
+		Thread muleTradingBeforeBanWaveTrade2 = new Thread(() -> {
+
+			while (programIsRunning) {
+				TradeBeforeBanWaves.trade2();
+			}
+
+		});
+		muleTradingBeforeBanWaveTrade2.setName("muleTradingBeforeBanWaveTrade2");
+		muleTradingBeforeBanWaveTrade2.start();
+
+		threadList.add(muleTradingBeforeBanWaveTrade2);
+	}
+
+	private static void muleTradingBeforeBanWave() {
+		Thread muleTradingBeforeBanWave = new Thread(() -> {
+
+			while (programIsRunning) {
+				TradeBeforeBanWaves.trade1();
+			}
+
+		});
+		muleTradingBeforeBanWave.setName("muleTradingBeforeBanWave");
+		muleTradingBeforeBanWave.start();
+
+		threadList.add(muleTradingBeforeBanWave);
 	}
 
 	private static void transformIntoMuleAccount() {
@@ -179,25 +209,59 @@ public class ThreadHandler {
 	/**
 	 * Handles the thread for muling on the accounts
 	 */
-	private static void handleMulesTrading() {
-		Thread handleMulesTrading = new Thread(() -> {
+	private static void checkMulesCorrectTrading() {
+		Thread checkMulesCorrectTrading = new Thread(() -> {
 			while (programIsRunning) {
 
-				BotHandler.handleMules();
-
-				// Checking every 15 seconds for a mule
-				// try {
-				// Thread.sleep(20_000);
-				// } catch (Exception e) {
-				// e.printStackTrace();
-				// }
-
+				BotHandler.checkMulesCorrectTrading();
 			}
 		});
-		handleMulesTrading.setName("handleMulesTrading");
-		handleMulesTrading.start();
+		checkMulesCorrectTrading.setName("checkMulesCorrectTrading");
+		checkMulesCorrectTrading.start();
 
-		threadList.add(handleMulesTrading);
+		threadList.add(checkMulesCorrectTrading);
+	}
+
+	/**
+	 * Handles the thread for muling on the accounts
+	 */
+	private static void handleNormalMulesTrading() {
+		Thread handleNormalMulesTrading = new Thread(() -> {
+			while (programIsRunning) {
+
+				BotHandler.handleNormalMules();
+			}
+		});
+		handleNormalMulesTrading.setName("handleNormalMulesTrading");
+		handleNormalMulesTrading.start();
+
+		threadList.add(handleNormalMulesTrading);
+	}
+
+	private static void handleServerMules() {
+		Thread handleServerMules = new Thread(() -> {
+			while (programIsRunning) {
+
+				BotHandler.handleServerMules();
+			}
+		});
+		handleServerMules.setName("handleServerMules");
+		handleServerMules.start();
+
+		threadList.add(handleServerMules);
+	}
+
+	private static void handleSuperMules() {
+		Thread handleSuperMules = new Thread(() -> {
+			while (programIsRunning) {
+
+				BotHandler.handleSuperMules();
+			}
+		});
+		handleSuperMules.setName("handleSuperMules");
+		handleSuperMules.start();
+
+		threadList.add(handleSuperMules);
 	}
 
 	/**
@@ -405,71 +469,7 @@ public class ThreadHandler {
 
 				checkForAlive();
 
-				if (getThread("checkTimeoutLockedBackToNormal") == null) {
-					checkTimeoutLockedBackToNormal();
-					System.out.println("Started new thread checkTimeoutLockedBackToNormal");
-
-				}
-				if (getThread("checkBotsWhenNotActive") == null && Config.CLOSE_BOTS_WHEN_ACTIVE) {
-					checkBotsWhenNotActive();
-					System.out.println("Started new thread checkBotsWhenNotActive");
-
-				}
-
-				if (getThread("transformIntoMuleAccount") == null) {
-					transformIntoMuleAccount();
-					System.out.println("Started new thread transformIntoMuleAccount");
-
-				}
-
-				if (getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null) {
-					checkProxiesAndInsertIntoDatabaseAndOnTheWebsite();
-					System.out.println("Started new thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
-
-				}
-
-				if (getThread("checkRunningErrors") == null) {
-					checkRunningErrors();
-					System.out.println("Started new thread checkRunningErrors");
-
-				}
-
-				if (getThread("checkPidsProcessesEveryMinutes2") == null) {
-					checkPids();
-					System.out.println("Started new thread checkPidsProcessesEveryMinutes2");
-
-				}
-
-				if (getThread("checkUsedUsernames") == null) {
-					checkUsedUsernames();
-					System.out.println("Started new thread checkUsedUsernames");
-
-				}
-
-				if (getThread("handleBotsRunning") == null && Config.BOT_HANDLER_THREAD_ACTIVE) {
-					handleBotsRunning();
-					System.out.println("Started new thread: handleBotsRunning");
-				}
-
-				if (getThread("transformIntoMuleHandler") == null && Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
-					transformIntoMuleHandler();
-					System.out.println("Started new thread: transformIntoMuleHandler");
-				}
-
-				if (getThread("handleMulesTrading") == null && Config.MULES_TRADING) {
-					handleMulesTrading();
-					System.out.println("Started new thread: handleMulesTrading");
-				}
-
-				if (getThread("checkProxiesProxyRackToUse") == null && Config.NEW_PROXYRACK_CONFIGURATION) {
-					checkProxiesProxyRackToUse();
-					System.out.println("Started new thread: checkProxiesProxyRackToUse");
-				}
-
-				if (getThread("queueThread") == null && Config.CAPTCHA) {
-					runQueueThread();
-					System.out.println("Started new thread: queueThread");
-				}
+				checkTheadsRunningAndIfNotStartNewOne();
 
 				// Thread sleeping & checking every 30 seconds
 				try {
@@ -488,6 +488,106 @@ public class ThreadHandler {
 		threadList.add(mainThread);
 	}
 
+	public static void checkTheadsRunningAndIfNotStartNewOne() {
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		if (getThread("checkTimeoutLockedBackToNormal") == null) {
+			checkTimeoutLockedBackToNormal();
+			System.out.println("Started new thread checkTimeoutLockedBackToNormal");
+		}
+		
+		if (getThread("refreshTablesThread") == null) {
+			ContentController.refreshTablesThread();
+			System.out.println("Started new thread refreshTablesThread");
+		}
+
+		if (getThread("checkBotsWhenNotActive") == null && Config.CLOSE_BOTS_WHEN_ACTIVE) {
+			checkBotsWhenNotActive();
+			System.out.println("Started new thread checkBotsWhenNotActive");
+		}
+
+		if (getThread("transformIntoMuleAccount") == null) {
+			transformIntoMuleAccount();
+			System.out.println("Started new thread transformIntoMuleAccount");
+		}
+
+		if (getThread("checkMulesCorrectTrading") == null) {
+			checkMulesCorrectTrading();
+			System.out.println("Started new thread checkMulesCorrectTrading");
+		}
+
+		if (getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null) {
+			checkProxiesAndInsertIntoDatabaseAndOnTheWebsite();
+			System.out.println("Started new thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
+		}
+
+		if (getThread("checkRunningErrors") == null) {
+			checkRunningErrors();
+			System.out.println("Started new thread checkRunningErrors");
+		}
+
+		if (getThread("checkPidsProcessesEveryMinutes2") == null) {
+			checkPids();
+			System.out.println("Started new thread checkPidsProcessesEveryMinutes2");
+
+		}
+
+		if (getThread("checkUsedUsernames") == null) {
+			checkUsedUsernames();
+			System.out.println("Started new thread checkUsedUsernames");
+		}
+
+		// if (getThread("muleTradingBeforeBanWave") == null) {
+		// muleTradingBeforeBanWave();
+		// System.out.println("Started new thread muleTradingBeforeBanWave");
+		//
+		// }
+		//
+		// if (getThread("muleTradingBeforeBanWaveTrade2") == null) {
+		// muleTradingBeforeBanWaveTrade2();
+		// System.out.println("Started new thread muleTradingBeforeBanWaveTrade2");
+		//
+		// }
+
+		if (getThread("handleBotsRunning") == null && Config.BOT_HANDLER_THREAD_ACTIVE) {
+			handleBotsRunning();
+			System.out.println("Started new thread: handleBotsRunning");
+		}
+
+		if (getThread("transformIntoMuleHandler") == null && Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
+			transformIntoMuleHandler();
+			System.out.println("Started new thread: transformIntoMuleHandler");
+		}
+
+		if (getThread("handleNormalMulesTrading") == null && Config.MULES_TRADING) {
+			handleNormalMulesTrading();
+			System.out.println("Started new thread: handleNormalMulesTrading");
+		}
+		if (getThread("handleServerMules") == null && Config.MULES_TRADING) {
+			handleServerMules();
+			System.out.println("Started new thread: handleServerMules");
+		}
+		if (getThread("handleSuperMules") == null && Config.MULES_TRADING) {
+			handleSuperMules();
+			System.out.println("Started new thread: handleSuperMules");
+		}
+
+		if (getThread("checkProxiesProxyRackToUse") == null && Config.NEW_PROXYRACK_CONFIGURATION) {
+			checkProxiesProxyRackToUse();
+			System.out.println("Started new thread: checkProxiesProxyRackToUse");
+		}
+
+		if (getThread("queueThread") == null && Config.CAPTCHA) {
+			runQueueThread();
+			System.out.println("Started new thread: queueThread");
+		}
+	}
+
 	/**
 	 * Manages all the threads currently running
 	 */
@@ -499,7 +599,7 @@ public class ThreadHandler {
 
 			while (programIsRunning) {
 
-				checkForAlive();
+				// checkForAlive();
 
 				System.out.println("[BACKUP] Thread management: " + isThreadAlive("backupThread") + " "
 						+ getThread("backupThread"));
@@ -508,6 +608,8 @@ public class ThreadHandler {
 					mainThread();
 					System.out.println("Started new thread: mainThread");
 				}
+
+				checkTheadsRunningAndIfNotStartNewOne();
 
 				try {
 					Thread.sleep(20_000);

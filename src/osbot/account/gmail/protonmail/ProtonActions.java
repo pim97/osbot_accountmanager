@@ -59,7 +59,7 @@ public class ProtonActions {
 				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
 			}
 			onWebsite = true;
-			
+
 			try {
 				Thread.sleep(1500);
 			} catch (InterruptedException e) {
@@ -290,6 +290,13 @@ public class ProtonActions {
 			// }
 
 		} catch (SessionNotCreatedException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
+		} catch (org.openqa.selenium.WebDriverException e1) {
 			e1.printStackTrace();
 			driver.quit();
 			if (WebdriverFunctions.hasQuit(driver)) {

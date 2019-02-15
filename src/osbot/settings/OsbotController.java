@@ -67,15 +67,15 @@ public class OsbotController {
 			System.out.println("Took 2: " + (System.currentTimeMillis() - startTime));
 			System.out.println("Waiting for OSBot to launch..");
 
-			p.waitFor();
-			
+			// p.waitFor();
+
 			// System.out.println("6");
-//			if (!p.waitFor(10, TimeUnit.SECONDS)) {
-//				System.out.println("Destroyed, couldn't start up in time");
-//				p.destroy();
-//				setStartingUp(false);
-//				return;
-//			}
+			if (!p.waitFor(120, TimeUnit.SECONDS)) {
+				System.out.println("Destroyed, couldn't start up in time");
+				p.destroy();
+				setStartingUp(false);
+				return;
+			}
 			System.out.println("Took 3: " + (System.currentTimeMillis() - startTime));
 
 			System.out.println(getCliArgs().toString());
@@ -91,6 +91,7 @@ public class OsbotController {
 					p.destroy();
 					System.out.println("Destroyed, couldn't set pid, too many");
 					setStartingUp(false);
+					Thread.sleep(5000);
 					return;
 				}
 			}
@@ -219,11 +220,13 @@ public class OsbotController {
 		} else {
 			if (addDoublePoint) {
 				for (int i = 0; i < value.length; i++) {
-					getCliArgs().append(value[i] + ((value.length - 1) != i ? ":" : ""));
+					String result = (String) value[i];
+					getCliArgs().append(result.trim() + ((value.length - 1) != i ? ":" : ""));
 				}
 			} else {
 				for (int i = 0; i < value.length; i++) {
-					getCliArgs().append(value[i] + ((value.length - 1) != i ? " " : ""));
+					String result = (String) value[i];
+					getCliArgs().append(result.trim() + ((value.length - 1) != i ? " " : ""));
 				}
 			}
 		}

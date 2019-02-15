@@ -37,7 +37,7 @@ public class AccountTable {
 		return getProxyIp() != null && getProxyPort() != null && getProxyIp().length() > 0
 				&& getProxyPort().length() > 0;
 	}
-	
+
 	private boolean proxyOnline;
 
 	/**
@@ -62,11 +62,13 @@ public class AccountTable {
 		this.stage = stage;
 		this.accountStageProgress = accountStageProgress;
 	}
-	
+
+	private long lastUpdated = System.currentTimeMillis();
+
 	private boolean updated;
 
 	private AccountStage stage;
-	
+
 	private LoginStatus loginStatus;
 
 	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
@@ -351,7 +353,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param proxyUsername the proxyUsername to set
+	 * @param proxyUsername
+	 *            the proxyUsername to set
 	 */
 	public void setProxyUsername(String proxyUsername) {
 		this.proxyUsername = proxyUsername;
@@ -365,7 +368,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param proxyPassword the proxyPassword to set
+	 * @param proxyPassword
+	 *            the proxyPassword to set
 	 */
 	public void setProxyPassword(String proxyPassword) {
 		this.proxyPassword = proxyPassword;
@@ -379,7 +383,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param amountTimeout the amountTimeout to set
+	 * @param amountTimeout
+	 *            the amountTimeout to set
 	 */
 	public void setAmountTimeout(int amountTimeout) {
 		this.amountTimeout = amountTimeout;
@@ -393,7 +398,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param loginStatus the loginStatus to set
+	 * @param loginStatus
+	 *            the loginStatus to set
 	 */
 	public void setLoginStatus(LoginStatus loginStatus) {
 		this.loginStatus = loginStatus;
@@ -407,7 +413,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param updated the updated to set
+	 * @param updated
+	 *            the updated to set
 	 */
 	public void setUpdated(boolean updated) {
 		this.updated = updated;
@@ -421,7 +428,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param proxyOnline the proxyOnline to set
+	 * @param proxyOnline
+	 *            the proxyOnline to set
 	 */
 	public void setProxyOnline(boolean proxyOnline) {
 		this.proxyOnline = proxyOnline;
@@ -435,10 +443,26 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param countryProxyCode the countryProxyCode to set
+	 * @param countryProxyCode
+	 *            the countryProxyCode to set
 	 */
 	public void setCountryProxyCode(String countryProxyCode) {
 		this.countryProxyCode = countryProxyCode;
+	}
+
+	/**
+	 * @return the lastUpdated
+	 */
+	public long getLastUpdated() {
+		return lastUpdated;
+	}
+
+	/**
+	 * @param lastUpdated
+	 *            the lastUpdated to set
+	 */
+	public void setLastUpdated(long lastUpdated) {
+		this.lastUpdated = lastUpdated;
 	}
 
 }

@@ -49,11 +49,11 @@ public class Proxy6 {
 			updateValidityCheck();
 
 			// TODO should be its own instance with other mail handlers
-			double availableBalance = api.getBalance();
-			if (availableBalance < 2) {
-				MailWarning.initializeMail("Balance on Proxy6 is low! " + availableBalance + " is left!",
-						"Please increase your balance on proxy6 to not have any proxies have removed!");
-			}
+//			double availableBalance = api.getBalance();
+//			if (availableBalance < 2) {
+//				MailWarning.initializeMail("Balance on Proxy6 is low! " + availableBalance + " is left!",
+//						"Please increase your balance on proxy6 to not have any proxies have removed!");
+//			}
 		}
 	}
 
@@ -62,6 +62,9 @@ public class Proxy6 {
 	 */
 	private void update() {
 		// if (proxyList.size() == 0) {
+		if (proxyList == null) {
+			proxyList = new ArrayList<Proxy6Proxy>();
+		}
 		proxyList.clear();
 		proxyList = api.getProxies();
 		System.out.println("Updated proxy list!");
@@ -79,6 +82,9 @@ public class Proxy6 {
 	 * Setting a description for a proxy
 	 */
 	private void setDescriptionForComputer() {
+		if (proxyList == null) {
+			this.update();
+		}
 
 		// This should have his own loop
 		for (Proxy6Proxy proxy : proxyList) {
@@ -98,19 +104,29 @@ public class Proxy6 {
 				if (((isStaticMuleProxy) || (isSuperMuleProxy)) && (description != -2)) {
 					System.out.println("Set this proxy to a mule proxy!");
 					System.out.println(api.setDescription(Integer.toString(proxy.getId()), -2));
+					break;
 				}
 
 				// Adding the muling proxies that all servers use to create their mulers
 				if ((isStaticMuleProxy || (isSuperMuleProxy)) && (!containsInProxyList)) {
 					System.out.println("Added a muling proxy to the database, all servers will use this");
 					DatabaseUtilities.insertProxy(proxy, true);
+					break;
 				}
-
+				
+				if ((description != -2) && (description != Config.MACHINE_ID) && (containsInProxyList)
+						&& (containsInProxy6List(proxy.getIp(), proxy.getPort(), proxy.getUser(), proxy.getPass()))) {
+					System.out.println("Deleted proxy from the database, because no longer exists in the API");
+					DatabaseUtilities.deleteFromProxyList(proxy.getIp(), proxy.getPort());
+					break;
+				}
+				
 				// When the proxy on the site doesn't exist anymore but it does in the database
 				if (containsInProxyList
 						&& !containsInProxy6List(proxy.getIp(), proxy.getPort(), proxy.getUser(), proxy.getPass())) {
 					System.out.println("Deleted proxy from the database, because no longer exists in the API");
 					DatabaseUtilities.deleteFromProxyList(proxy.getIp(), proxy.getPort());
+					break;
 				}
 
 				// If its not used by our database, but is still logged to use, reset it so
@@ -118,12 +134,14 @@ public class Proxy6 {
 				if ((!containsInProxyList) && (description == Config.MACHINE_ID) && (description != -2)) {
 					System.out.println("Set this proxy to not used, so other machines may use it");
 					System.out.println(api.setDescription(Integer.toString(proxy.getId()), -1));
+					break;
 				}
 
 				// If already contains, but not set a description, then set a description
 				if ((containsInProxyList) && (description != Config.MACHINE_ID) && (description != -2)) {
 					System.out.println("Set a proxy to ours, because it's already used by us");
 					System.out.println(api.setDescription(Integer.toString(proxy.getId()), Config.MACHINE_ID));
+					break;
 				}
 
 			} catch (Exception e) {
@@ -143,9 +161,9 @@ public class Proxy6 {
 				}
 
 				// A server may have a max. amount proxies used up in total
-				if (DatabaseUtilities.getTotalProxies().size() >= ((Config.MAX_BOTS_OPEN / 2)) + 5) {
-					System.out.println(
-							"Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2) + 5) + " proxies served");
+				if (DatabaseUtilities.getTotalProxies().size() >= ((Config.MAX_BOTS_OPEN / 2)) + 11) {
+					System.out.println("Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2) + 5)
+							+ " proxies served");
 					break;
 				}
 
@@ -164,6 +182,7 @@ public class Proxy6 {
 				DatabaseUtilities.insertProxy(proxy, false);
 				String proxyId = Integer.toString(proxy.getId());
 				System.out.println(api.setDescription(proxyId, Config.MACHINE_ID));
+				break;
 
 			} catch (Exception e) {
 				System.out.println("Could not set description");
@@ -171,6 +190,11 @@ public class Proxy6 {
 			}
 		}
 		update();
+		updateConfigProxies();
+	}
+
+	private void updateConfigProxies() {
+		Config.MULE_PROXY_IP = DatabaseUtilities.getMuleProxyAddresses();
 	}
 
 	/**

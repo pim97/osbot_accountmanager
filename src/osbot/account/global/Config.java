@@ -66,7 +66,9 @@ public class Config {
 
 	public static final ArrayList<String> STATIC_MULE_PROXIES = new ArrayList<String>(
 			Arrays.asList("185.99.99.69:8000:mule", "185.194.13.35:8000:main", "45.4.196.149:8000:mule",
-					"196.18.14.239:8000:mule", "196.18.12.242:8000:mule"));
+					"196.18.14.239:8000:mule", "196.18.12.242:8000:mule", "185.168.249.222:8000:main",
+					"196.17.171.70:8000:main", "185.240.49.184:8000:mule", "185.239.139.148:8000:mule",
+					"185.202.108.86:8000:mule", "103.84.121.106:8000:mule"));
 
 	public static ArrayList<String> MULE_PROXY_IP = new ArrayList<String>();
 
@@ -129,7 +131,8 @@ public class Config {
 	}
 
 	public static ArrayList<String> SUPER_MULE_PROXY_IP = new ArrayList<String>(
-			Arrays.asList("181.177.86.9:9966:mpPo6U:MTA7c8"));
+			Arrays.asList("181.177.86.9:9966:mpPo6U:MTA7c8", "185.168.249.222:8000:NoRUh4:NBfLwx",
+					"196.17.171.70:8000:e3E5h3:W9zB9g"));
 
 	public static String getRandomSuperMuleProxy() {
 		return SUPER_MULE_PROXY_IP.get(RandomUtil.getRandomNumberInRange(0, SUPER_MULE_PROXY_IP.size() - 1));
@@ -196,7 +199,7 @@ public class Config {
 	 * Configs for threads
 	 */
 
-	public static final boolean GUI = false;
+	public static final boolean GUI = true;
 
 	public static final boolean CAPTCHA = false;
 
@@ -210,21 +213,21 @@ public class Config {
 	 * End
 	 */
 
-	public static final boolean LOW_CPU = true;
-	
-	public static final boolean CLOSE_BOTS_WHEN_ACTIVE = true;
+	public static final boolean LOW_CPU = false;
 
-	public static final boolean ERROR_IP = true;
+	public static final boolean CLOSE_BOTS_WHEN_ACTIVE = false;
 
-	public static final boolean CREATE_BATCH_FILES_FOR_MULES = true;
+	public static final boolean ERROR_IP = false;
 
-	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = true;
+	public static final boolean CREATE_BATCH_FILES_FOR_MULES = false;
 
-	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = true;
+	public static final boolean CREATING_ACCOUNTS_THREAD_ACTIVE = false;
 
-	public static final boolean BOT_HANDLER_THREAD_ACTIVE = true;
+	public static final boolean RECOVERING_ACCOUNTS_THREAD_ACTIVE = false;
 
-	public static final boolean CLOSE_ON_INACTIVITY = true;
+	public static final boolean BOT_HANDLER_THREAD_ACTIVE = false;
 
-	public static final boolean MULES_TRADING = true;
+	public static final boolean CLOSE_ON_INACTIVITY = false;
+
+	public static final boolean MULES_TRADING = false;
 }

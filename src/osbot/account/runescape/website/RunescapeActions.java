@@ -280,6 +280,8 @@ public class RunescapeActions {
 	 */
 	private int failedTries = 0;
 
+	private boolean error = false;
+
 	/**
 	 * Creates an account on Runescape
 	 * 
@@ -289,7 +291,9 @@ public class RunescapeActions {
 		try {
 			// Thread for watching over the current page
 			new Thread(() -> {
-				while (!WebdriverFunctions.hasQuit(driver)) {
+				boolean finish = false;
+				int tries = 0;
+				while (!finish) {
 					// System.out.println("Current page url: " + getDriver().getCurrentUrl() + " at
 					// link: "
 					// + isAtLinkNoWait("error?error=1"));
@@ -298,6 +302,7 @@ public class RunescapeActions {
 						DatabaseUtilities.updateProxyStatus(getAccount().getAccount().getProxyIp(),
 								getAccount().getAccount().getProxyPort(), true);
 						System.out.println("Proxy set to blocked");
+						error = true;
 						driver.quit();
 					}
 
@@ -306,6 +311,18 @@ public class RunescapeActions {
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+					}
+
+					tries++;
+					if (tries > 150) {
+						finish = true;
+						System.out.println("Breaking out of loop");
+						break;
+					}
+					if (WebdriverFunctions.hasQuit(driver)) {
+						finish = true;
+						System.out.println("Breaking out of loop");
+						break;
 					}
 				}
 			}).start();
@@ -325,7 +342,9 @@ public class RunescapeActions {
 			}
 			System.out.println("On the runescape website!");
 
-			getResponseToken("https://secure.runescape.com/m=account-creation/create_account");
+			if (!isAtLinkNoWait("error?error=1") && !error) {
+				getResponseToken("https://secure.runescape.com/m=account-creation/create_account");
+			}
 
 			fillInInformation();
 			// Filling in all the information
@@ -469,7 +488,10 @@ public class RunescapeActions {
 	 */
 	private void getResponseToken(String link) {
 
+		new Thread(() -> DatabaseUtilities.insertLoggingMessage("CAPTCHA", "1")).start();
+
 		new Thread(() -> {
+
 			String responseToken = null;
 
 			// String apiKey, String googleKey, String pageUrl, boolean invisible

@@ -200,6 +200,67 @@ public class DatabaseUtilities {
 		return false;
 	}
 
+	public static final int SERVER_MULE_TRADE_THRESHOLD = 2_500_000;
+
+	public static boolean isOverThresholdToTradeToServerMule() {
+		String sql = "SELECT SUM(account_value) as amount FROM account WHERE account_stage=\"UNKNOWN\" AND (status=\"MULE\" OR status=\"SUPER_MULE\")";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+
+					int amount = resultSet.getInt("amount");
+
+					if (amount >= SERVER_MULE_TRADE_THRESHOLD) {
+						return true;
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public static boolean shouldMuleTradeWithSuperMuleWhenNoOneIsTrading() {
+		String sql = "SELECT COUNT(*) as count_null_trading, (SELECT COUNT(*) FROM account WHERE status=\"MULE\" AND account_stage=\"UNKNOWN\") as total FROM account WHERE status=\"MULE\" AND account_stage=\"UNKNOWN\" AND trade_with_other IS NULL";
+
+		try {
+			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(sql);
+			ResultSet resultSet = preparedStatement.executeQuery(sql);
+
+			try {
+				while (resultSet.next()) {
+
+					int notTrading = resultSet.getInt("count_null_trading");
+					int totalMules = resultSet.getInt("total");
+
+					if ((notTrading == totalMules) && (notTrading > 0 && totalMules > 0)) {
+						return true;
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				resultSet.close();
+				preparedStatement.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	public static ArrayList<DatabaseProxy> getTotalProxiesWithMuleProxiesAndExceptAlive() {
 		String sql = "SELECT * FROM proxies as p";
 		ArrayList<DatabaseProxy> proxiesInDatabase = new ArrayList<DatabaseProxy>();
@@ -587,6 +648,36 @@ public class DatabaseUtilities {
 		return -1;
 	}
 
+	public static boolean updateAtASpecificTimeToMule() {
+		try {
+			String query = "UPDATE account SET account_stage = ? WHERE account_stage='MINING_LEVEL_TO_15' AND account_value > 3500 AND status='AVAILABLE'"
+					+ " AND updated_at BETWEEN SUBDATE(NOW(),1) AND NOW()";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			preparedStmt.setString(1, AccountStage.MULE_TRADING.name());
+
+			// execute the java preparedstatement
+			preparedStmt.executeUpdate();
+			preparedStmt.close();
+
+			System.out.println("Updated account to mule!");
+
+			for (OsbotController bots : BotController.getBots()) {
+				if ((bots.getAccount().getStage() == AccountStage.MINING_LEVEL_TO_15
+						|| bots.getAccount().getStage() == AccountStage.MULE_TRADING)) {
+					BotController.killProcess(bots.getPidId());
+					System.out.println(
+							"Killed the process: " + bots.getPidId() + " because is going to trade with a mule!");
+				}
+			}
+
+			return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	/**
 	 * Updates the account in the database
 	 * 
@@ -717,7 +808,7 @@ public class DatabaseUtilities {
 			// When account has started, but not logged in between 80 seconds
 			if (bot.getAccount().getLoginStatus() != null
 					&& bot.getAccount().getLoginStatus() == LoginStatus.INITIALIZING && (System.currentTimeMillis()
-							- bot.getStartTime() > (Config.NEW_PROXYRACK_CONFIGURATION ? 300_000 : 110_000))) {
+							- bot.getStartTime() > (Config.NEW_PROXYRACK_CONFIGURATION ? 300_000 : 150_000))) {
 				bot.getAccount().setUpdated(true);
 				BotController.killProcess(bot.getPidId());
 				bot.setPidId(-1);
@@ -1518,6 +1609,29 @@ public class DatabaseUtilities {
 		}
 	}
 
+	public static void insertLoggingMessage(String type, String message) {
+		// the mysql insert statement
+		String query = "INSERT INTO logging.`log` (type, message, server) values (?,?,?)";
+
+		// create the mysql insert preparedstatement
+		try {
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+
+			preparedStmt.setString(1, type);
+			preparedStmt.setString(2, message);
+			preparedStmt.setString(3, Config.DATABASE_NAME);
+
+			// execute the preparedstatement
+			preparedStmt.execute();
+			preparedStmt.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			// api.log(exceptionToString(e));
+			e.printStackTrace();
+		}
+	}
+
 	public static boolean setTradingWith(String tradeWith, String username) {
 		try {
 			String query = "UPDATE account SET trade_with_other = ? WHERE trade_with_other=?";
@@ -1905,8 +2019,8 @@ public class DatabaseUtilities {
 
 				while (resultSet.next()) {
 					availableAccounts = resultSet.getInt("available_accounts");
+					return availableAccounts;
 				}
-				return availableAccounts;
 			} catch (Exception e) {
 				e.printStackTrace();
 				return 0;
@@ -1928,15 +2042,14 @@ public class DatabaseUtilities {
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
 			try {
-				int muleCount = 0;
+				int muleCount = -1;
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
+					return muleCount;
 				}
-				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -1944,7 +2057,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return 10;
 	}
 
 	public static int getMuleAmount() {
@@ -1959,11 +2072,10 @@ public class DatabaseUtilities {
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
+					return muleCount;
 				}
-				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -1971,7 +2083,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return 10;
 	}
 
 	public static int getMuleAccountsInTheMaking() {
@@ -1989,7 +2101,7 @@ public class DatabaseUtilities {
 		}
 
 		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE (" + totalProxies.toString()
-				+ ") AND status = \"AVAILABLE\"";
+				+ ") AND (status = \"AVAILABLE\" OR status=\"LOCKED\" OR status=\"LOCKED_TIMEOUT\")";
 		// System.out.println(sql);
 
 		try {
@@ -1997,15 +2109,14 @@ public class DatabaseUtilities {
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
 			try {
-				int muleCount = 0;
+				int muleCount = -1;
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
+					return muleCount;
 				}
-				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -2013,7 +2124,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return 10;
 	}
 
 	public static int getServerMulesAccountsInTheMaking() {
@@ -2031,7 +2142,7 @@ public class DatabaseUtilities {
 		}
 
 		String sql = "SELECT COUNT(*) as mule_count FROM server_muling.account WHERE (" + totalProxies.toString()
-				+ ") AND status = \"AVAILABLE\"";
+				+ ") AND (status = \"AVAILABLE\" OR status=\"LOCKED\" OR status=\"LOCKED_TIMEOUT\")";
 		// System.out.println(sql);
 
 		try {
@@ -2039,15 +2150,14 @@ public class DatabaseUtilities {
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
 			try {
-				int muleCount = 0;
+				int muleCount = -1;
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
+					return muleCount;
 				}
-				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -2055,7 +2165,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return 10;
 	}
 
 	public static int getSuperAccountsInTheMaking() {
@@ -2073,7 +2183,7 @@ public class DatabaseUtilities {
 		}
 
 		String sql = "SELECT COUNT(*) as mule_count FROM account WHERE (" + totalProxies.toString()
-				+ ") AND status = \"AVAILABLE\"";
+				+ ") AND (status = \"AVAILABLE\" OR status=\"LOCKED\" OR status=\"LOCKED_TIMEOUT\")";
 		// System.out.println(sql);
 
 		try {
@@ -2081,15 +2191,14 @@ public class DatabaseUtilities {
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
 			try {
-				int muleCount = 0;
+				int muleCount = -1;
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
+					return muleCount;
 				}
-				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -2097,7 +2206,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return -1;
 	}
 
 	public static int getSuperMuleAmount() {
@@ -2108,7 +2217,7 @@ public class DatabaseUtilities {
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
 			try {
-				int muleCount = 0;
+				int muleCount = -1;
 
 				while (resultSet.next()) {
 					muleCount = resultSet.getInt("mule_count");
@@ -2116,7 +2225,6 @@ public class DatabaseUtilities {
 				return muleCount;
 			} catch (Exception e) {
 				e.printStackTrace();
-				return 0;
 			} finally {
 				resultSet.close();
 				preparedStatement.close();
@@ -2124,7 +2232,7 @@ public class DatabaseUtilities {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return 0;
+		return -1;
 	}
 
 	/**
@@ -2215,7 +2323,6 @@ public class DatabaseUtilities {
 	// }
 
 	private static long lastAttempt = 0;
-	private static long lastAttemptSuperMule = 0;
 
 	public static void transformIntoMuleAccount() {
 
@@ -2292,8 +2399,41 @@ public class DatabaseUtilities {
 		System.out.println("[MULE CREATION] Current amount of mules: " + DatabaseUtilities.getMuleAmount() + " time: "
 				+ (System.currentTimeMillis() - lastAttempt));
 
-		if (DatabaseUtilities.getServerMuleAmount() <= 0 && DatabaseUtilities.getServerMulesAccountsInTheMaking() <= 0
-				&& (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
+		if ((DatabaseUtilities.getSuperMuleAmount()) == 0 && (DatabaseUtilities.getSuperAccountsInTheMaking() == 0)
+				&& ((System.currentTimeMillis() - lastAttempt) > 1_200_000)) {
+			lastAttempt = System.currentTimeMillis();
+
+			RandomNameGenerator name = new RandomNameGenerator();
+
+			String[] proxyString = Config.getRandomSuperMuleProxy().split(":");
+
+			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxyString[0], proxyString[1])) {
+				System.out.println("Skipping this IP, because it's currently giving an error");
+				return;
+			}
+
+			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
+					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
+
+			table.setPassword(name.generateRandomNameString());
+			table.setProxyUsername(proxyString[2]);// hjeg53
+			table.setProxyPassword(proxyString[3]);// L9MbdJ
+			table.setBankPin("0000");
+
+			DatabaseProxy proxy = new DatabaseProxy(table.getProxyUsername(), table.getProxyPort(),
+					table.getProxyUsername(), table.getProxyPassword());
+
+			OsbotController bot = new OsbotController(-1, table);
+			System.out.println(
+					"Creating account: " + table.getUsername() + " stage: " + " status: " + AccountStatus.SUPER_MULE);
+
+			AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT, false);
+
+		}
+
+		if ((DatabaseUtilities.getServerMuleAmount() == 0)
+				&& (DatabaseUtilities.getServerMulesAccountsInTheMaking() == 0)
+				&& ((System.currentTimeMillis() - lastAttempt) > 800_000)) {
 			lastAttempt = System.currentTimeMillis();
 
 			RandomNameGenerator name = new RandomNameGenerator();
@@ -2323,8 +2463,8 @@ public class DatabaseUtilities {
 
 		}
 
-		if (DatabaseUtilities.getMuleAmount() <= 2 && DatabaseUtilities.getMuleAccountsInTheMaking() <= 2
-				&& (System.currentTimeMillis() - lastAttempt) > 1_200_000) {
+		if ((DatabaseUtilities.getMuleAmount() <= 4) && (DatabaseUtilities.getMuleAccountsInTheMaking() <= 2)
+				&& ((System.currentTimeMillis() - lastAttempt) > 600_000)) {
 			lastAttempt = System.currentTimeMillis();
 
 			RandomNameGenerator name = new RandomNameGenerator();
@@ -2354,37 +2494,6 @@ public class DatabaseUtilities {
 
 		}
 
-		if (DatabaseUtilities.getSuperMuleAmount() == 0 && DatabaseUtilities.getSuperAccountsInTheMaking() == 0
-				&& (System.currentTimeMillis() - lastAttemptSuperMule) > 1_200_000) {
-			lastAttemptSuperMule = System.currentTimeMillis();
-
-			RandomNameGenerator name = new RandomNameGenerator();
-
-			String[] proxyString = Config.getRandomSuperMuleProxy().split(":");
-
-			if (Config.ERROR_IP && DatabaseUtilities.isErrorProxy(proxyString[0], proxyString[1])) {
-				System.out.println("Skipping this IP, because it's currently giving an error");
-				return;
-			}
-
-			AccountTable table = new AccountTable(-1, "test", name.generateRandomNameString(), 394, proxyString[0],
-					proxyString[1], true, AccountStatus.AVAILABLE, AccountStage.TUT_ISLAND, 0);
-
-			table.setPassword(name.generateRandomNameString());
-			table.setProxyUsername(proxyString[2]);// hjeg53
-			table.setProxyPassword(proxyString[3]);// L9MbdJ
-			table.setBankPin("0000");
-
-			DatabaseProxy proxy = new DatabaseProxy(table.getProxyUsername(), table.getProxyPort(),
-					table.getProxyUsername(), table.getProxyPassword());
-
-			OsbotController bot = new OsbotController(-1, table);
-			System.out.println(
-					"Creating account: " + table.getUsername() + " stage: " + " status: " + AccountStatus.SUPER_MULE);
-
-			AccountCreationService.launchRunescapeWebsite(proxy, bot, SeleniumType.CREATE_VERIFY_ACCOUNT, false);
-
-		}
 	}
 
 	public static List<AccountCreate> USED_IPS_TO_CREATE_WITH = new CopyOnWriteArrayList<AccountCreate>();
@@ -2468,7 +2577,8 @@ public class DatabaseUtilities {
 		}
 
 		System.out.println("[RS AUTOMATIC ACCOUNT CREATION] " + accountsToCreate2()
-				+ " accounts left to create accounts with! Total accounts available: " + totalAccountsAvailable());
+				+ " accounts left to create accounts with! Total accounts available: "
+				+ BotController.getBots().size());
 
 		ArrayList<DatabaseProxy> proxies = new ArrayList<DatabaseProxy>();
 		synchronized (getUsedProxies2()) {
@@ -2494,11 +2604,12 @@ public class DatabaseUtilities {
 				continue;
 			}
 
-			boolean usedProxyAmount = proxy.getUsedCount() < 2 || Config.NEW_PROXYRACK_CONFIGURATION;
+			boolean usedProxyAmount = proxy.getUsedCount() < 3 || Config.NEW_PROXYRACK_CONFIGURATION;
 
 			// DatabaseProxy key = entry.getKey();
 			// Integer value = entry.getValue();
-			if (usedProxyAmount && totalAccountsAvailable() < (Config.MAX_BOTS_OPEN + (Config.MAX_BOTS_OPEN / 10))) {
+			int extraBots = 9;
+			if ((usedProxyAmount) && (BotController.getBots().size()) < (Config.MAX_BOTS_OPEN + extraBots)) {
 				/**
 				 * public AccountTable(int id, String script, String username, int world, String
 				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {

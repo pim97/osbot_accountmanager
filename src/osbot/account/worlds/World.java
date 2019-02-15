@@ -107,7 +107,7 @@ public class World {
 		}
 		return worlds.stream()
 				.filter(world -> world.getType() == type && !world.getDetail().contains("skill total")
-						&& !world.getDetail().contains("PvP") && world.getPlayerAmount() < 600)
+						&& !world.getDetail().contains("PvP") && world.getPlayerAmount() < 1400)
 				.collect(Collectors.toList());
 	}
 
