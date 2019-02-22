@@ -9,6 +9,7 @@ import osbot.account.creator.PidDriver;
 import osbot.account.creator.SeleniumType;
 import osbot.account.runescape.website.RunescapeActions;
 import osbot.account.webdriver.WebdriverFunctions;
+import osbot.database.DatabaseUtilities;
 import osbot.settings.OsbotController;
 
 public class ProtonMain {
@@ -18,6 +19,8 @@ public class ProtonMain {
 	private OsbotController account;
 
 	private PidDriver pidDriver;
+
+	private boolean database;
 
 	/**
 	 * 
@@ -30,19 +33,40 @@ public class ProtonMain {
 		this.setPidDriver(pidDriver);
 	}
 
+	public ProtonMain(WebDriver driver, OsbotController account, PidDriver pidDriver, boolean database) {
+		this.setDriver(driver);
+		this.setAccount(account);
+		this.setActions(new ProtonActions(driver, account));
+		this.setPidDriver(pidDriver);
+		this.database = database;
+	}
+
 	public void unlockAccount() {
 		if (getActions().login(ProtonConfig.PROTON_MAIL_USERNAME, ProtonConfig.PROTON_MAIL_PASSWORD)) {
 			System.out.println("Successfully logged in");
 
 			boolean found = false;
 			int cantFindEmail = 0;
+			// boolean friday = false;
+			// int fridayTries = 0;
 
 			while (!found) {
+
+				// if (!friday && getActions().blackFridayDeals()) {
+				// System.out.println("Solving this black fridays thing");
+				// friday = true;
+				// }
+				// if (fridayTries > 10) {
+				// System.out.println("Couldn't find friday, requesting to not click it again");
+				// friday = true;
+				// }
+				// fridayTries++;
+
 				if (getActions().clickMail("Reset your Jagex password")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found, clicking on the next one");
-						cantFindEmail++;
+//						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -50,18 +74,18 @@ public class ProtonMain {
 				}
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 20) {
-					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
-					driver.quit();
-					break;
-				}
-				
+//				if (cantFindEmail > 100) {
+//					System.out.println("Had 100 tries of finding the e-mail, but couldn't find, restarting the driver");
+//					driver.quit();
+//					break;
+//				}
+
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
@@ -71,6 +95,7 @@ public class ProtonMain {
 			System.out.println("Got the e-mail");
 
 			while (!getActions().clickLink("https://secure.runescape.com/m=accountappeal/enter_security_code.ws")) {
+				// while (!getActions().clickLink("http://echo7.bluehornet.com/")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
@@ -79,12 +104,12 @@ public class ProtonMain {
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 			System.out.println("Succesfully clicked on the verification link!");
 
@@ -103,7 +128,7 @@ public class ProtonMain {
 				}
 				System.out.println("Trying to fill in..");
 			}
-			
+
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -132,16 +157,34 @@ public class ProtonMain {
 	 */
 	public void verifyAccount() {
 		if (getActions().login(ProtonConfig.PROTON_MAIL_USERNAME, ProtonConfig.PROTON_MAIL_PASSWORD)) {
+			if (getAccount().getAccount().getEmail() == null) {
+				System.out.println("E-mail was not set correctly, quiting!");
+				driver.quit();
+				return;
+			}
 			System.out.println("Successfully logged in");
 			boolean found = false;
 			int cantFindEmail = 0;
+			// boolean friday = false;
+			// int fridayTries = 0;
 
 			while (!found) {
-				if (getActions().clickMail("Welcome to RuneScape!")) {
+
+				// if (!friday && getActions().blackFridayDeals()) {
+				// System.out.println("Solving this black fridays thing");
+				// friday = true;
+				// }
+				// if (fridayTries > 10) {
+				// System.out.println("Couldn't find friday, requesting to not click it again");
+				// friday = true;
+				// }
+				// fridayTries++;
+
+				if (getActions().clickMail("Thank you for registering your email")) {
 					if (!getActions().clickedCorrectEmail()) {
-//						getActions().deleteEmail();
+						// getActions().deleteEmail();
 						System.out.println("Email has not been found");
-						cantFindEmail++;
+//						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -149,29 +192,32 @@ public class ProtonMain {
 				}
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 20) {
-					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
-					driver.quit();
-					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-					break;
-				}
-				
+//				if (cantFindEmail > 20) {
+//					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+//					driver.quit();
+//					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
+//					break;
+//				}
+
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
 					break;
 				}
-				
+
 			}
 			System.out.println("Got the e-mail");
 
-			while (!getActions().clickLink("https://secure.runescape.com/m=email-register/submit_code.ws")) {
+			// while
+			// (!getActions().clickLink("https://secure.runescape.com/m=email-register/submit_code.ws"))
+			// {
+			while (!getActions().clickLink("http://echo7.bluehornet.com/")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
 					driver.quit();
@@ -181,12 +227,12 @@ public class ProtonMain {
 
 				System.out.println("Waiting to click on the verification link");
 
-//				try {
-//					Thread.sleep(50);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				// try {
+				// Thread.sleep(50);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 
 			try {
@@ -197,6 +243,11 @@ public class ProtonMain {
 			}
 
 			// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
+			if (database) {
+				DatabaseUtilities.insertIntoTable("server_muling", account.getAccount());
+			} else {
+				DatabaseUtilities.insertIntoTable(account.getAccount());
+			}
 			driver.quit();
 			System.out.println("Succesfully clicked on the verification link!");
 		}

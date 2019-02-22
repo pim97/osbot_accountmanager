@@ -5,7 +5,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
+	<classpathentry including="**/*.java|changeTable.fxml|view/" kind="src" output="target/classes" path="src">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
@@ -42,5 +42,15 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/zt-exec-1.10.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/commons-io-1.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/osbot/lib/slf4j-api-1.7.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/jsoup-1.11.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/activation-1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/javaee-api-8.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Dropbox/osbot/lib/javax.mail-1.6.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Desktop/OS-War development/Server/deps/json-lib-2.4-jdk15.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/Desktop/OS-War development/Server/deps/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/pim/eclipse-workspace1/autoVoter/libs/anticaptcha/java-json.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

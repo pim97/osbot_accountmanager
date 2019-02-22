@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import osbot.account.global.Config;
+
 public class DatabaseConnection {
 
 	public static DatabaseConnection con = new DatabaseConnection();
@@ -25,24 +27,12 @@ public class DatabaseConnection {
 		return conn;
 	}
 
-	public ResultSet getResult(String query) {
-		try {
-			PreparedStatement statement = getConnection().prepareStatement(query);
-
-			ResultSet resultSet = statement.executeQuery(query);
-			return resultSet;
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
 	// init database constants
 	private static final String DATABASE_DRIVER = "com.mysql.jdbc.Driver";
-	private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/osbot";
-	private static final String USERNAME = "root";
-	private static final String PASSWORD = "";
+	private static final String DATABASE_URL = "jdbc:mysql://" + Config.DATABASE_IP + ":3306/" + Config.DATABASE_NAME
+			+ "";
+	private static final String USERNAME = Config.DATABASE_USER_NAME;
+	private static final String PASSWORD = Config.DATABASE_PASSWORD;
 	private static final String MAX_POOL = "250";
 
 	// init connection object
@@ -65,9 +55,9 @@ public class DatabaseConnection {
 	public Connection connect() {
 		if (connection == null) {
 			try {
-				Class.forName(DATABASE_DRIVER);
+//				Class.forName(DATABASE_DRIVER);
 				connection = DriverManager.getConnection(DATABASE_URL, getProperties());
-			} catch (ClassNotFoundException | SQLException e) {
+			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}

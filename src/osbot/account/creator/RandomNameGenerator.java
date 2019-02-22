@@ -11,13 +11,13 @@ public class RandomNameGenerator {
 		StringBuilder name = new StringBuilder();
 		String setName = generateRandomName();
 		String randomIdentitier = randomIdentifier();
-		setName = setName.substring(0, setName.length() < 7 ? setName.length() : 7);
-		randomIdentitier = randomIdentitier.substring(0, 4);
+		randomIdentitier = randomIdentitier.substring(0, randomIdentitier.length() < 8 ? randomIdentitier.length() : 8);
+		setName = setName.substring(0, setName.length() < 4 ? setName.length() : 4);
 
 		name.append(setName);
 		name.append(randomIdentitier);
 
-		//Max length of names is 12
+		// Max length of names is 12
 		if (name.length() > 12) {
 			name.setLength(12);
 		}
@@ -55,7 +55,7 @@ public class RandomNameGenerator {
 	private String randomIdentifier() {
 		StringBuilder builder = new StringBuilder();
 		while (builder.toString().length() == 0) {
-			int length = rand.nextInt(5) + 7;
+			int length = 50; // rand.nextInt(5) + 7;
 			for (int i = 0; i < length; i++) {
 				builder.append(lexicon.charAt(rand.nextInt(lexicon.length())));
 			}

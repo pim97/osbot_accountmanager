@@ -1,0 +1,1 @@
+java -jar osbot.jar -login dormic:DuTIbljNuXHDF4T0e7Bk -data 0 -world 394 -allow norandoms -bot alphabearman+187290@protonmail.com:461ud6mihoys:0000 -mem 2048 -proxy 185.36.190.83:8000:rvWt0S:AqwncH -script MULE_TRADING:alphabearman+187290@protonmail.com_461ud6mihoys_-1_TUT-ISLAND__

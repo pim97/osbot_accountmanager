@@ -1,0 +1,21 @@
+Debug enabled on port 5005
+Collection of game data set to: 0
+Clearing all randoms from OSBot
+Setting memory at 2048MB
+Starting local script with name: QUEST_DORICS_QUEST
+[DEBUG][12/07 12:07:26 AM]: Injected 2 field list filters
+[DEBUG][12/07 12:07:26 AM]: Injected 2 field filters
+[DEBUG][12/07 12:07:26 AM]: Injected 2 method list filters
+[DEBUG][12/07 12:07:26 AM]: Injected 3 method filters
+In debug mode!
+Listening for transport dt_socket at address: 5005
+Setup proxy authentication!
+Stealth injection class-filter enabled!
+Successfully loaded OSBot!
+[INFO][12/07 12:07:28 AM]: Loaded 0 RS accounts!
+Loaded 11 local scripts and 0 SDN scripts.
+[INFO][12/07 12:07:29 AM]: Welcome to OSBot 2.5.28!
+[INFO][12/07 12:07:30 AM]: Updated injection hooks for client revision : 177!
+[DEBUG][Bot #1][12/07 12:07:30 AM]: Initializing stealth injection bot...
+[INFO][Bot #1][12/07 12:07:30 AM]: Downloading latest RS2 old-school client parameters...
+[INFO][Bot #1][12/07 12:07:30 AM]: Downloading latest RS2 old-school client...

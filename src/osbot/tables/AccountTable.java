@@ -4,6 +4,7 @@ import java.util.Calendar;
 
 import osbot.account.AccountStage;
 import osbot.account.AccountStatus;
+import osbot.account.LoginStatus;
 
 public class AccountTable {
 
@@ -37,6 +38,8 @@ public class AccountTable {
 				&& getProxyPort().length() > 0;
 	}
 
+	private boolean proxyOnline;
+
 	/**
 	 * Does the account have a current script?
 	 * 
@@ -60,12 +63,20 @@ public class AccountTable {
 		this.accountStageProgress = accountStageProgress;
 	}
 
+	private long lastUpdated = System.currentTimeMillis();
+
+	private boolean updated;
+
 	private AccountStage stage;
 
-	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
-			proxyUsername, proxyPassword;
+	private LoginStatus loginStatus;
 
-	private int world, day, month, year, accountStageProgress, questPoints, accountValue;
+	private String script, username, password, proxyIp, proxyPort, bankPin, email, dateString, tradeWithOther,
+			proxyUsername, proxyPassword, countryProxyCode;
+
+	private int world, day, month, year, accountStageProgress, questPoints, amountTimeout;
+
+	String accountValue;
 
 	private Calendar date;
 
@@ -277,7 +288,7 @@ public class AccountTable {
 	/**
 	 * @return the accountValue
 	 */
-	public int getAccountValue() {
+	public String getAccountValue() {
 		return accountValue;
 	}
 
@@ -285,7 +296,7 @@ public class AccountTable {
 	 * @param accountValue
 	 *            the accountValue to set
 	 */
-	public void setAccountValue(int accountValue) {
+	public void setAccountValue(String accountValue) {
 		this.accountValue = accountValue;
 	}
 
@@ -342,7 +353,8 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param proxyUsername the proxyUsername to set
+	 * @param proxyUsername
+	 *            the proxyUsername to set
 	 */
 	public void setProxyUsername(String proxyUsername) {
 		this.proxyUsername = proxyUsername;
@@ -356,10 +368,101 @@ public class AccountTable {
 	}
 
 	/**
-	 * @param proxyPassword the proxyPassword to set
+	 * @param proxyPassword
+	 *            the proxyPassword to set
 	 */
 	public void setProxyPassword(String proxyPassword) {
 		this.proxyPassword = proxyPassword;
+	}
+
+	/**
+	 * @return the amountTimeout
+	 */
+	public int getAmountTimeout() {
+		return amountTimeout;
+	}
+
+	/**
+	 * @param amountTimeout
+	 *            the amountTimeout to set
+	 */
+	public void setAmountTimeout(int amountTimeout) {
+		this.amountTimeout = amountTimeout;
+	}
+
+	/**
+	 * @return the loginStatus
+	 */
+	public LoginStatus getLoginStatus() {
+		return loginStatus;
+	}
+
+	/**
+	 * @param loginStatus
+	 *            the loginStatus to set
+	 */
+	public void setLoginStatus(LoginStatus loginStatus) {
+		this.loginStatus = loginStatus;
+	}
+
+	/**
+	 * @return the updated
+	 */
+	public boolean isUpdated() {
+		return updated;
+	}
+
+	/**
+	 * @param updated
+	 *            the updated to set
+	 */
+	public void setUpdated(boolean updated) {
+		this.updated = updated;
+	}
+
+	/**
+	 * @return the proxyOnline
+	 */
+	public boolean isProxyOnline() {
+		return proxyOnline;
+	}
+
+	/**
+	 * @param proxyOnline
+	 *            the proxyOnline to set
+	 */
+	public void setProxyOnline(boolean proxyOnline) {
+		this.proxyOnline = proxyOnline;
+	}
+
+	/**
+	 * @return the countryProxyCode
+	 */
+	public String getCountryProxyCode() {
+		return countryProxyCode;
+	}
+
+	/**
+	 * @param countryProxyCode
+	 *            the countryProxyCode to set
+	 */
+	public void setCountryProxyCode(String countryProxyCode) {
+		this.countryProxyCode = countryProxyCode;
+	}
+
+	/**
+	 * @return the lastUpdated
+	 */
+	public long getLastUpdated() {
+		return lastUpdated;
+	}
+
+	/**
+	 * @param lastUpdated
+	 *            the lastUpdated to set
+	 */
+	public void setLastUpdated(long lastUpdated) {
+		this.lastUpdated = lastUpdated;
 	}
 
 }

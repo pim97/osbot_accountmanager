@@ -1,0 +1,33 @@
+Debug enabled on port 5005
+Collection of game data set to: 0
+Clearing all randoms from OSBot
+Setting memory at 2048MB
+Starting local script with name: QUEST_DORICS_QUEST
+[DEBUG][12/06 11:49:22 PM]: Injected 2 field list filters
+[DEBUG][12/06 11:49:22 PM]: Injected 2 field filters
+[DEBUG][12/06 11:49:22 PM]: Injected 2 method list filters
+[DEBUG][12/06 11:49:22 PM]: Injected 3 method filters
+In debug mode!
+Listening for transport dt_socket at address: 5005
+Setup proxy authentication!
+Stealth injection class-filter enabled!
+Successfully loaded OSBot!
+[INFO][12/06 11:49:23 PM]: Loaded 0 RS accounts!
+Loaded 11 local scripts and 0 SDN scripts.
+[INFO][12/06 11:49:24 PM]: Welcome to OSBot 2.5.28!
+[INFO][12/06 11:49:25 PM]: Updated injection hooks for client revision : 177!
+[DEBUG][Bot #1][12/06 11:49:25 PM]: Initializing stealth injection bot...
+[INFO][Bot #1][12/06 11:49:25 PM]: Downloading latest RS2 old-school client parameters...
+[INFO][Bot #1][12/06 11:49:25 PM]: Downloading latest RS2 old-school client...
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected bot reference into client!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected world accessors!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected 37 class and 323 field accessors!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected canvas!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected 3 model update calls!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected 12 definition calls!
+[DEBUG][Bot #1][12/06 11:49:28 PM]: Injected 32 definition transformation calls!
+[DEBUG][Bot #1][12/06 11:49:29 PM]: Injected random.dat patch for bot #1
+[DEBUG][Bot #1][12/06 11:49:29 PM]: Injected 3 tooltip callbacks!
+[DEBUG][Bot #1][12/06 11:49:29 PM]: Injected 2 config callbacks!
+[DEBUG][Bot #1][12/06 11:49:29 PM]: Injected 11 head message callbacks!
+[DEBUG][Bot #1][12/06 11:49:29 PM]: Injected 3 chatbox message callbacks!

@@ -1,14 +1,16 @@
 package osbot.account.gmail.protonmail;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.SessionNotCreatedException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import osbot.account.global.Config;
 import osbot.account.webdriver.WebdriverFunctions;
 import osbot.settings.OsbotController;
 
@@ -39,7 +41,32 @@ public class ProtonActions {
 	 * @return
 	 */
 	private boolean openMail() {
-		getDriver().navigate().to(ProtonConfig.LINK_TO_PROTON);
+		driver.manage().timeouts().pageLoadTimeout(40, TimeUnit.SECONDS);
+
+		boolean onWebsite = false;
+
+		while (!onWebsite) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				onWebsite = true;
+			}
+			try {
+				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
+			} catch (Exception e) {
+				System.out.println("Page did not load within 40 seconds!");
+				System.out.println("Restarting driver and trying again");
+				e.printStackTrace();
+				driver.navigate().to(ProtonConfig.LINK_TO_PROTON);
+			}
+			onWebsite = true;
+
+			try {
+				Thread.sleep(1500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 
 		System.out.println("Current URL: " + getCurrentURL());
 		if (getCurrentURL().contains("protonmail")) {
@@ -100,25 +127,59 @@ public class ProtonActions {
 	 */
 	public boolean clickLink(String contentEquals) {
 		try {
+			// List<WebElement> allLinksByTagA = driver
+			// .findElements(By.xpath("//a[contains(text(),'https://secure.runescape.com')]"));
+			//
 			List<WebElement> allLinksByTagA = driver
 					.findElements(By.xpath("//a[contains(text(),'https://secure.runescape.com')]"));
 
+			//
 			for (WebElement link2 : allLinksByTagA) {
 				System.out.println(
 						"link found: " + link2 + " " + link2.getAttribute("href") != null ? link2.getAttribute("href")
 								: "null");
 				if (link2 != null && link2.getAttribute("href") != null
-						&& link2.getAttribute("href").contains(contentEquals)) {
+						&& link2.getAttribute("href").toLowerCase().contains(contentEquals.toLowerCase())) {
 					link2.click();
 					return true;
 				}
 			}
+		} catch (SessionNotCreatedException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 		} catch (Exception e) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 			e.printStackTrace();
 			// Ignoring excetion, might be dangerous
 			return false;
 		}
 		return false;
+	}
+
+	public boolean blackFridayDeals() {
+		try {
+			WebDriverWait wait = new WebDriverWait(driver, 2);
+
+			WebElement element = wait.until(
+					ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@class='fa fa-times close']")));
+			System.out.println("element found: " + element);
+			if (element != null && element.isDisplayed()) {
+				element.click();
+				return true;
+			}
+			return false;
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Couldnt find the friday deals!");
+			return false;
+		}
 	}
 
 	/**
@@ -185,41 +246,44 @@ public class ProtonActions {
 	}
 
 	private int clickedIndex = 0;
-	
+
 	private int loop;
 
-	
 	/**
 	 * 
 	 * @return
 	 */
 	public boolean clickMail(String subjectName) {
 		try {
+
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
+
 			WebDriverWait wait = new WebDriverWait(driver, 30);
 
 			WebElement element = wait
 					.until(ExpectedConditions.visibilityOfElementLocated(By.className("subject-text")));
-			
-			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
-//			System.out
-//					.println("Trying to click email index: " + clickedIndex + " " + " " + name.get(clickedIndex) != null
-//							? name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)
-//							: "null"+" "+subjectName);
 
-			if (clickedIndex > 30) {//name.size()) {
+			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
+
+			if ((clickedIndex > 25) || (clickedIndex > name.size())) {// name.size()) {
 				loop++;
 				clickedIndex = 0;
 			}
-			
-			if (loop > 1) {
+
+			if (loop > 10) {
+				driver.close();
 				driver.quit();
-				System.out.println("Couldn't find e-mail twice, restarting & retrying");
+				System.out.println("Couldn't find e-mail 11 times, restarting & retrying");
 				return false;
 			}
 
 			// for (WebElement name : email) {
-			
-			if (name.get(clickedIndex) != null && name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)) {
+
+			if (name.get(clickedIndex) != null && clickedIndex < name.size()
+					&& name.get(clickedIndex).getText().equalsIgnoreCase(subjectName)) {
 				name.get(clickedIndex).click();
 				clickedIndex++;
 				// WebElement parent = (WebElement) ((JavascriptExecutor) driver).executeScript(
@@ -229,6 +293,20 @@ public class ProtonActions {
 			}
 			// }
 
+		} catch (SessionNotCreatedException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
+		} catch (org.openqa.selenium.WebDriverException e1) {
+			e1.printStackTrace();
+			driver.quit();
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				return true;
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			clickedIndex++;
@@ -244,6 +322,10 @@ public class ProtonActions {
 	 */
 	public boolean login(String username, String password) {
 		while (!isLoggedIn()) {
+			if (WebdriverFunctions.hasQuit(driver)) {
+				System.out.println("Breaking out of loop");
+				break;
+			}
 			if (logInToMail(username, password)) {
 				return true;
 			}
@@ -264,7 +346,7 @@ public class ProtonActions {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			if (sendKeysAndVerifyValue(By.id("username"), username)) {
+			if (sendKeysAndVerifyValue(By.id("username"), Config.PREFIX_EMAIL + "@protonmail.com")) {
 				if (sendKeysAndVerifyValue(By.id("password"), password)) {
 					if (clickButtonAndVerifyLink(By.id("login_btn"), ProtonConfig.LINK_TO_PROTON)) {
 						return true;
