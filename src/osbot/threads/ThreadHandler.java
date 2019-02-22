@@ -5,15 +5,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import osbot.account.AccountStage;
 import osbot.account.api.ipwhois.IPWhoisApi;
 import osbot.account.api.proxy6.Proxy6;
 import osbot.account.creator.AccountCreationService;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.account.mules.TradeBeforeBanWaves;
+import osbot.bot.BotController;
 import osbot.controller.communicator.ContentController;
 import osbot.database.DatabaseUtilities;
 import osbot.random.RandomUtil;
+import osbot.selenium.timeout.TimeoutSeleniumHandler;
+import osbot.settings.OsbotController;
 
 public class ThreadHandler {
 
@@ -110,6 +114,43 @@ public class ThreadHandler {
 		muleTradingBeforeBanWave.start();
 
 		threadList.add(muleTradingBeforeBanWave);
+	}
+
+	private static void isUnkownAndNotAMule() {
+
+		Thread isUnkownAndNotAMule = new Thread(() -> {
+
+			while (programIsRunning) {
+
+				for (OsbotController bots : BotController.getBots()) {
+					if ((!Config.isMuleProxy(bots.getAccount().getProxyIp(), bots.getAccount().getProxyPort())
+							&& !Config.isServerMuleProxy(bots.getAccount().getProxyIp(),
+									bots.getAccount().getProxyPort())
+							&& !Config.isStaticMuleProxy(bots.getAccount().getProxyIp(),
+									bots.getAccount().getProxyPort())
+							&& !Config.isSuperMuleProxy(bots.getAccount().getProxyIp(),
+									bots.getAccount().getProxyPort()))
+							&& (DatabaseUtilities.getAccountStageInDatabase(bots.getId())
+									.equalsIgnoreCase("UNKNOWN"))) {
+						DatabaseUtilities.updateAccountStage(AccountStage.TUT_ISLAND, bots.getId());
+						System.out.println("Was an 'unknown' but was not a mule, setting back to tut island");
+					}
+				}
+
+				try {
+					Thread.sleep(1500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+
+		isUnkownAndNotAMule.setName("isUnkownAndNotAMule");
+		isUnkownAndNotAMule.start();
+
+		threadList.add(isUnkownAndNotAMule);
+
 	}
 
 	private static void transformIntoMuleAccount() {
@@ -290,11 +331,14 @@ public class ThreadHandler {
 		threadList.add(handleBotsRunning);
 	}
 
+	private static TimeoutSeleniumHandler timeoutHandler = new TimeoutSeleniumHandler();
+
 	private static void checkPids() {
 		Thread checkPidsProcessesEveryMinutes2 = new Thread(() -> {
 			while (programIsRunning) {
 
-				DatabaseUtilities.checkPidsProcessesEveryMinutes2();
+				timeoutHandler.handleGeckoPids();
+				// DatabaseUtilities.checkPidsProcessesEveryMinutes2();
 
 				// Checking every 5 seconds if bot is still running
 				try {
@@ -378,15 +422,14 @@ public class ThreadHandler {
 		Thread checkRunningErrors = new Thread(() -> {
 			while (programIsRunning) {
 
+				DatabaseUtilities.checkIfAccountIsTooMany();
 				// DatabaseUtilities.checkRunningErrors();
-
-				// Checking every 5 seconds if bot is still running
-				try {
-					Thread.sleep(30_000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				// try {
+				// Thread.sleep(30_000);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
 			}
 		});
 		checkRunningErrors.setName("checkRunningErrors");
@@ -434,7 +477,7 @@ public class ThreadHandler {
 				}
 
 				try {
-					Thread.sleep(89_000);
+					Thread.sleep(35_000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -500,7 +543,7 @@ public class ThreadHandler {
 			checkTimeoutLockedBackToNormal();
 			System.out.println("Started new thread checkTimeoutLockedBackToNormal");
 		}
-		
+
 		if (getThread("refreshTablesThread") == null) {
 			ContentController.refreshTablesThread();
 			System.out.println("Started new thread refreshTablesThread");
@@ -524,6 +567,11 @@ public class ThreadHandler {
 		if (getThread("checkProxiesAndInsertIntoDatabaseAndOnTheWebsite") == null) {
 			checkProxiesAndInsertIntoDatabaseAndOnTheWebsite();
 			System.out.println("Started new thread checkProxiesAndInsertIntoDatabaseAndOnTheWebsite");
+		}
+
+		if (getThread("isUnkownAndNotAMule") == null) {
+			isUnkownAndNotAMule();
+			System.out.println("Started new thread isUnkownAndNotAMule");
 		}
 
 		if (getThread("checkRunningErrors") == null) {

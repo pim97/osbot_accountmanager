@@ -201,7 +201,7 @@ public class AccountCreationService {
 		// firefoxBinary.addCommandLineOptions("--headless");
 		DesiredCapabilities dc = new DesiredCapabilities();
 		FirefoxOptions option = new FirefoxOptions();
-		option.addPreference("permissions.default.image", 2);
+//		option.addPreference("permissions.default.image", 2);
 
 		option.setBinary(firefoxBinary);
 		option.setProfile(profile);

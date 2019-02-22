@@ -127,15 +127,19 @@ public class ProtonActions {
 	 */
 	public boolean clickLink(String contentEquals) {
 		try {
+			// List<WebElement> allLinksByTagA = driver
+			// .findElements(By.xpath("//a[contains(text(),'https://secure.runescape.com')]"));
+			//
 			List<WebElement> allLinksByTagA = driver
 					.findElements(By.xpath("//a[contains(text(),'https://secure.runescape.com')]"));
 
+			//
 			for (WebElement link2 : allLinksByTagA) {
 				System.out.println(
 						"link found: " + link2 + " " + link2.getAttribute("href") != null ? link2.getAttribute("href")
 								: "null");
 				if (link2 != null && link2.getAttribute("href") != null
-						&& link2.getAttribute("href").contains(contentEquals)) {
+						&& link2.getAttribute("href").toLowerCase().contains(contentEquals.toLowerCase())) {
 					link2.click();
 					return true;
 				}

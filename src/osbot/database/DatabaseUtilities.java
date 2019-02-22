@@ -157,6 +157,53 @@ public class DatabaseUtilities {
 	}
 
 	/**
+	 * Returns the amount of super mules there is currently
+	 * 
+	 * @return
+	 */
+	public static int getAmountOfSuperMules() {
+		int amountOfSuperMules = 0;
+		for (OsbotController bot : BotController.getBots()) {
+			if (bot.getAccount().getStatus() == AccountStatus.SUPER_MULE) {
+				amountOfSuperMules++;
+			}
+		}
+		return amountOfSuperMules;
+	}
+
+	/**
+	 * Sometimes too many super mules accounts are created, this should cut them
+	 * off, not the ideal solution but okay for now
+	 */
+	public static void checkIfAccountIsTooMany() {
+		if (getAmountOfSuperMules() > 1) {
+			OsbotController removedBot = null;
+
+			for (OsbotController bot : BotController.getBots()) {
+				if (getAmountOfSuperMules() == 1) {
+					break;
+				}
+
+				if (bot.getAccount().getStatus() == AccountStatus.SUPER_MULE
+						&& Integer.parseInt(bot.getAccount().getAccountValue()) == 0
+						&& bot.getAccount().getStage() == AccountStage.UNKNOWN
+						&& Config.isSuperMuleProxy(bot.getAccount().getProxyIp(), bot.getAccount().getProxyPort())) {
+					removedBot = bot;
+					deleteFromTable(bot.getId());
+					System.out.println("Tried to delete: " + bot.getAccount().getEmail());
+					break;
+				}
+
+			}
+			if (removedBot != null) {
+				BotController.getBots().remove(removedBot);
+				System.out.println("Removed bot from the list");
+			}
+
+		}
+	}
+
+	/**
 	 * Deletes an account in the database
 	 * 
 	 * @param id
@@ -804,6 +851,20 @@ public class DatabaseUtilities {
 			}
 
 			boolean isProcessRunningOnWindows = BotHandler.isProcessIdRunningOnWindows(bot.getPidId());
+
+			boolean mustCloseBecauseMoreThan1CurrentlyOpenBasedOnUsername = BotHandler.doubleRunningOnProcess(bot) > 1;
+
+			if (mustCloseBecauseMoreThan1CurrentlyOpenBasedOnUsername) {
+				bot.getAccount().setUpdated(true);
+				BotController.killProcess(bot.getPidId());
+				bot.setPidId(-1);
+				if (isServerMule(bot.getAccount())) {
+					DatabaseUtilities.updateLoginStatus("server_muling", LoginStatus.DEFAULT, bot.getId());
+				} else {
+					DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId());
+				}
+				System.out.println("KILLING: 6 because of duplicated windows open");
+			}
 
 			// When account has started, but not logged in between 80 seconds
 			if (bot.getAccount().getLoginStatus() != null
@@ -1883,81 +1944,84 @@ public class DatabaseUtilities {
 	}
 
 	public static void checkPidsProcessesEveryMinutes2() {
-		if (GeckoHandler.getFirefoxExeWindows().size() > 0 && GeckoHandler.getGeckodriverExeWindows().size() <= 0) {
-			WebdriverFunctions.killAll();
-		}
-
-		for (Integer pid : GeckoHandler.getFirefoxExeWindows()) {
-			if (!containsInPid2(pid)) {
-				PidCheck c = new PidCheck(pid);
-				GECKO_PIDS.add(c);
-				System.out.println("Added new firefox/2 pid: " + c.getPid());
-			}
-		}
-
-		Iterator<PidCheck> i = GECKO_PIDS.iterator();
-
-		while (i.hasNext()) {
-			PidCheck pid = i.next();
-
-			if (!containsInRealTimePid2(pid.getPid())) {
-				BotController.killProcess(pid.getPid());
-				i.remove();
-				System.out.println("Pid /2 " + pid + " was removed, was already open for 5 minutes");
-				continue;
-			}
-
-			if (pid.getMatches() > 480) {
-				BotController.killProcess(pid.getPid());
-				i.remove();
-				System.out.println("Pid /2 " + pid + " was removed, was already open for 5 minutes");
-				continue;
-			} else {
-				// System.out.println("Firefox /2 pid: " + pid.getPid() + " closing in " +
-				// pid.getMatches() + "/300");
-			}
-			pid.setMatches(pid.getMatches() + 1);
-		}
-
-		for (Integer pid : GeckoHandler.getGeckodriverExeWindows()) {
-			if (!containsInPid(pid)) {
-				FIREFOX_PIDS.add(new PidCheck(pid));
-				System.out.println("Added new firefox pid: " + pid);
-			}
-		}
-
-		Iterator<PidCheck> b = FIREFOX_PIDS.iterator();
-
-		while (b.hasNext()) {
-			PidCheck pid = b.next();
-
-			if (!containsInRealTimePid(pid.getPid())) {
-				BotController.killProcess(pid.getPid());
-				b.remove();
-				// System.out.println("Pid " + pid + " was removed, was already open for 5
-				// minutes");
-				continue;
-			}
-
-			if (pid.getMatches() > 480) {
-				BotController.killProcess(pid.getPid());
-				b.remove();
-				// System.out.println("Pid " + pid + " was removed, was already open for 5
-				// minutes");
-				continue;
-			} else {
-				// System.out.println("Firefox pid: " + pid.getPid() + " closing in " +
-				// pid.getMatches() + "/300");
-			}
-			pid.setMatches(pid.getMatches() + 1);
-		}
-
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// if (GeckoHandler.getFirefoxExeWindows().size() > 0 &&
+		// GeckoHandler.getGeckodriverExeWindows().size() <= 0) {
+		// WebdriverFunctions.killAll();
+		// }
+		//
+		// for (Integer pid : GeckoHandler.getFirefoxExeWindows()) {
+		// if (!containsInPid2(pid)) {
+		// PidCheck c = new PidCheck(pid);
+		// GECKO_PIDS.add(c);
+		// System.out.println("Added new firefox/2 pid: " + c.getPid());
+		// }
+		// }
+		//
+		// Iterator<PidCheck> i = GECKO_PIDS.iterator();
+		//
+		// while (i.hasNext()) {
+		// PidCheck pid = i.next();
+		//
+		// if (!containsInRealTimePid2(pid.getPid())) {
+		// BotController.killProcess(pid.getPid());
+		// i.remove();
+		// // System.out.println("Pid /2 " + pid + " was removed, was already open for 5
+		// // minutes");
+		// continue;
+		// }
+		//
+		// if (pid.getMatches() > 1200) {
+		// BotController.killProcess(pid.getPid());
+		// i.remove();
+		// System.out.println("Pid /2 " + pid + " was killed, was already open for 5
+		// minutes");
+		// continue;
+		// } else {
+		// // System.out.println("Firefox /2 pid: " + pid.getPid() + " closing in " +
+		// // pid.getMatches() + "/300");
+		// }
+		// pid.setMatches(pid.getMatches() + 1);
+		// }
+		//
+		// for (Integer pid : GeckoHandler.getGeckodriverExeWindows()) {
+		// if (!containsInPid(pid)) {
+		// FIREFOX_PIDS.add(new PidCheck(pid));
+		// System.out.println("Added new firefox pid: " + pid);
+		// }
+		// }
+		//
+		// Iterator<PidCheck> b = FIREFOX_PIDS.iterator();
+		//
+		// while (b.hasNext()) {
+		// PidCheck pid = b.next();
+		//
+		// if (!containsInRealTimePid(pid.getPid())) {
+		// BotController.killProcess(pid.getPid());
+		// b.remove();
+		// // System.out.println("Pid " + pid + " was removed, was already open for 5
+		// // minutes");
+		// continue;
+		// }
+		//
+		// if (pid.getMatches() > 1200) {
+		// BotController.killProcess(pid.getPid());
+		// b.remove();
+		// System.out.println("Pid " + pid + " was killed, was already open for 5
+		// minutes");
+		// continue;
+		// } else {
+		// // System.out.println("Firefox pid: " + pid.getPid() + " closing in " +
+		// // pid.getMatches() + "/300");
+		// }
+		// pid.setMatches(pid.getMatches() + 1);
+		// }
+		//
+		// try {
+		// Thread.sleep(1000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
 
 	}
 
@@ -2604,12 +2668,18 @@ public class DatabaseUtilities {
 				continue;
 			}
 
+			if (proxy.getProxyIp().contains("185.232")) {
+				System.out.println("Not using this flagged ip-address to create accounts");
+				continue;
+			}
+
 			boolean usedProxyAmount = proxy.getUsedCount() < 3 || Config.NEW_PROXYRACK_CONFIGURATION;
 
 			// DatabaseProxy key = entry.getKey();
 			// Integer value = entry.getValue();
 			int extraBots = 9;
 			if ((usedProxyAmount) && (BotController.getBots().size()) < (Config.MAX_BOTS_OPEN + extraBots)) {
+
 				/**
 				 * public AccountTable(int id, String script, String username, int world, String
 				 * proxyIp, String proxyPort, boolean lowCpuMode, AccountStatus status) {

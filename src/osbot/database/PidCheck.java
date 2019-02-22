@@ -2,8 +2,9 @@ package osbot.database;
 
 public class PidCheck {
 
-	public PidCheck(int pid) {
+	public PidCheck(int pid, long startTime) {
 		this.pid = pid;
+		this.startTime = startTime;
 	}
 
 	public int getPid() {
@@ -22,5 +23,22 @@ public class PidCheck {
 		this.matches = matches;
 	}
 
+	/**
+	 * @return the startTime
+	 */
+	public long getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * @param startTime
+	 *            the startTime to set
+	 */
+	public void setStartTime(long startTime) {
+		this.startTime = startTime;
+	}
+
 	private int pid, matches;
+
+	private long startTime;
 }

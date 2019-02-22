@@ -66,7 +66,7 @@ public class ProtonMain {
 					if (!getActions().clickedCorrectEmail()) {
 						// getActions().deleteEmail();
 						System.out.println("Email has not been found, clicking on the next one");
-						cantFindEmail++;
+//						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -74,17 +74,17 @@ public class ProtonMain {
 				}
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 100) {
-					System.out.println("Had 100 tries of finding the e-mail, but couldn't find, restarting the driver");
-					driver.quit();
-					break;
-				}
+//				if (cantFindEmail > 100) {
+//					System.out.println("Had 100 tries of finding the e-mail, but couldn't find, restarting the driver");
+//					driver.quit();
+//					break;
+//				}
 
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
@@ -95,6 +95,7 @@ public class ProtonMain {
 			System.out.println("Got the e-mail");
 
 			while (!getActions().clickLink("https://secure.runescape.com/m=accountappeal/enter_security_code.ws")) {
+				// while (!getActions().clickLink("http://echo7.bluehornet.com/")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
 					System.out.println("Breaking out of loop");
@@ -179,11 +180,11 @@ public class ProtonMain {
 				// }
 				// fridayTries++;
 
-				if (getActions().clickMail("Welcome to RuneScape!")) {
+				if (getActions().clickMail("Thank you for registering your email")) {
 					if (!getActions().clickedCorrectEmail()) {
 						// getActions().deleteEmail();
 						System.out.println("Email has not been found");
-						cantFindEmail++;
+//						cantFindEmail++;
 					} else if (getActions().clickedCorrectEmail()) {
 						found = true;
 						System.out.println("Email has been found");
@@ -191,18 +192,18 @@ public class ProtonMain {
 				}
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				if (cantFindEmail > 20) {
-					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
-					driver.quit();
-					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
-					break;
-				}
+//				if (cantFindEmail > 20) {
+//					System.out.println("Had 20 tries of finding the e-mail, but couldn't find, restarting the driver");
+//					driver.quit();
+//					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
+//					break;
+//				}
 
 				if (WebdriverFunctions.hasQuit(driver)) {
 					driver.quit();
@@ -213,7 +214,10 @@ public class ProtonMain {
 			}
 			System.out.println("Got the e-mail");
 
-			while (!getActions().clickLink("https://secure.runescape.com/m=email-register/submit_code.ws")) {
+			// while
+			// (!getActions().clickLink("https://secure.runescape.com/m=email-register/submit_code.ws"))
+			// {
+			while (!getActions().clickLink("http://echo7.bluehornet.com/")) {
 				if (WebdriverFunctions.hasQuit(driver)) {
 					// AccountCreationService.checkPreviousProcessesAndDie(getPidDriver().getType());
 					driver.quit();

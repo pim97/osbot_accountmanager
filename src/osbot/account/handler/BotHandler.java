@@ -35,6 +35,22 @@ import osbot.tables.AccountTable;
 public class BotHandler {
 
 	/**
+	 * When 2 bot windows are active for 1 person
+	 * 
+	 * @param bot1
+	 * @return
+	 */
+	public static int doubleRunningOnProcess(OsbotController bot1) {
+		int countLiveOnUser = 0;
+		for (OsbotController bot2 : BotController.getBots()) {
+			if (bot2.getAccount().getUsername().equalsIgnoreCase(bot1.getAccount().getUsername())) {
+				countLiveOnUser++;
+			}
+		}
+		return countLiveOnUser;
+	}
+
+	/**
 	 * Queries {@code tasklist} if the process ID {@code pid} is running.
 	 * 
 	 * @param pid
@@ -1147,129 +1163,129 @@ public class BotHandler {
 		ArrayList<OsbotController> random = returnRandomizedBotControllerList();
 
 		int increase = 0;
-//		if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
+		// if (getAmountOfBotsActive() < Config.MAX_BOTS_OPEN) {
 
-			for (int i = 0; i < random.size(); i++) {
-				System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
+		for (int i = 0; i < random.size(); i++) {
+			System.out.println("[BOT HANDLER MANAGEMENT] Bots currently active: " + getAmountOfBotsActive());
 
-				OsbotController osbot = random.get(i);
+			OsbotController osbot = random.get(i);
 
-				long startTime = System.currentTimeMillis();
+			long startTime = System.currentTimeMillis();
 
-				if (wantsToMule()) {
-					System.out.println("A bot wants to mule, so giving them priority");
-					runMule();
+			if (wantsToMule()) {
+				System.out.println("A bot wants to mule, so giving them priority");
+				runMule();
+				continue;
+			}
+
+			OsbotController superMule = superMuleWantsToLaunchToFinishTutorialIsland();
+			if (superMule != null) {
+				System.out.println(
+						"Skipping this one, because a tutorial island mule/super mule/server mule has to launch first, acc: "
+								+ superMule.getAccount().getUsername() + " status: "
+								+ superMule.getAccount().getStatus());
+				runBot(superMule);
+				continue;
+			}
+
+			// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
+			// one");
+
+			boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
+
+			if (!hasValidLoginStatus) {
+				continue;
+			}
+
+			boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
+					&& osbot.getAccount().getStatus() != AccountStatus.OUT_OF_MONEY
+					&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
+					&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
+
+			if (!correctStagetoLaunch) {
+				continue;
+			}
+
+			boolean correctStatusToLaunch = (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
+					|| (osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
+					|| (osbot.getAccount().getStatus() == AccountStatus.TASK_TIMEOUT
+							&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
+					|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
+							&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);
+
+			boolean isProxyOnline = osbot.getAccount().isProxyOnline();
+
+			if (!isProxyOnline) {
+				System.out.println("Skipping launching this account, because the proxy is offline");
+				continue;
+			}
+
+			if (!correctStatusToLaunch) {
+				continue;
+			}
+
+			// boolean enoughSpaceToLaunch = javaPidsSize < Config.MAX_BOTS_OPEN;
+			//
+			// if (!enoughSpaceToLaunch) {
+			// continue;
+			// }
+
+			boolean hasValidEmail = osbot.getAccount().getEmail() != null;
+
+			if (!hasValidEmail) {
+				continue;
+			}
+
+			// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
+			// two");
+
+			if (osbot != null) {
+
+				boolean containsInProgram = BotController.containsInPidList(osbot.getPidId());
+
+				if (containsInProgram) {
 					continue;
 				}
 
-				OsbotController superMule = superMuleWantsToLaunchToFinishTutorialIsland();
-				if (superMule != null) {
-					System.out.println(
-							"Skipping this one, because a tutorial island mule/super mule/server mule has to launch first, acc: "
-									+ superMule.getAccount().getUsername() + " status: "
-									+ superMule.getAccount().getStatus());
-					runBot(superMule);
-					continue;
-				}
+				if (Config.NEW_PROXYRACK_CONFIGURATION) {
+					WhoIsIp proxy = IPWhoisApi.getSingleton()
+							.getRandomCountryObjectFromCountryCode(osbot.getAccount().getCountryProxyCode());
 
-				// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
-				// one");
-
-				boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
-
-				if (!hasValidLoginStatus) {
-					continue;
-				}
-
-				boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
-						&& osbot.getAccount().getStatus() != AccountStatus.OUT_OF_MONEY
-						&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
-						&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
-
-				if (!correctStagetoLaunch) {
-					continue;
-				}
-
-				boolean correctStatusToLaunch = (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
-						|| (osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
-						|| (osbot.getAccount().getStatus() == AccountStatus.TASK_TIMEOUT
-								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
-						|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
-								&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);
-
-				boolean isProxyOnline = osbot.getAccount().isProxyOnline();
-
-				if (!isProxyOnline) {
-					System.out.println("Skipping launching this account, because the proxy is offline");
-					continue;
-				}
-
-				if (!correctStatusToLaunch) {
-					continue;
-				}
-
-//				boolean enoughSpaceToLaunch = javaPidsSize < Config.MAX_BOTS_OPEN;
-//
-//				if (!enoughSpaceToLaunch) {
-//					continue;
-//				}
-
-				boolean hasValidEmail = osbot.getAccount().getEmail() != null;
-
-				if (!hasValidEmail) {
-					continue;
-				}
-
-				// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
-				// two");
-
-				if (osbot != null) {
-
-					boolean containsInProgram = BotController.containsInPidList(osbot.getPidId());
-
-					if (containsInProgram) {
+					if (proxy == null) {
 						continue;
 					}
-
-					if (Config.NEW_PROXYRACK_CONFIGURATION) {
-						WhoIsIp proxy = IPWhoisApi.getSingleton()
-								.getRandomCountryObjectFromCountryCode(osbot.getAccount().getCountryProxyCode());
-
-						if (proxy == null) {
-							continue;
-						}
-					}
-
-					if (Config.BREAKING) {
-						if (!calendar2.after(osbot.getAccount().getDate())) {
-							System.out.println(
-									"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
-							continue;
-						}
-					}
-
-					runBot(osbot);
-
-					if (increase > 10) {
-						System.out.println("Breaking because wants to be randomized...");
-						break;
-					}
-
-					increase++;
-
-					// try {
-					// Thread.sleep(5500);
-					// } catch (InterruptedException e) {
-					// // TODO Auto-generated catch block
-					// e.printStackTrace();
-					// }
-
-					System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage()
-							+ " " + osbot.getAccount().getUsername());
-
-					System.out.println(System.currentTimeMillis() - startTime + " ms to start up");
 				}
-//			}
+
+				if (Config.BREAKING) {
+					if (!calendar2.after(osbot.getAccount().getDate())) {
+						System.out.println(
+								"Skipping " + osbot.getAccount().getUsername() + " because has currently a break");
+						continue;
+					}
+				}
+
+				runBot(osbot);
+
+				if (increase > 10) {
+					System.out.println("Breaking because wants to be randomized...");
+					break;
+				}
+
+				increase++;
+
+				// try {
+				// Thread.sleep(5500);
+				// } catch (InterruptedException e) {
+				// // TODO Auto-generated catch block
+				// e.printStackTrace();
+				// }
+
+				System.out.println("[BOT HANDLER MANAGEMENT] Running bot name: " + osbot.getAccount().getStage() + " "
+						+ osbot.getAccount().getUsername());
+
+				System.out.println(System.currentTimeMillis() - startTime + " ms to start up");
+			}
+			// }
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package osbot.account.runescape.website;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -9,7 +10,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -19,6 +19,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.twocaptcha.api.ProxyType;
 
+import anti_captcha.AntiCaptcha;
 import osbot.account.AccountStatus;
 import osbot.account.creator.PidDriver;
 import osbot.account.creator.RandomNameGenerator;
@@ -342,11 +343,12 @@ public class RunescapeActions {
 			}
 			System.out.println("On the runescape website!");
 
+			fillInInformation();
+			
 			if (!isAtLinkNoWait("error?error=1") && !error) {
 				getResponseToken("https://secure.runescape.com/m=account-creation/create_account");
 			}
 
-			fillInInformation();
 			// Filling in all the information
 			// if (fillInInformation()) {
 			// System.out.println("Successfully filled in all information!");
@@ -363,7 +365,7 @@ public class RunescapeActions {
 				System.out.println("Waiting on the completion of the captcha");
 
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -390,7 +392,7 @@ public class RunescapeActions {
 				setFailedTries(getFailedTries() + 1);
 
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					// e.printStackTrace();
@@ -491,17 +493,30 @@ public class RunescapeActions {
 		new Thread(() -> DatabaseUtilities.insertLoggingMessage("CAPTCHA", "1")).start();
 
 		new Thread(() -> {
-
+			//
 			String responseToken = null;
+			//
+			// try {
+			// responseToken =
+			// AntiCaptcha.exampleNoCaptchaProxyless("60f2074bd6ac1580eab7dd0009e3419a",
+			// link,
+			// "6Lcsv3oUAAAAAGFhlKrkRb029OHio098bbeyi_Hv");
+			// } catch (MalformedURLException e1) {
+			// // TODO Auto-generated catch block
+			// e1.printStackTrace();
+			// } catch (InterruptedException e1) {
+			// // TODO Auto-generated catch block
+			// e1.printStackTrace();
+			// }
 
 			// String apiKey, String googleKey, String pageUrl, boolean invisible
 			osbot.account.TwoCaptchaService service = new osbot.account.TwoCaptchaService(
 					"8ff2e630e82351bdc3f0b00af2e026b9", "6Lcsv3oUAAAAAGFhlKrkRb029OHio098bbeyi_Hv", link,
-					// "" + getAccount().getAccount().getProxyIp(), "" +
-					// getAccount().getAccount().getProxyPort(),
-					// getAccount().getAccount().getProxyUsername(),
-					// getAccount().getAccount().getProxyPassword(),
-					// ProxyType.SOCKS5,
+					 "" + getAccount().getAccount().getProxyIp(), "" +
+					 getAccount().getAccount().getProxyPort(),
+					 getAccount().getAccount().getProxyUsername(),
+					 getAccount().getAccount().getProxyPassword(),
+					 ProxyType.SOCKS5,
 
 					true);
 
@@ -668,7 +683,7 @@ public class RunescapeActions {
 	 */
 	private boolean hasCaptchaCompleted() {
 		RemoteWebDriver r = (RemoteWebDriver) driver;
-		return (new WebDriverWait(driver, 300)).until(new ExpectedCondition<Boolean>() {
+		return (new WebDriverWait(driver, 400)).until(new ExpectedCondition<Boolean>() {
 			public Boolean apply(WebDriver d) {
 				String setResponseToken = "return document.getElementById('g-recaptcha-response').value";
 				String a = r.executeScript(setResponseToken).toString();
