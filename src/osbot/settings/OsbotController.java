@@ -1,7 +1,11 @@
 package osbot.settings;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -11,9 +15,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 
+import osbot.account.LoginStatus;
 import osbot.account.global.Config;
 import osbot.account.handler.BotHandler;
 import osbot.bot.BotController;
+import osbot.database.DatabaseUtilities;
 import osbot.tables.AccountTable;
 
 public class OsbotController {
@@ -54,7 +60,7 @@ public class OsbotController {
 	 *            TODO
 	 * 
 	 */
-	public void runBot(boolean isMule) {
+	public void runBot(OsbotController bot, boolean isMule) {
 
 		// new Thread(() -> {
 
@@ -63,7 +69,12 @@ public class OsbotController {
 
 			List<Integer> pids = BotController.getJavaPIDsWindows();
 			System.out.println("Took 1: " + (System.currentTimeMillis() - startTime));
-			Process p = Runtime.getRuntime().exec(getCliArgs().toString());
+			String abc = "cmd /c start cmd.exe /c cd C:\\Users\\Administrator\\Dropbox\\osbot && "+getCliArgs().toString();
+			System.out.println(abc);
+			Process p = Runtime.getRuntime().exec(abc);
+			
+//			"cmd /c start cmd.exe /c cd ""+ osbotPath +"" && start osbot_script.bat"
+
 			System.out.println("Took 2: " + (System.currentTimeMillis() - startTime));
 			System.out.println("Waiting for OSBot to launch..");
 
@@ -74,23 +85,30 @@ public class OsbotController {
 				System.out.println("Destroyed, couldn't start up in time");
 				p.destroy();
 				setStartingUp(false);
+				new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId())).start();
 				return;
 			}
 			System.out.println("Took 3: " + (System.currentTimeMillis() - startTime));
 
-			System.out.println(getCliArgs().toString());
 			List<Integer> pidsAfter = BotController.getJavaPIDsWindows();
 			System.out.println("Took 4: " + (System.currentTimeMillis() - startTime));
 			pidsAfter.removeAll(pids);
 
+//			System.out.println("found pid: " + getPidOfProcess(p));
 			if (!Config.TESTING) {
 				if (pidsAfter.size() == 1) {
 					setPidId(pidsAfter.get(0));
 					System.out.println("Pid set to: " + pidsAfter.get(0));
 				} else {
 					p.destroy();
-					System.out.println("Destroyed, couldn't set pid, too many");
+
+					pidsAfter.forEach(pid -> {
+						System.out.println("found: " + pid);
+					});
+
+					System.out.println("Destroyed, couldn't set pid, too many or less");
 					setStartingUp(false);
+					new Thread(() -> DatabaseUtilities.updateLoginStatus(LoginStatus.DEFAULT, bot.getId())).start();
 					Thread.sleep(5000);
 					return;
 				}
@@ -209,7 +227,7 @@ public class OsbotController {
 	public void addArguments(CliArgs args, boolean addDoublePoint, Object... value) {
 		if (getCliArgs().length() == 0) {
 			// getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot -debug");
-			getCliArgs().append("java -XX:ErrorFile=nul -cp \"lib/*\" org.osbot.Boot");
+			getCliArgs().append("java -cp \"lib/*\" org.osbot.Boot");
 		}
 		getCliArgs().append(" ");
 		getCliArgs().append("-" + args.name().toLowerCase());

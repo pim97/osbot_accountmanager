@@ -9,13 +9,18 @@ import osbot.random.RandomUtil;
 
 public class Config {
 
-	public static final ArrayList<String> DATABASE_NAMES = new ArrayList<String>(
-			Arrays.asList("107.150.38.50_002_elf", "173.208.203.146_001_dragon", "bear_test"));
-
 	/**
 	 * Osbot configs
 	 */
-
+	public static final String[] DATABASES = { 
+			"`107.150.38.50_003_dear`",
+			"`107.150.61.130_006_goblin`",
+			"`173.208.175.186_002_elf`",
+//			"`173.208.184.178_004_unicornbod`",
+//			"`173.208.203.146_001_dragon`",
+//			"`63.141.228.170_005_brother`"
+			};
+	
 	public static final String OSBOT_USERNAME = "dormic";
 
 	public static final String OSBOT_PASSWORD = "DuTIbljNuXHDF4T0e7Bk";
@@ -209,9 +214,12 @@ public class Config {
 	public static final boolean TESTING = false;
 
 	public static final boolean NEW_PROXYRACK_CONFIGURATION = false;
+	
+	public static final boolean PROXIES_ONE_DATABASE_AND_NOT_BY_MACHINE = true;
 	/**
 	 * End
 	 */
+//	x
 
 	public static final boolean LOW_CPU = true;
 

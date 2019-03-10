@@ -1,0 +1,1 @@
+java -XX:ErrorFile=nul -cp "lib/*" org.osbot.Boot -login dormic:DuTIbljNuXHDF4T0e7Bk -data 0 -world 453 -allow norandoms,lowcpu -bot dearmralpha+1010279960@protonmail.com:navi06lhi4g2:0000 -mem 1200 -proxy 196.18.12.242:8000:WQYyVZ:ouzCuU -script LOGIN_TEST:dearmralpha+1010279960@protonmail.com_navi06lhi4g2_-1_UNKNOWN_root_osbot__mill4ptzk7jd_null

@@ -137,7 +137,7 @@ public class AccountCreationService {
 
 	private static ArrayList<AccountCreate> usedUsernames = new ArrayList<AccountCreate>();
 
-	public static synchronized boolean containsUsername(String user) {
+	public static boolean containsUsername(String user) {
 		for (AccountCreate acc : usedUsernames) {
 			if (acc.getUsername().equalsIgnoreCase(user)) {
 				return true;
@@ -146,12 +146,12 @@ public class AccountCreationService {
 		return false;
 	}
 
-	public static synchronized void addUsernameToUsernames(String username) {
+	public static void addUsernameToUsernames(String username) {
 		AccountCreate acc = new AccountCreate(System.currentTimeMillis(), username);
 		usedUsernames.add(acc);
 	}
 
-	public static synchronized void checkUsedUsernames() {
+	public static void checkUsedUsernames() {
 		Iterator<AccountCreate> it = usedUsernames.iterator();
 		System.out.println("List checked usernames: " + usedUsernames.size());
 
@@ -201,7 +201,7 @@ public class AccountCreationService {
 		// firefoxBinary.addCommandLineOptions("--headless");
 		DesiredCapabilities dc = new DesiredCapabilities();
 		FirefoxOptions option = new FirefoxOptions();
-//		option.addPreference("permissions.default.image", 2);
+		option.addPreference("permissions.default.image", 2);
 
 		option.setBinary(firefoxBinary);
 		option.setProfile(profile);
@@ -395,7 +395,7 @@ public class AccountCreationService {
 	/**
 	 * @return the usedUsernames
 	 */
-	public static synchronized List<AccountCreate> getUsedUsernames() {
+	public static List<AccountCreate> getUsedUsernames() {
 		return usedUsernames;
 	}
 
@@ -403,7 +403,7 @@ public class AccountCreationService {
 	 * @param usedUsernames
 	 *            the usedUsernames to set
 	 */
-	public static synchronized void setUsedUsernames(ArrayList<AccountCreate> usedUsernames) {
+	public static void setUsedUsernames(ArrayList<AccountCreate> usedUsernames) {
 		AccountCreationService.usedUsernames = usedUsernames;
 	}
 

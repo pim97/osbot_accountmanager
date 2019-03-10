@@ -344,7 +344,7 @@ public class RunescapeActions {
 			System.out.println("On the runescape website!");
 
 			fillInInformation();
-			
+
 			if (!isAtLinkNoWait("error?error=1") && !error) {
 				getResponseToken("https://secure.runescape.com/m=account-creation/create_account");
 			}
@@ -490,7 +490,10 @@ public class RunescapeActions {
 	 */
 	private void getResponseToken(String link) {
 
-		new Thread(() -> DatabaseUtilities.insertLoggingMessage("CAPTCHA", "1")).start();
+		new Thread(() -> DatabaseUtilities.insertLoggingMessage("CAPTCHA", type.name(),
+				getAccount().getAccount().getEmail() != null ? getAccount().getAccount().getEmail()
+						: getAccount().getAccount().getUsername() != null ? getAccount().getAccount().getUsername()
+								: "null")).start();
 
 		new Thread(() -> {
 			//
@@ -512,11 +515,12 @@ public class RunescapeActions {
 			// String apiKey, String googleKey, String pageUrl, boolean invisible
 			osbot.account.TwoCaptchaService service = new osbot.account.TwoCaptchaService(
 					"8ff2e630e82351bdc3f0b00af2e026b9", "6Lcsv3oUAAAAAGFhlKrkRb029OHio098bbeyi_Hv", link,
-					 "" + getAccount().getAccount().getProxyIp(), "" +
-					 getAccount().getAccount().getProxyPort(),
-					 getAccount().getAccount().getProxyUsername(),
-					 getAccount().getAccount().getProxyPassword(),
-					 ProxyType.SOCKS5,
+
+					// "" + getAccount().getAccount().getProxyIp(), "" +
+					// getAccount().getAccount().getProxyPort(),
+					// getAccount().getAccount().getProxyUsername(),
+					// getAccount().getAccount().getProxyPassword(),
+					// ProxyType.SOCKS5,
 
 					true);
 

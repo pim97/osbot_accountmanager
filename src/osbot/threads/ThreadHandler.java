@@ -138,7 +138,7 @@ public class ThreadHandler {
 				}
 
 				try {
-					Thread.sleep(1500);
+					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -255,6 +255,13 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.checkMulesCorrectTrading();
+				
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		checkMulesCorrectTrading.setName("checkMulesCorrectTrading");
@@ -271,6 +278,13 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleNormalMules();
+				
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		handleNormalMulesTrading.setName("handleNormalMulesTrading");
@@ -284,6 +298,13 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleServerMules();
+				
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		handleServerMules.setName("handleServerMules");
@@ -297,6 +318,13 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleSuperMules();
+				
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		handleSuperMules.setName("handleSuperMules");
@@ -342,7 +370,7 @@ public class ThreadHandler {
 
 				// Checking every 5 seconds if bot is still running
 				try {
-					Thread.sleep(500);
+					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -405,7 +433,7 @@ public class ThreadHandler {
 				DatabaseUtilities.closeBotsWhenNotActive();
 
 				try {
-					Thread.sleep(500);
+					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -423,6 +451,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.checkIfAccountIsTooMany();
+//				DatabaseUtilities.setNonBannedMulersToNoTrading();
 				// DatabaseUtilities.checkRunningErrors();
 				// try {
 				// Thread.sleep(30_000);
@@ -449,8 +478,8 @@ public class ThreadHandler {
 				int createAmount = DatabaseUtilities.accountsToCreate2() != 1
 						? DatabaseUtilities.accountsToCreate2() / 2
 						: DatabaseUtilities.accountsToCreate2();
-				if (createAmount > 5) {
-					createAmount = 5;
+				if (createAmount > 15) {
+					createAmount = 15;
 				}
 				if (recoverAmount > 5) {
 					recoverAmount = 5;

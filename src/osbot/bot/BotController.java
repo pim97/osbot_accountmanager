@@ -112,7 +112,7 @@ public class BotController {
 	/**
 	 * @return the bots
 	 */
-	public static List<OsbotController> getBots() {
+	public static synchronized List<OsbotController> getBots() {
 		return bots;
 	}
 

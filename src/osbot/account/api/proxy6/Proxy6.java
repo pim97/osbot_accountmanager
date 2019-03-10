@@ -42,18 +42,20 @@ public class Proxy6 {
 	 */
 	public void loop() {
 		// For test server
-		if (Config.MACHINE_ID != -1) {
+		if (Config.MACHINE_ID != -1 || Config.PROXIES_ONE_DATABASE_AND_NOT_BY_MACHINE) {
 
 			// resetDescription();
 			setDescriptionForComputer();
 			updateValidityCheck();
 
 			// TODO should be its own instance with other mail handlers
-//			double availableBalance = api.getBalance();
-//			if (availableBalance < 2) {
-//				MailWarning.initializeMail("Balance on Proxy6 is low! " + availableBalance + " is left!",
-//						"Please increase your balance on proxy6 to not have any proxies have removed!");
-//			}
+			// double availableBalance = api.getBalance();
+			// if (availableBalance < 2) {
+			// MailWarning.initializeMail("Balance on Proxy6 is low! " + availableBalance +
+			// " is left!",
+			// "Please increase your balance on proxy6 to not have any proxies have
+			// removed!");
+			// }
 		}
 	}
 
@@ -113,14 +115,19 @@ public class Proxy6 {
 					DatabaseUtilities.insertProxy(proxy, true);
 					break;
 				}
-				
+
 				if ((description != -2) && (description != Config.MACHINE_ID) && (containsInProxyList)
 						&& (containsInProxy6List(proxy.getIp(), proxy.getPort(), proxy.getUser(), proxy.getPass()))) {
 					System.out.println("Deleted proxy from the database, because no longer exists in the API");
 					DatabaseUtilities.deleteFromProxyList(proxy.getIp(), proxy.getPort());
 					break;
 				}
-				
+
+				if (Config.PROXIES_ONE_DATABASE_AND_NOT_BY_MACHINE && !containsInProxyList) {
+					System.out.println("Inserted a proxy into a big shared database");
+					DatabaseUtilities.insertProxy(proxy, false);
+				}
+
 				// When the proxy on the site doesn't exist anymore but it does in the database
 				if (containsInProxyList
 						&& !containsInProxy6List(proxy.getIp(), proxy.getPort(), proxy.getUser(), proxy.getPass())) {
@@ -129,19 +136,21 @@ public class Proxy6 {
 					break;
 				}
 
-				// If its not used by our database, but is still logged to use, reset it so
-				// other machines may use it
-				if ((!containsInProxyList) && (description == Config.MACHINE_ID) && (description != -2)) {
-					System.out.println("Set this proxy to not used, so other machines may use it");
-					System.out.println(api.setDescription(Integer.toString(proxy.getId()), -1));
-					break;
-				}
+				if (!Config.PROXIES_ONE_DATABASE_AND_NOT_BY_MACHINE) {
+					// If its not used by our database, but is still logged to use, reset it so
+					// other machines may use it
+					if ((!containsInProxyList) && (description == Config.MACHINE_ID) && (description != -2)) {
+						System.out.println("Set this proxy to not used, so other machines may use it");
+						System.out.println(api.setDescription(Integer.toString(proxy.getId()), -1));
+						break;
+					}
 
-				// If already contains, but not set a description, then set a description
-				if ((containsInProxyList) && (description != Config.MACHINE_ID) && (description != -2)) {
-					System.out.println("Set a proxy to ours, because it's already used by us");
-					System.out.println(api.setDescription(Integer.toString(proxy.getId()), Config.MACHINE_ID));
-					break;
+					// If already contains, but not set a description, then set a description
+					if ((containsInProxyList) && (description != Config.MACHINE_ID) && (description != -2)) {
+						System.out.println("Set a proxy to ours, because it's already used by us");
+						System.out.println(api.setDescription(Integer.toString(proxy.getId()), Config.MACHINE_ID));
+						break;
+					}
 				}
 
 			} catch (Exception e) {
@@ -151,45 +160,47 @@ public class Proxy6 {
 		}
 		update();
 
-		for (Proxy6Proxy proxy : proxyList) {
-			try {
-				boolean isServerMule = Config.isServerMuleProxy(proxy.getIp(), proxy.getPort());
-				int description = proxy.getDescr().length() > 0 ? Integer.parseInt(proxy.getDescr()) : -1;
+		if (!Config.PROXIES_ONE_DATABASE_AND_NOT_BY_MACHINE) {
+			for (Proxy6Proxy proxy : proxyList) {
+				try {
+					boolean isServerMule = Config.isServerMuleProxy(proxy.getIp(), proxy.getPort());
+					int description = proxy.getDescr().length() > 0 ? Integer.parseInt(proxy.getDescr()) : -1;
 
-				if (isServerMule) {
-					continue;
-				}
+					if (isServerMule) {
+						continue;
+					}
 
-				// A server may have a max. amount proxies used up in total
-				if (DatabaseUtilities.getTotalProxies().size() >= ((Config.MAX_BOTS_OPEN / 2)) + 11) {
-					System.out.println("Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2) + 5)
-							+ " proxies served");
+					// A server may have a max. amount proxies used up in total
+					if (DatabaseUtilities.getTotalProxies().size() >= ((Config.MAX_BOTS_OPEN / 2)) + 11) {
+						System.out.println("Returning because database already has " + ((Config.MAX_BOTS_OPEN / 2) + 5)
+								+ " proxies served");
+						break;
+					}
+
+					// A server may not use a proxy again when it's already used
+					if (description > 0) {
+						System.out.println("Returning because this proxy is already used");
+						continue;
+					}
+
+					// May not use it when it's a muling proxy
+					if (description == -2) {
+						System.out.println("May not use this proxy, because it is a muling proxy");
+						continue;
+					}
+
+					DatabaseUtilities.insertProxy(proxy, false);
+					String proxyId = Integer.toString(proxy.getId());
+					System.out.println(api.setDescription(proxyId, Config.MACHINE_ID));
 					break;
+
+				} catch (Exception e) {
+					System.out.println("Could not set description");
+					e.printStackTrace();
 				}
-
-				// A server may not use a proxy again when it's already used
-				if (description > 0) {
-					System.out.println("Returning because this proxy is already used");
-					continue;
-				}
-
-				// May not use it when it's a muling proxy
-				if (description == -2) {
-					System.out.println("May not use this proxy, because it is a muling proxy");
-					continue;
-				}
-
-				DatabaseUtilities.insertProxy(proxy, false);
-				String proxyId = Integer.toString(proxy.getId());
-				System.out.println(api.setDescription(proxyId, Config.MACHINE_ID));
-				break;
-
-			} catch (Exception e) {
-				System.out.println("Could not set description");
-				e.printStackTrace();
 			}
+			update();
 		}
-		update();
 		updateConfigProxies();
 	}
 

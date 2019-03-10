@@ -40,6 +40,10 @@ public class AccountTable {
 
 	private boolean proxyOnline;
 
+	public boolean takesLongToUpdate = (System.currentTimeMillis() - getLastUpdated() > 5_000);
+
+	private long sameRank;
+	
 	/**
 	 * Does the account have a current script?
 	 * 
@@ -154,6 +158,7 @@ public class AccountTable {
 	 *            the status to set
 	 */
 	public void setStatus(AccountStatus status) {
+		setSameRank(System.currentTimeMillis());
 		this.status = status;
 	}
 
@@ -463,6 +468,20 @@ public class AccountTable {
 	 */
 	public void setLastUpdated(long lastUpdated) {
 		this.lastUpdated = lastUpdated;
+	}
+
+	/**
+	 * @return the sameRank
+	 */
+	public long getSameRank() {
+		return sameRank;
+	}
+
+	/**
+	 * @param sameRank the sameRank to set
+	 */
+	public void setSameRank(long sameRank) {
+		this.sameRank = sameRank;
 	}
 
 }

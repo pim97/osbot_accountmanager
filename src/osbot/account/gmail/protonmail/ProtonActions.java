@@ -149,11 +149,13 @@ public class ProtonActions {
 			driver.quit();
 			if (WebdriverFunctions.hasQuit(driver)) {
 				System.out.println("Breaking out of loop");
+				driver.quit();
 				return true;
 			}
 		} catch (Exception e) {
 			if (WebdriverFunctions.hasQuit(driver)) {
 				System.out.println("Breaking out of loop");
+				driver.quit();
 				return true;
 			}
 			e.printStackTrace();
@@ -268,7 +270,7 @@ public class ProtonActions {
 
 			List<WebElement> name = getDriver().findElements(By.className("subject-text"));
 
-			if ((clickedIndex > 25) || (clickedIndex > name.size())) {// name.size()) {
+			if ((clickedIndex > 45) || (clickedIndex > name.size())) {// name.size()) {
 				loop++;
 				clickedIndex = 0;
 			}

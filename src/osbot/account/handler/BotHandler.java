@@ -192,11 +192,11 @@ public class BotHandler {
 			String accountStatus = bot.getAccount().getStatus().name().replaceAll("_", "-");
 			bot.addArguments(CliArgs.SCRIPT, true, account.getScript(),
 					account.getEmail() + "_" + account.getPassword() + "_" + bot.getPidId() + "_" + accountStatus + "_"
-							+ account.getUsername() + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%") + "_"
-							+ Config.DATABASE_NAME.replaceAll("_", "%") + "_"
-							+ Config.DATABASE_PASSWORD.replaceAll("_", "%"));
+							+ account.getUsername() + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "-") + "_"
+							+ Config.DATABASE_NAME.replaceAll("_", "-") + "_"
+							+ Config.DATABASE_PASSWORD.replaceAll("_", "-"));
 		}
-		bot.runBot(false);
+		bot.runBot(bot, false);
 	}
 
 	public static void runMule(OsbotController bot, String toTradeWith, String emailOfUserTradingWith) {
@@ -295,8 +295,8 @@ public class BotHandler {
 			// System.out.println("4");
 			String accountStatus = bot.getAccount().getStage().name().replaceAll("_", "-");
 			bot.addArguments(CliArgs.SCRIPT, true, script, account.getEmail() + "_" + account.getPassword() + "_"
-					+ bot.getPidId() + "_" + accountStatus + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "%") + "_"
-					+ Config.DATABASE_NAME.replaceAll("_", "%") + "_" + Config.DATABASE_PASSWORD.replaceAll("_", "%")
+					+ bot.getPidId() + "_" + accountStatus + "_" + Config.DATABASE_USER_NAME.replaceAll("_", "-") + "_"
+					+ Config.DATABASE_NAME.replaceAll("_", "-") + "_" + Config.DATABASE_PASSWORD.replaceAll("_", "-")
 					+ "_" + toTradeWith + "_" + emailOfUserTradingWith);
 		}
 
@@ -305,7 +305,7 @@ public class BotHandler {
 				|| bot.getAccount().getStatus() == AccountStatus.SUPER_MULE) {
 			createBatFile(bot);
 		}
-		bot.runBot(true);
+		bot.runBot(bot, true);
 	}
 
 	public static void createBatFile(OsbotController bot) {
@@ -387,18 +387,20 @@ public class BotHandler {
 	}
 
 	public static void resetAllTradingDatabaseForServerMule(OsbotController otherBot, OsbotController partner) {
-		DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
-		DatabaseUtilities.setTradingWith("server_muling", null, partner.getId());
+		new Thread(() -> {
+			DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
+			DatabaseUtilities.setTradingWith("server_muling", null, partner.getId());
 
-		DatabaseUtilities.setTradingWith(null, otherBot.getId());
-		DatabaseUtilities.setTradingWith(null, partner.getId());
+			DatabaseUtilities.setTradingWith(null, otherBot.getId());
+			DatabaseUtilities.setTradingWith(null, partner.getId());
 
-		DatabaseUtilities.setTradingWith(null, partner.getAccount().getUsername());
-		DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
-		DatabaseUtilities.setTradingWith("server_muling", null, partner.getAccount().getUsername());
-		DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getAccount().getUsername());
+			DatabaseUtilities.setTradingWith(null, partner.getAccount().getUsername());
+			DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
+			DatabaseUtilities.setTradingWith("server_muling", null, partner.getAccount().getUsername());
+			DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getAccount().getUsername());
 
-		DatabaseUtilities.setServerMuleConnectedDatabase(null);
+			DatabaseUtilities.setServerMuleConnectedDatabase(null);
+		}).start();
 	}
 
 	private static void isServerMuleTrading() {
@@ -420,25 +422,31 @@ public class BotHandler {
 					OsbotController partner = getOsbotByName(tradeWithOfServerMule);
 
 					if (otherBot.getAccount().getStatus() == AccountStatus.BANNED) {
-						DatabaseUtilities.setTradingWith(null, otherBot.getId());
-						DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
+						new Thread(() -> {
+							DatabaseUtilities.setTradingWith(null, otherBot.getId());
+							DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
 
-						DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getAccount().getUsername());
-						DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
-						System.out.println("Account was banned S04");
+							DatabaseUtilities.setTradingWith("server_muling", null,
+									otherBot.getAccount().getUsername());
+							DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
+							System.out.println("Account was banned S04");
 
-						DatabaseUtilities.setServerMuleConnectedDatabase(null);
+							DatabaseUtilities.setServerMuleConnectedDatabase(null);
+						}).start();
 					}
 
 					if (partner == null) {
 						System.out.println("Couldn't find the partner to trade: S01");
-						DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
-						DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getAccount().getUsername());
+						new Thread(() -> {
+							DatabaseUtilities.setTradingWith(null, otherBot.getAccount().getUsername());
+							DatabaseUtilities.setTradingWith("server_muling", null,
+									otherBot.getAccount().getUsername());
 
-						DatabaseUtilities.setTradingWith(null, otherBot.getId());
-						DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
+							DatabaseUtilities.setTradingWith(null, otherBot.getId());
+							DatabaseUtilities.setTradingWith("server_muling", null, otherBot.getId());
 
-						DatabaseUtilities.setServerMuleConnectedDatabase(null);
+							DatabaseUtilities.setServerMuleConnectedDatabase(null);
+						}).start();
 					}
 
 					if (partner != null) {
@@ -461,9 +469,11 @@ public class BotHandler {
 										serverMule.getId());
 
 								if (tradeWithOther3 == null) {
-									DatabaseUtilities.setServerMuleConnectedDatabase(null);
-									System.out.println(
-											"Set database to NULL in server_muling, because something went wrong!");
+									new Thread(() -> {
+										DatabaseUtilities.setServerMuleConnectedDatabase(null);
+										System.out.println(
+												"Set database to NULL in server_muling, because something went wrong!");
+									}).start();
 								}
 							}
 
@@ -556,7 +566,9 @@ public class BotHandler {
 	}
 
 	public static void checkMulesCorrectTrading() {
+		// new Thread(() -> {
 		DatabaseUtilities.setBannedAndTradingWithToNull();
+		// }).start();
 
 		// If accounts are not loaded yet
 		if (BotController.getBots().size() == 0) {
@@ -594,8 +606,11 @@ public class BotHandler {
 				String tradeWithData = DatabaseUtilities.getServerMuleUsedByDatabase();
 
 				if (tradeWith != null && tradeWithData == null) {
-					DatabaseUtilities.setTradingWith(null, bot.getAccount().getUsername());
-					DatabaseUtilities.setTradingWith("server_muling", null, bot.getId());
+					new Thread(() -> {
+						DatabaseUtilities.setTradingWith(null, bot.getAccount().getUsername());
+						DatabaseUtilities.setTradingWith("server_muling", null, bot.getId());
+					}).start();
+
 					System.out.println("Reset trade with because CONFIG trading was null!");
 				}
 			}
@@ -622,8 +637,10 @@ public class BotHandler {
 					// Cant find the partner
 					if (partner == null) {
 						System.out.println("Couldn't find the partner to trade: E01");
-						DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-						DatabaseUtilities.setTradingWith(null, osbot.getId());
+						new Thread(() -> {
+							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+							DatabaseUtilities.setTradingWith(null, osbot.getId());
+						}).start();
 					}
 
 					if (partner != null) {
@@ -641,8 +658,10 @@ public class BotHandler {
 						if ((tradeWithOther != null && tradeWithOther2 == null)
 								|| (tradeWithOther == null && tradeWithOther2 != null)) {
 							System.out.println("One of the account had a null! E04");
-							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-							DatabaseUtilities.setTradingWith(null, osbot.getId());
+							new Thread(() -> {
+								DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+								DatabaseUtilities.setTradingWith(null, osbot.getId());
+							}).start();
 						}
 
 						boolean moreThan1Trading = DatabaseUtilities
@@ -664,8 +683,10 @@ public class BotHandler {
 							// System.out.println("2: " + partner.getAccount().getUsername() + " " +
 							// tradeWithOther);
 
-							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-							DatabaseUtilities.setTradingWith(null, tradeWithOther);
+							new Thread(() -> {
+								DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+								DatabaseUtilities.setTradingWith(null, tradeWithOther);
+							}).start();
 						}
 					}
 
@@ -673,17 +694,34 @@ public class BotHandler {
 							&& osbot.getAccount().getStatus() != AccountStatus.AVAILABLE
 							&& osbot.getAccount().getStatus() != AccountStatus.SUPER_MULE) {
 						System.out.println("One of the accounts got banned! E03");
-						DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
-						DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						new Thread(() -> {
+							DatabaseUtilities.setTradingWith(null, osbot.getAccount().getUsername());
+							DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						}).start();
 					}
 
 					// Don't match
 					if (osbot != null && tradeWithOther.equalsIgnoreCase(osbot.getAccount().getUsername())) {
-						DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						new Thread(() -> {
+							DatabaseUtilities.setTradingWith(null, tradeWithOther);
+						}).start();
 						System.out.println("Don't correspond: E02");
 					}
 
 				}
+			}
+		}
+	}
+
+	public static void handleBannedMulers() {
+		for (int i = 0; i < BotController.getBots().size(); i++) {
+			OsbotController bot = BotController.getBots().get(i);
+			String tradingWith = DatabaseUtilities.getTradeWithOther(bot.getId());
+
+			if (tradingWith != null
+					&& DatabaseUtilities.getAccountStatusInDatabase(null, bot.getId()) == AccountStatus.BANNED) {
+				DatabaseUtilities.setTradingWith(null, bot.getId());
+				System.out.println("Set bot: " + bot.getAccount().getUsername() + " to not trading because banned");
 			}
 		}
 	}
@@ -1188,27 +1226,27 @@ public class BotHandler {
 				continue;
 			}
 
-			// System.out.println((System.currentTimeMillis() - startTime) + " ms time part
-			// one");
-
-			boolean hasValidLoginStatus = osbot.getAccount().getLoginStatus() == LoginStatus.DEFAULT;
+			LoginStatus loginStatus = DatabaseUtilities.getLoginStatus(
+					DatabaseUtilities.isServerMule(osbot.getAccount()) ? "server_muling" : null, osbot.getId());
+			AccountStatus accountStatus = DatabaseUtilities.getAccountStatusInDatabase(null, osbot.getId());
+			AccountStage stage = AccountStage.valueOf(DatabaseUtilities.getAccountStageInDatabase(osbot.getId()));
+			boolean hasValidLoginStatus = loginStatus == LoginStatus.DEFAULT;// osbot.getAccount().getLoginStatus()
+			// == LoginStatus.DEFAULT;
 
 			if (!hasValidLoginStatus) {
 				continue;
 			}
 
-			boolean correctStagetoLaunch = osbot.getAccount().getStage() != AccountStage.UNKNOWN
-					&& osbot.getAccount().getStatus() != AccountStatus.OUT_OF_MONEY
-					&& osbot.getAccount().getStage() != AccountStage.MULE_TRADING
-					&& osbot.getAccount().getStage() != AccountStage.GE_SELL_BUY_MINING;
+			boolean correctStagetoLaunch = stage != AccountStage.UNKNOWN && accountStatus != AccountStatus.OUT_OF_MONEY
+					&& stage != AccountStage.MULE_TRADING && stage != AccountStage.GE_SELL_BUY_MINING;
 
 			if (!correctStagetoLaunch) {
 				continue;
 			}
 
-			boolean correctStatusToLaunch = (osbot.getAccount().getStatus() == AccountStatus.AVAILABLE)
-					|| (osbot.getAccount().getStatus() == AccountStatus.WALKING_STUCK)
-					|| (osbot.getAccount().getStatus() == AccountStatus.TASK_TIMEOUT
+			boolean correctStatusToLaunch = (accountStatus == AccountStatus.AVAILABLE)
+					|| (accountStatus == AccountStatus.WALKING_STUCK)
+					|| (accountStatus == AccountStatus.TASK_TIMEOUT
 							&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE)
 					|| (osbot.getAccount().getStatus() == AccountStatus.TIMEOUT
 							&& osbot.getAccount().getAmountTimeout() < Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE);

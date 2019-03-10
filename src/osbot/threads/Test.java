@@ -3,6 +3,9 @@ package osbot.threads;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,11 +20,13 @@ import org.openqa.selenium.firefox.ProfilesIni;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.Select;
 
+import osbot.account.AccountStatus;
 import osbot.account.creator.PidDriver;
 import osbot.account.global.Config;
 import osbot.account.gmail.protonmail.ProtonMain;
 import osbot.account.handler.GeckoHandler;
 import osbot.bot.BotController;
+import osbot.database.DatabaseConnection;
 import osbot.database.DatabaseUtilities;
 import osbot.settings.OsbotController;
 import osbot.tables.AccountTable;
@@ -66,6 +71,78 @@ public class Test {
 			}
 
 		}
+
+	}
+
+	public static boolean checkAlreadyLockedProxies(String proxy, String email) {
+
+		int index = 0;
+		StringBuilder sql = new StringBuilder();
+		for (String abc : DATABASES) {
+			index++;
+			sql.append(
+					"SELECT email,proxy_ip,updated_at FROM "+abc+".account WHERE status=\"LOCKED_TIMEOUT\" AND proxy_ip= '"
+							+ proxy + "' AND email <> '" + email + "'");
+			if (index != DATABASES.length) {
+				sql.append(" UNION\n");
+			} else {
+				sql.append("\n");
+			}
+			// System.out.println(index+" "+DATABASES.length);
+		}
+		System.out.println(sql.toString());
+		// String sql = "SELECT email,proxy_ip,updated_at FROM account WHERE
+		// status=\"LOCKED_TIMEOUT\" AND proxy_ip= '"
+		// + proxy + "' AND email <> '" + email + "'";
+		//
+		// System.out.println("USING SQL: " + sql);
+		// try {
+		// PreparedStatement preparedStatement =
+		// DatabaseConnection.getDatabase().getConnection()
+		// .prepareStatement(sql);
+		// ResultSet resultSet = preparedStatement.executeQuery(sql);
+		//
+		// try {
+		//
+		// boolean alreadyLocked = false;
+		// while (resultSet.next()) {
+		// alreadyLocked = true;
+		// }
+		//
+		// if (alreadyLocked) {
+		// try {
+		// String query = "UPDATE account SET status = ? WHERE email=?";
+		// PreparedStatement preparedStmt =
+		// DatabaseConnection.getDatabase().getConnection()
+		// .prepareStatement(query);
+		// preparedStmt.setString(1, AccountStatus.LOCKED_TIMEOUT.name());
+		// preparedStmt.setString(2, email);
+		//
+		// // execute the java preparedstatement
+		// preparedStmt.executeUpdate();
+		// preparedStmt.close();
+		//
+		// System.out.println("Updated account to locked_timeout because ip was timed
+		// out E10");
+		//
+		// return true;
+		//
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		// }
+		//
+		// } catch (SQLException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// } finally {
+		// resultSet.close();
+		// preparedStatement.close();
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		return false;
 
 	}
 
@@ -174,6 +251,10 @@ public class Test {
 		proton.unlockAccount();
 	}
 
+	public static String[] DATABASES = { "`107.150.38.50_003_dear`", "`107.150.61.130_006_goblin`",
+			"`173.208.175.186_002_elf`", "`173.208.184.178_004_unicornbod`", "`173.208.203.146_001_dragon`",
+			"`63.141.228.170_005_brother`" };
+
 	public static void main(String args[]) {
 		Config.DATABASE_NAME = args[2];
 		Config.DATABASE_USER_NAME = args[3];
@@ -196,16 +277,69 @@ public class Test {
 
 		System.out.println(BotController.getBots().size());
 
+		// String sql = "SELECT COUNT(*) as available_accounts FROM (SELECT * FROM
+		// (\r\n"
+		// + "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us,
+		// p.password as p_pass FROM account AS ac INNER JOIN proxies.proxies AS p ON
+		// p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <>
+		// \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND
+		// ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <>
+		// \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <>
+		// \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as
+		// z\r\n" + "\r\n"
+		// + "UNION\r\n" + "\r\n" + "SELECT * FROM (\r\n"
+		// + "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us,
+		// p.password as p_pass FROM server_muling.account AS ac INNER JOIN
+		// server_muling.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible =
+		// \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\"
+		// AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <>
+		// \"BANNED\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND
+		// ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as
+		// p) as total";
+		// String sql = "SELECT * FROM (\r\n"
+		// + "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us,
+		// p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON
+		// p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <>
+		// \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND
+		// ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\" AND ac.status <>
+		// \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND ac.status <>
+		// \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as
+		// z\r\n" + "\r\n"
+		// + "UNION\r\n" + "\r\n" + "SELECT * FROM (\r\n"
+		// + "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us,
+		// p.password as p_pass FROM server_muling.account AS ac INNER JOIN
+		// server_muling.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible =
+		// \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\"
+		// AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <>
+		// \"BANNED\" AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\" AND
+		// ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND
+		// amount_timeout < "
+		// + Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as
+		// p";
+
 		String sql = "SELECT * FROM (\r\n"
-				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM account AS ac INNER JOIN proxies.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND p.is_alive = 1 AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as z\r\n" + "\r\n"
 				+ "UNION\r\n" + "\r\n" + "SELECT * FROM (\r\n"
-				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM server_muling.account AS ac INNER JOIN server_muling.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
+				+ "SELECT * FROM (SELECT ac.*, p.is_alive as alive, p.username as p_us, p.password as p_pass FROM server_muling.account AS ac INNER JOIN server_muling.proxies AS p ON p.ip_addres=ac.proxy_ip WHERE (ac.visible = \"true\" AND p.is_alive = 1 AND ac.status <> \"MANUAL_REVIEW\" AND ac.status <> \"OUT_OF_MONEY\" AND email IS NOT NULL AND ac.status <> \"LOCKED_INGAME\" AND ac.status <> \"BANNED\"  AND ac.status <> \"TIMEOUT\" AND ac.status <> \"TASK_TIMEOUT\"  AND ac.status <> \"INVALID_PASSWORD\") OR (ac.status=\"TASK_TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ") OR (ac.status=\"TIMEOUT\" AND amount_timeout < "
 				+ Config.AMOUNT_OF_TIMEOUTS_BEFORE_GONE + ")) as z GROUP BY z.id\r\n" + ") as p";
 
-		System.out.println(sql);
+//		checkAlreadyLockedProxies("185.233.201.198", "osrsbod+843670171@protonmail.com");
+		 System.out.println(sql);
 
 		// load();
 		//
