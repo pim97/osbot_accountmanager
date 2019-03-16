@@ -147,7 +147,7 @@ public class ProtonMain {
 	 * @return
 	 */
 	public boolean fillInAllInformation() {
-		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null, null);
+		RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, null, null, database);
 
 		return runescapeWebsite.fillInInformationRecovering();
 	}

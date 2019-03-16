@@ -247,6 +247,21 @@ public class ThreadHandler {
 
 	}
 
+	private static void recoverServerMuleThread() {
+		Thread recoverServerMuleThread = new Thread(() -> {
+
+			DatabaseUtilities.recoverServerMule();
+
+		});
+		recoverServerMuleThread.setName("recoverServerMuleThread");
+		recoverServerMuleThread.start();
+
+		threadList.add(recoverServerMuleThread);
+
+	}
+
+	// recoverServerMule
+
 	/**
 	 * Handles the thread for muling on the accounts
 	 */
@@ -255,7 +270,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.checkMulesCorrectTrading();
-				
+
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -278,7 +293,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleNormalMules();
-				
+
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -298,7 +313,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleServerMules();
-				
+
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -318,7 +333,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				BotHandler.handleSuperMules();
-				
+
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -451,7 +466,7 @@ public class ThreadHandler {
 			while (programIsRunning) {
 
 				DatabaseUtilities.checkIfAccountIsTooMany();
-//				DatabaseUtilities.setNonBannedMulersToNoTrading();
+				// DatabaseUtilities.setNonBannedMulersToNoTrading();
 				// DatabaseUtilities.checkRunningErrors();
 				// try {
 				// Thread.sleep(30_000);
@@ -639,6 +654,10 @@ public class ThreadHandler {
 		if (getThread("transformIntoMuleHandler") == null && Config.CREATING_ACCOUNTS_THREAD_ACTIVE) {
 			transformIntoMuleHandler();
 			System.out.println("Started new thread: transformIntoMuleHandler");
+		}
+		
+		if (getThread("recoverServerMuleThread") == null && Config.RECOVERING_ACCOUNTS_THREAD_ACTIVE) {
+			recoverServerMuleThread();
 		}
 
 		if (getThread("handleNormalMulesTrading") == null && Config.MULES_TRADING) {

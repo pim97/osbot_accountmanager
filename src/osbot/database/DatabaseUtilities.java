@@ -753,10 +753,17 @@ public class DatabaseUtilities {
 	 * @param accountId
 	 * @return
 	 */
-	public static boolean updatePasswordInDatabase(String newPassword, int accountId) {
+	public static boolean updatePasswordInDatabase(String database, String newPassword, int accountId) {
 		try {
-			String query = "UPDATE account SET password = ?, status = ? WHERE id=?";
-			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection().prepareStatement(query);
+			StringBuilder query = new StringBuilder();
+			if (database != null) {
+				query.append("UPDATE " + database + ".account SET password = ?, status = ? WHERE id=?");
+			} else {
+				query.append("UPDATE account SET password = ?, status = ? WHERE id=?");
+			}
+			// String query = "UPDATE account SET password = ?, status = ? WHERE id=?";
+			PreparedStatement preparedStmt = DatabaseConnection.getDatabase().getConnection()
+					.prepareStatement(query.toString());
 			preparedStmt.setString(1, newPassword);
 			preparedStmt.setString(2, "Available");
 			preparedStmt.setInt(3, accountId);
@@ -2081,7 +2088,7 @@ public class DatabaseUtilities {
 	public static synchronized ArrayList<OsbotController> getAccountsToBeRecovered() {
 		ArrayList<OsbotController> bots = new ArrayList<OsbotController>();
 		try {
-			String sql = "SELECT * FROM account WHERE status=\"LOCKED\"";
+			String sql = "SELECT * FROM account WHERE status=\"LOCKED\" UNION SELECT * FROM server_muling.account WHERE status=\"LOCKED\"";
 			PreparedStatement preparedStatement = DatabaseConnection.getDatabase().getConnection()
 					.prepareStatement(sql);
 			ResultSet resultSet = preparedStatement.executeQuery(sql);
@@ -2535,6 +2542,30 @@ public class DatabaseUtilities {
 		return -1;
 	}
 
+	public static void recoverServerMule() {
+		ArrayList<OsbotController> accs = new ArrayList<OsbotController>();
+		accs = getAccountsToBeRecovered();
+
+		for (OsbotController account : accs) {
+			if (!AccountCreationService.containsUsername(account.getAccount().getUsername())) {
+				if (account.getAccount().getStatus() == AccountStatus.LOCKED
+						&& Config.isServerMuleProxy(account.getAccount().getProxyIp(),
+								account.getAccount().getProxyPort())
+						&& account.getAccount().getEmail().contains(Config.PREFIX_EMAIL)) {
+					AccountCreationService.addUsernameToUsernames(account.getAccount().getUsername());
+
+					System.out.println("Recovering account: " + account.getAccount().getUsername());
+
+					DatabaseProxy proxy = new DatabaseProxy(account.getAccount().getProxyIp(),
+							account.getAccount().getProxyPort(), account.getAccount().getProxyUsername(),
+							account.getAccount().getProxyPassword());
+
+					AccountCreationService.launchRunescapeWebsite(proxy, account, SeleniumType.RECOVER_ACCOUNT, true);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Recovers an account
 	 */
@@ -2570,6 +2601,10 @@ public class DatabaseUtilities {
 		for (OsbotController account : accs) {
 			if (!account.getAccount().isProxyOnline()) {
 				System.out.println("Skipping, because proxy is offline");
+				continue;
+			}
+			if (!account.getAccount().getEmail().contains(Config.PREFIX_EMAIL)) {
+				System.out.println("Not correct email");
 				continue;
 			}
 			if (!GeckoHandler.mayStartFirefoxBrowser(10)) {

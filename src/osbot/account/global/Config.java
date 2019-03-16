@@ -51,7 +51,11 @@ public class Config {
 	public static final int AMOUNT_OF_TIMEOUTS_BEFORE_GONE = 3;
 
 	public static final ArrayList<String> SERVER_MULES = new ArrayList<String>(
-			Arrays.asList("185.194.15.2:8000:hGk5CB:s0jRMm"));
+			Arrays.asList(
+					"185.168.250.6:8000:ZHNsW5:VXVshG"
+//					,
+//					"185.194.15.2:8000:hGk5CB:s0jRMm"
+		));
 
 	public static boolean isServerMuleProxy(String ip, String port) {
 		StringBuilder proxyString = new StringBuilder();

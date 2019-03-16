@@ -198,12 +198,15 @@ public class ProtonActions {
 			WebElement element = wait
 					.until(ExpectedConditions.visibilityOfElementLocated(By.className("recipients-summary-label")));
 
-			WebElement toEmail = getDriver().findElement(By.className("recipients-summary-label"));
+			String toEmail = driver.findElement(By.cssSelector("span[class='recipients-summary-label']"))
+					.getAttribute("title").replace("<", "").replace(">", "");
+			// getDriver().findElement(By.className("recipients-summary-label"));
 
-			WebdriverFunctions.waitForElementToBeVisible(driver, toEmail);
+			WebdriverFunctions.waitForElementToBeVisible(driver, element);
 			if (toEmail != null) {
-				System.out.println("Label: " + getAccount().getAccount().getEmail() + " " + toEmail.getText());
-				if (getAccount().getAccount().getEmail().equalsIgnoreCase(toEmail.getText())) {
+//				String email = toEmail.getAttribute("title");
+				System.out.println("Label: " + getAccount().getAccount().getEmail() + " " + toEmail);
+				if (getAccount().getAccount().getEmail().equalsIgnoreCase(toEmail)) {
 					return true;
 				}
 			}

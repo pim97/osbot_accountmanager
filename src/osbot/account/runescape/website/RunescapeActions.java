@@ -45,6 +45,15 @@ public class RunescapeActions {
 		setPidDriver(pidDriver);
 	}
 
+	public RunescapeActions(WebDriver driver, OsbotController account, SeleniumType type, PidDriver pidDriver,
+			boolean database) {
+		setAccount(account);
+		setDriver(driver);
+		setType(type);
+		setPidDriver(pidDriver);
+		this.database = database;
+	}
+
 	private PidDriver pidDriver;
 
 	private WebDriver driver;
@@ -866,7 +875,15 @@ public class RunescapeActions {
 			String password = new RandomNameGenerator().generateRandomNameString();
 			driver.findElement(By.name("password")).sendKeys(password);
 			driver.findElement(By.name("confirm")).sendKeys(password);
-			DatabaseUtilities.updatePasswordInDatabase(password, getAccount().getId());
+
+			if (database) {
+				DatabaseUtilities.updatePasswordInDatabase("server_muling", password, getAccount().getId());
+				DatabaseUtilities.updateStatusOfAccountById("server_muling", AccountStatus.AVAILABLE,
+						getAccount().getId());
+			} else {
+				DatabaseUtilities.updatePasswordInDatabase(null, password, getAccount().getId());
+				DatabaseUtilities.updateStatusOfAccountById(AccountStatus.AVAILABLE, getAccount().getId());
+			}
 
 			System.out.println("new password: " + password);
 
@@ -875,6 +892,8 @@ public class RunescapeActions {
 		return true;
 
 	}
+
+	private boolean database = false;
 
 	/**
 	 * Fills in all information required to make an account

@@ -365,7 +365,13 @@ public class AccountCreationService {
 
 			RunescapeActions runescapeWebsite = new RunescapeActions(driver, account, type, pidDriver);
 			runescapeWebsite.unlock();
-			ProtonMain proton = new ProtonMain(driver, account, pidDriver);
+			ProtonMain proton = null;
+			if (database) {
+				proton = new ProtonMain(driver, account, pidDriver, true);
+			} else {
+				proton = new ProtonMain(driver, account, pidDriver);
+			}
+//			ProtonMain proton = new ProtonMain(driver, account, pidDriver);
 			proton.unlockAccount();
 		}
 
